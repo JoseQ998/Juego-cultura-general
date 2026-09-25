@@ -10,9 +10,10 @@ service cloud.firestore {
 
     function validResult(d) {
       return validName(d.name)
-        && d.score is int && d.score >= 0 && d.score <= 3000
-        && d.correct is int && d.correct >= 0 && d.correct <= 15
-        && d.timeMs is int && d.timeMs >= 0 && d.timeMs <= 150000
+        && d.total is int && d.total >= 1 && d.total <= 20
+        && d.score is int && d.score >= 0 && d.score <= d.total * 200
+        && d.correct is int && d.correct >= 0 && d.correct <= d.total
+        && d.timeMs is int && d.timeMs >= 0 && d.timeMs <= d.total * 10000
         && d.ts is int;
     }
 

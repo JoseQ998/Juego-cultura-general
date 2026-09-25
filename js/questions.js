@@ -229,3 +229,10 @@ export const CLASSIC_IDS = [
   'musica-1', 'deportes-9', 'cine-2', 'videojuegos-2', 'tecnologia-5',
   'historia-4', 'geografia-1', 'ciencia-3', 'arte-7', 'literatura-2',
 ];
+
+// Preguntas extra que se añaden al final del modo Clásico.
+// No forman parte del banco general, así que no salen en el modo Aleatorio ni en las salas.
+export const EXTRA_CATEGORY = { id: 'extra', name: 'Pregunta extra', icon: '⚔️' };
+export const CLASSIC_EXTRA = [
+  ['¿Cuál es el mejor espadachín de la historia?', 'Roronoa Zoro', 'Ichigo Kurosaki', 'Zenitsu Agatsuma', 'Kenshin Himura'],
+].map(([text, ...options], i) => ({ id: `extra-${i + 1}`, cat: EXTRA_CATEGORY.id, text, options }));

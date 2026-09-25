@@ -6,14 +6,14 @@ Página web de preguntas de cultura general. Funciona sin servidor propio: se pu
 
 | Función | Detalle |
 |---|---|
-| 🏛️ **Modo Clásico** | Siempre las mismas 15 preguntas, en el mismo orden. |
+| 🏛️ **Modo Clásico** | Siempre las mismas 15 preguntas, en el mismo orden, más 1 pregunta extra al final (16 en total). |
 | 🎲 **Modo Aleatorio** | 15 preguntas distintas en cada partida (evita repetir las que ya viste). |
 | 👥 **Salas** | Eliges las categorías (videojuegos, música, deportes, arte, historia, geografía, ciencia, cine y TV, literatura, tecnología) y se genera un código de 6 caracteres. Todos los que entran con ese código reciben las mismas preguntas. |
 | 🏆 **Rankings** | Uno por modo (Clásico, Aleatorio) y uno por cada sala. Se guarda la mejor partida de cada nombre. |
 | ⏱️ **10 segundos** | Límite por pregunta. Si se acaba el tiempo, cuenta como fallo. |
 | 📋 **Registro** | Página protegida con PIN que muestra todas las partidas y marca los dispositivos, huellas de navegador e IPs desde los que se jugó con varios nombres distintos. También cuenta cuántas veces salió el jugador de la pestaña durante la partida (por ejemplo, para buscar la respuesta). |
 
-**Puntuación:** cada acierto vale 100 puntos, más un bonus de hasta 100 según lo rápido que respondas (máximo 3000). Si hay empate, gana quien tardó menos.
+**Puntuación:** cada acierto vale 100 puntos, más un bonus de hasta 100 según lo rápido que respondas (máximo 3000 en Aleatorio y salas, 3200 en Clásico). Si hay empate, gana quien tardó menos.
 
 ---
 
@@ -83,7 +83,7 @@ Están en [`js/questions.js`](js/questions.js). Cada pregunta es una línea:
 ['Texto de la pregunta', 'Respuesta correcta', 'Incorrecta 1', 'Incorrecta 2', 'Incorrecta 3'],
 ```
 
-La respuesta correcta siempre va en segundo lugar; el juego baraja las opciones al mostrarlas. Las 15 preguntas del modo Clásico se eligen en `CLASSIC_IDS`, al final del mismo archivo (por ejemplo `'historia-1'` es la primera pregunta de Historia).
+La respuesta correcta siempre va en segundo lugar; el juego baraja las opciones al mostrarlas. Las 15 preguntas del modo Clásico se eligen en `CLASSIC_IDS`, al final del mismo archivo (por ejemplo `'historia-1'` es la primera pregunta de Historia). Las preguntas extra del Clásico están justo debajo, en `CLASSIC_EXTRA`: solo aparecen en ese modo.
 
 ## Archivos
 

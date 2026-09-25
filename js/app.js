@@ -1,14 +1,14 @@
 import { CONFIG } from './config.js';
-import { CATEGORIES, QUESTIONS, CLASSIC_IDS } from './questions.js';
+import { CATEGORIES, QUESTIONS, CLASSIC_IDS, CLASSIC_EXTRA, EXTRA_CATEGORY } from './questions.js';
 import * as store from './storage.js';
 import { getIdentity, rememberName } from './identity.js';
 
 const QUESTION_COUNT = 15;
 const TIME_LIMIT = 10_000; // 10 segundos por pregunta
 const REVEAL_MS = 1400;
-const MAX_POINTS = QUESTION_COUNT * 200;
+const POINTS_PER_QUESTION = 200;
 
-const CAT = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
+const CAT = Object.fromEntries([...CATEGORIES, EXTRA_CATEGORY].map((c) => [c.id, c]));
 const BY_ID = Object.fromEntries(QUESTIONS.map((q) => [q.id, q]));
 const app = document.getElementById('app');
 
@@ -105,7 +105,7 @@ function prepare(q, rnd) {
 }
 
 function buildClassic() {
-  return CLASSIC_IDS.map((id) => prepare(BY_ID[id], seededRandom(hashStr('clasico:' + id))));
+  return [...CLASSIC_IDS.map((id) => BY_ID[id]), ...CLASSIC_EXTRA].map((q) => prepare(q, seededRandom(hashStr('clasico:' + q.id))));
 }
 
 function buildRandom() {
@@ -194,14 +194,14 @@ function renderHome() {
   app.innerHTML = `
     <section class="hero">
       <h1>¿Cuánto sabes?</h1>
-      <p class="muted">15 preguntas · 10 segundos por pregunta · ranking por modo de juego</p>
+      <p class="muted">Preguntas de cultura general · 10 segundos por pregunta · ranking por modo de juego</p>
       ${nameField()}
     </section>
 
     <section class="modes">
       <button class="mode" data-mode="clasico">
         <span class="mode-icon">🏛️</span>
-        <span><strong>Clásico</strong><small>Siempre las mismas 15 preguntas. ¿Quién consigue la mejor puntuación?</small></span>
+        <span><strong>Clásico</strong><small>Siempre las mismas 15 preguntas + 1 pregunta extra. ¿Quién consigue la mejor puntuación?</small></span>
       </button>
       <button class="mode" data-mode="aleatorio">
         <span class="mode-icon">🎲</span>
@@ -345,7 +345,7 @@ async function fillRanking(el, board, highlight = '') {
               <td>${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</td>
               <td>${esc(r.name)}</td>
               <td><b>${r.score}</b></td>
-              <td>${r.correct}/${QUESTION_COUNT}</td>
+              <td>${r.correct}/${r.total || QUESTION_COUNT}</td>
               <td>${fmtTime(r.timeMs)}</td>
             </tr>`).join('')}
         </tbody>
@@ -501,7 +501,8 @@ async function finishGame() {
   const timeMs = Math.round(g.totalMs);
   const now = Date.now();
 
-  const scoreEntry = { name: g.name, nameKey: key, score: g.score, correct: g.correct, timeMs, ts: now, deviceId: id.deviceId };
+  const total = g.questions.length;
+  const scoreEntry = { name: g.name, nameKey: key, score: g.score, correct: g.correct, total, timeMs, ts: now, deviceId: id.deviceId };
   const logEntry = {
     ts: now,
     name: g.name,
@@ -511,6 +512,7 @@ async function finishGame() {
     boardLabel: g.label,
     score: g.score,
     correct: g.correct,
+    total,
     timeMs,
     durationMs: now - g.startedAt,
     tabSwitches: g.tabSwitches,
@@ -541,7 +543,7 @@ async function finishGame() {
     <section class="card result">
       <p class="eyebrow">${esc(g.label)}</p>
       <h2>${msg}</h2>
-      <div class="big-score">${g.score}<small> / ${MAX_POINTS}</small></div>
+      <div class="big-score">${g.score}<small> / ${g.questions.length * POINTS_PER_QUESTION}</small></div>
       <div class="stats">
         <div><b>${g.correct}/${g.questions.length}</b><span>aciertos</span></div>
         <div><b>${fmtTime(timeMs)}</b><span>tiempo total</span></div>
@@ -685,7 +687,7 @@ async function renderLog() {
         <td><b>${esc(l.name)}</b></td>
         <td>${esc(l.boardLabel || l.mode)}</td>
         <td>${l.score}</td>
-        <td>${l.correct}/${QUESTION_COUNT}</td>
+        <td>${l.correct}/${l.total || QUESTION_COUNT}</td>
         <td>${fmtTime(l.timeMs)}</td>
         <td class="${l.tabSwitches ? 'warn-text' : ''}">${l.tabSwitches ?? 0}</td>
         <td><button class="link mono" data-filter="${esc(l.deviceId)}">${esc(String(l.deviceId).slice(0, 8))}</button></td>
@@ -715,7 +717,7 @@ async function renderLog() {
     renderLog();
   });
   document.getElementById('csv').onclick = () => {
-    const cols = ['ts', 'name', 'boardLabel', 'score', 'correct', 'timeMs', 'tabSwitches', 'deviceId', 'fp', 'ip', 'ua'];
+    const cols = ['ts', 'name', 'boardLabel', 'score', 'correct', 'total', 'timeMs', 'tabSwitches', 'deviceId', 'fp', 'ip', 'ua'];
     const csv = [cols.join(',')]
       .concat(logs.map((l) => cols.map((c) => `"${String(c === 'ts' ? new Date(l.ts).toISOString() : l[c] ?? '').replace(/"/g, '""')}"`).join(',')))
       .join('\n');

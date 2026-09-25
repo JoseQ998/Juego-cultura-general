@@ -42,7 +42,7 @@ const docId = (nameKey) => 'n_' + encodeURIComponent(nameKey).slice(0, 200);
 // manipulado no pueda romper la página.
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const str = (v) => (v == null ? '' : String(v));
-const cleanScore = (r) => ({ ...r, name: str(r.name), score: num(r.score), correct: num(r.correct), timeMs: num(r.timeMs), ts: num(r.ts) });
+const cleanScore = (r) => ({ ...r, name: str(r.name), score: num(r.score), correct: num(r.correct), total: num(r.total) || 15, timeMs: num(r.timeMs), ts: num(r.ts) });
 const cleanLog = (l) => ({
   ...cleanScore(l),
   nameKey: str(l.nameKey), mode: str(l.mode), board: str(l.board), boardLabel: str(l.boardLabel),
