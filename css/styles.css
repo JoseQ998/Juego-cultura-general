@@ -50,6 +50,7 @@ h1 { font-size: clamp(2rem, 7vw, 3rem); }
   max-width: 760px; width: 100%; margin: 0 auto; padding: 16px; color: var(--muted); font-size: .85rem;
 }
 .footer a { color: var(--muted); }
+body.wide .container, body.wide .topbar, body.wide .footer { max-width: 1200px; }
 body.playing .topbar nav, body.playing .footer { visibility: hidden; }
 
 .card {

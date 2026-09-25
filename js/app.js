@@ -67,7 +67,8 @@ function setName(n) {
   try { localStorage.setItem('cg_name', n); } catch {}
 }
 function validName(n) {
-  return /^[\p{L}\p{N} _.\-]{2,20}$/u.test(n.trim());
+  const t = n.trim();
+  return /^[\p{L}\p{N} _.\-]{2,20}$/u.test(t) && /[\p{L}\p{N}]/u.test(t);
 }
 
 // ---------------- salas (lobbies) ----------------
@@ -145,6 +146,7 @@ async function route() {
   const h = location.hash || '#/';
   const [, page, arg] = h.split('/');
   window.scrollTo(0, 0);
+  document.body.classList.toggle('wide', page === 'registro');
   if (page === 'sala' && arg) return renderLobby(arg);
   if (page === 'crear') return renderCreateLobby();
   if (page === 'ranking') return renderRanking(arg ? decodeURIComponent(arg) : 'clasico');
@@ -162,9 +164,13 @@ function stopGame() {
 function requireName() {
   const n = getName();
   if (!validName(n)) {
-    toast('Primero escribe tu nombre (2 a 20 caracteres).', 'error');
-    go('#/');
-    setTimeout(() => document.getElementById('name')?.focus(), 50);
+    toast('Escribe un nombre válido: de 2 a 20 letras o números.', 'error');
+    const input = document.getElementById('name');
+    if (input) input.focus();
+    else {
+      go('#/');
+      setTimeout(() => document.getElementById('name')?.focus(), 50);
+    }
     return null;
   }
   return n.trim();
@@ -694,6 +700,7 @@ async function renderLog() {
     if (!t) return;
     filter.value = t.dataset.filter;
     draw();
+    app.querySelector('.table-wrap').scrollLeft = 0;
     filter.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
   draw();

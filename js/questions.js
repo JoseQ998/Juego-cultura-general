@@ -175,7 +175,7 @@ const RAW = {
     ['¿Cuál es el premio más prestigioso del cine estadounidense?', 'El Óscar', 'El Emmy', 'El Grammy', 'El Tony'],
     ['¿Cómo se llama el robot de Pixar (2008) que limpia la Tierra?', 'WALL-E', 'EVE', 'Baymax', 'R2-D2'],
     ['¿Cómo se llama el mago protagonista de la saga creada por J. K. Rowling?', 'Harry Potter', 'Ron Weasley', 'Draco Malfoy', 'Neville Longbottom'],
-    ['¿Qué personaje de Disney tiene poderes de hielo y canta "Libre soy"?', 'Elsa', 'Anna', 'Moana', 'Rapunzel'],
+    ['¿Cómo se llama la reina con poderes de hielo de la película "Frozen"?', 'Elsa', 'Anna', 'Moana', 'Rapunzel'],
   ],
   literatura: [
     ['¿Quién escribió "Don Quijote de la Mancha"?', 'Miguel de Cervantes', 'Lope de Vega', 'Francisco de Quevedo', 'Luis de Góngora'],

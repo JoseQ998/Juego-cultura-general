@@ -4,28 +4,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Rankings: boards/{modo}/scores/{nombre}
+    function validName(n) {
+      return n is string && n.size() >= 2 && n.size() <= 20;
+    }
+
+    function validResult(d) {
+      return validName(d.name)
+        && d.score is int && d.score >= 0 && d.score <= 3000
+        && d.correct is int && d.correct >= 0 && d.correct <= 15
+        && d.timeMs is int && d.timeMs >= 0 && d.timeMs <= 150000
+        && d.ts is int;
+    }
+
+    // Rankings: boards/{modo}/scores/{jugador}
     match /boards/{board}/scores/{player} {
       allow read: if true;
-      allow create, update: if request.resource.data.keys().hasAll(['name', 'score', 'correct', 'timeMs'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() >= 2
-        && request.resource.data.name.size() <= 20
-        && request.resource.data.score is int
-        && request.resource.data.score >= 0
-        && request.resource.data.score <= 3000
-        && request.resource.data.correct is int
-        && request.resource.data.correct >= 0
-        && request.resource.data.correct <= 15;
+      allow create, update: if validResult(request.resource.data);
       allow delete: if false;
     }
 
     // Registro de partidas: se puede añadir pero no modificar ni borrar desde la web.
     match /logs/{id} {
       allow read: if true;
-      allow create: if request.resource.data.name is string
-        && request.resource.data.name.size() <= 20
-        && request.resource.data.score is int;
+      allow create: if validResult(request.resource.data)
+        && request.resource.data.tabSwitches is int
+        && request.resource.data.deviceId is string && request.resource.data.deviceId.size() <= 64
+        && request.resource.data.fp is string && request.resource.data.fp.size() <= 64;
       allow update, delete: if false;
     }
 
@@ -33,7 +37,9 @@ service cloud.firestore {
     match /lobbies/{code} {
       allow read: if true;
       allow create: if request.resource.data.code == code
-        && request.resource.data.cats is list;
+        && request.resource.data.name is string && request.resource.data.name.size() <= 40
+        && request.resource.data.cats is list && request.resource.data.cats.size() >= 1
+        && request.resource.data.createdAt is int;
       allow update, delete: if false;
     }
   }

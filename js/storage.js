@@ -35,7 +35,20 @@ function isBetter(a, b) {
   return a.score > b.score || (a.score === b.score && a.timeMs < b.timeMs);
 }
 const sortRanking = (list) => list.sort((a, b) => b.score - a.score || a.timeMs - b.timeMs);
-const docId = (nameKey) => encodeURIComponent(nameKey).slice(0, 200);
+// Prefijo para que ningún nombre choque con IDs reservados de Firestore ('.', '..', '__x__').
+const docId = (nameKey) => 'n_' + encodeURIComponent(nameKey).slice(0, 200);
+
+// Los datos que vienen de la base de datos se normalizan para que un registro
+// manipulado no pueda romper la página.
+const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+const str = (v) => (v == null ? '' : String(v));
+const cleanScore = (r) => ({ ...r, name: str(r.name), score: num(r.score), correct: num(r.correct), timeMs: num(r.timeMs), ts: num(r.ts) });
+const cleanLog = (l) => ({
+  ...cleanScore(l),
+  nameKey: str(l.nameKey), mode: str(l.mode), board: str(l.board), boardLabel: str(l.boardLabel),
+  tabSwitches: num(l.tabSwitches), deviceId: str(l.deviceId), fp: str(l.fp), ip: l.ip ? str(l.ip) : null, ua: str(l.ua),
+});
+const cleanLobby = (l) => ({ ...l, code: str(l.code), name: str(l.name), createdAt: num(l.createdAt) });
 
 function localImpl() {
   const read = (k, d) => {
@@ -55,7 +68,7 @@ function localImpl() {
     },
     async getRanking(board, n) {
       const b = read('cg_rank', {})[board] || {};
-      return sortRanking(Object.values(b)).slice(0, n);
+      return sortRanking(Object.values(b).map(cleanScore)).slice(0, n);
     },
     async addLog(entry) {
       const logs = read('cg_log', []);
@@ -64,7 +77,7 @@ function localImpl() {
       write('cg_log', logs);
     },
     async getLogs(n) {
-      return read('cg_log', []).slice(-n).reverse();
+      return read('cg_log', []).slice(-n).reverse().map(cleanLog);
     },
     async saveLobby(lobby) {
       const all = read('cg_lobbies', {});
@@ -109,25 +122,25 @@ async function firebaseImpl(cfg) {
     async getRanking(board, n) {
       const q = query(collection(db, 'boards', board, 'scores'), orderBy('score', 'desc'), limit(n));
       const snap = await getDocs(q);
-      return sortRanking(snap.docs.map((d) => d.data()));
+      return sortRanking(snap.docs.map((d) => cleanScore(d.data())));
     },
     async addLog(entry) {
       await addDoc(collection(db, 'logs'), entry);
     },
     async getLogs(n) {
       const snap = await getDocs(query(collection(db, 'logs'), orderBy('ts', 'desc'), limit(n)));
-      return snap.docs.map((d) => d.data());
+      return snap.docs.map((d) => cleanLog(d.data()));
     },
     async saveLobby(lobby) {
       await setDoc(doc(db, 'lobbies', lobby.code), lobby);
     },
     async getLobby(code) {
       const snap = await getDoc(doc(db, 'lobbies', code));
-      return snap.exists() ? snap.data() : null;
+      return snap.exists() ? cleanLobby(snap.data()) : null;
     },
     async listLobbies(n) {
       const snap = await getDocs(query(collection(db, 'lobbies'), orderBy('createdAt', 'desc'), limit(n)));
-      return snap.docs.map((d) => d.data());
+      return snap.docs.map((d) => cleanLobby(d.data()));
     },
     clearLogs: null, // en Firebase se borra desde la consola de Firebase
   };
