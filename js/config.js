@@ -16,6 +16,16 @@ export const CONFIG = {
     key: 'sb_publishable_1bpDx145jTUvQUMsktj6Hw_HK-J-aLo',
   },
 
+  // Donaciones por Binance Pay.
+  //   binanceUser: tu nombre de usuario de Binance (se muestra en la página).
+  //   binanceId:   tu Binance ID (número que aparece en tu perfil de Binance). Binance Pay
+  //                solo permite enviar dinero al Binance ID, correo o teléfono, no al usuario,
+  //                así que conviene rellenarlo. Si lo dejas vacío, no se muestra.
+  DONATION: {
+    binanceUser: 'JoseQ998',
+    binanceId: '',
+  },
+
   // PIN del Registro SOLO para el modo local.
   // Con Supabase, el PIN se configura en Supabase (supabase/setup.sql) y no aparece en el código.
   ADMIN_PIN: '1234',

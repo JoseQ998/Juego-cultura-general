@@ -94,6 +94,10 @@ Están en [`js/questions.js`](js/questions.js). Cada pregunta es una línea:
 
 La respuesta correcta siempre va en segundo lugar; el juego baraja las opciones al mostrarlas. Las 15 preguntas del modo Clásico se eligen en `CLASSIC_IDS`, al final del mismo archivo (por ejemplo `'historia-1'` es la primera pregunta de Historia). Las preguntas extra del Clásico están justo debajo, en `CLASSIC_EXTRA`: solo aparecen en ese modo.
 
+## Donaciones
+
+La tarjeta "Apoya el juego" (con el logo de Binance, de [Simple Icons](https://simpleicons.org), licencia CC0) aparece en el inicio, al terminar cada partida y en la página **Donar** del pie. Los datos se cambian en `js/config.js` → `DONATION`. Binance Pay solo permite enviar al **Binance ID**, al correo o al teléfono, así que conviene rellenar `binanceId`.
+
 ## Diseño
 
 El estilo "Arcade neón" está en [`css/styles.css`](css/styles.css): arriba la estructura base y abajo el tema (colores en `:root`, tipografías y brillos). Las tipografías *Press Start 2P* y *Space Grotesk* van incluidas en la carpeta `fonts/` (licencia SIL OFL), así que no dependen de servicios externos.

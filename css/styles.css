@@ -371,3 +371,16 @@ input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(25,240,255,.6
 .game.extra .option { border-color: rgba(255,243,92,.6); }
 @keyframes extra-pulse { from { opacity: .35; transform: scale(.94); } to { opacity: 1; transform: scale(1.06); } }
 @keyframes extra-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
+
+/* donaciones (Binance) */
+.card.donate { border-color: rgba(240,185,11,.6); box-shadow: 0 0 22px rgba(240,185,11,.15), inset 0 0 30px rgba(240,185,11,.04); }
+.donate-head { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.donate-head h3 { color: #f0b90b; margin: 0 0 2px; }
+.donate-head p { margin: 0; }
+.binance-logo { width: 44px; height: 44px; flex: none; fill: #f0b90b; filter: drop-shadow(0 0 8px rgba(240,185,11,.6)); }
+.donate-row {
+  display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 10px 12px;
+  background: rgba(0,0,0,.45); border: 1px solid rgba(240,185,11,.35); border-radius: 2px;
+}
+.donate-row b { flex: 1; font-size: 1.05rem; color: #fff; letter-spacing: .03em; }
+.donate-row .btn.ghost { color: #f0b90b; border-color: #f0b90b; box-shadow: 0 0 8px rgba(240,185,11,.35); }
