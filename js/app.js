@@ -206,8 +206,8 @@ function renderHome() {
 
     <section class="modes">
       <button class="mode" data-mode="clasico">
-        <span class="mode-icon">16</span>
-        <span><strong>Clásico</strong><small>Siempre las mismas 15 preguntas + 1 pregunta extra. ¿Quién consigue la mejor puntuación?</small></span>
+        <span class="mode-icon">15</span>
+        <span><strong>Clásico</strong><small>Las mismas 15 preguntas para todos tus amigos. Compara quién sabe más.</small></span>
       </button>
       <button class="mode" data-mode="aleatorio">
         <span class="mode-icon">??</span>
@@ -352,7 +352,7 @@ async function fillRanking(el, board, highlight = '') {
               <td class="pos pos-${i + 1}">${i + 1}</td>
               <td>${esc(r.name)}</td>
               <td><b>${r.score}</b></td>
-              <td>${r.correct}/${r.total || QUESTION_COUNT}</td>
+              <td>${r.correct}</td>
               <td>${fmtTime(r.timeMs)}</td>
             </tr>`).join('')}
         </tbody>
@@ -415,11 +415,16 @@ function startGame(cfg) {
 function showQuestion() {
   const g = game;
   const q = g.questions[g.idx];
+  // Las preguntas extra no se anuncian: el contador solo cuenta las normales
+  // y la extra aparece por sorpresa al final.
+  const isExtra = q.cat === EXTRA_CATEGORY.id;
+  const normal = g.questions.filter((x) => x.cat !== EXTRA_CATEGORY.id).length;
   app.innerHTML = `
-    <section class="game">
+    <section class="game${isExtra ? ' extra' : ''}">
       <div class="game-top">
-        <span class="counter">Pregunta <b>${g.idx + 1}</b>/${g.questions.length}</span>
-        ${catChip(q.cat)}
+        ${isExtra
+          ? '<span class="counter extra-flag">¡Pregunta extra!</span>'
+          : `<span class="counter">Pregunta <b>${g.idx + 1}</b>/${normal}</span>${catChip(q.cat)}`}
         <span class="score">PTS <b>${g.score}</b></span>
       </div>
       <div class="timer"><div class="track"><div class="timer-bar" id="bar"></div></div><span id="secs">10</span></div>

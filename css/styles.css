@@ -360,3 +360,14 @@ input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(25,240,255,.6
 #storageBadge[data-state="local"]::before { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
 #storageBadge[data-state="error"]::before { background: var(--bad); box-shadow: 0 0 8px var(--bad); }
 .btn.ghost.danger { color: var(--bad); border-color: var(--bad); box-shadow: 0 0 8px rgba(255,46,99,.4); }
+
+/* pregunta extra sorpresa del Clásico */
+.counter.extra-flag {
+  font-size: .8rem; color: var(--yellow);
+  text-shadow: 0 0 8px var(--yellow), 0 0 22px var(--pink);
+  animation: extra-pulse .6s ease-in-out 4 alternate;
+}
+.game.extra .question { animation: extra-in .5s ease-out; color: var(--yellow); text-shadow: 0 0 16px rgba(255,243,92,.5); }
+.game.extra .option { border-color: rgba(255,243,92,.6); }
+@keyframes extra-pulse { from { opacity: .35; transform: scale(.94); } to { opacity: 1; transform: scale(1.06); } }
+@keyframes extra-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
