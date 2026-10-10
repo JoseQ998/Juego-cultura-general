@@ -50,7 +50,7 @@ create table if not exists public.scores (
   device_id  text,
   updated_at timestamptz not null default now(),
   primary key (board, name_key),
-  constraint scores_board  check (board ~ '^(clasico|aleatorio|sala_[0-9A-Z]{6})$'),
+  constraint scores_board  check (board ~ '^(clasico|aleatorio|sala_[0-9A-Z]{6,7})$'),
   constraint scores_name   check (char_length(name) between 2 and 20 and char_length(name_key) between 2 and 40),
   constraint scores_values check (total between 1 and 20
                                   and score between 0 and total * 200
@@ -125,11 +125,17 @@ create table if not exists public.lobbies (
   cats       text[] not null,
   created_by text,
   created_at timestamptz not null default now(),
-  constraint lobbies_code check (code ~ '^[0-9A-Z]{6}$'),
+  constraint lobbies_code check (code ~ '^[0-9A-Z]{6,7}$'),
   constraint lobbies_name check (char_length(name) between 1 and 40 and char_length(coalesce(created_by, '')) <= 20),
   constraint lobbies_cats check (cardinality(cats) between 1 and 20)
 );
 create index if not exists lobbies_created_idx on public.lobbies (created_at desc);
+
+-- Códigos de sala de 7 caracteres (desde que hay más de 10 categorías).
+alter table public.scores drop constraint if exists scores_board;
+alter table public.scores add constraint scores_board check (board ~ '^(clasico|aleatorio|sala_[0-9A-Z]{6,7})$');
+alter table public.lobbies drop constraint if exists lobbies_code;
+alter table public.lobbies add constraint lobbies_code check (code ~ '^[0-9A-Z]{6,7}$');
 
 
 -- ---------------------------------------------------------------------

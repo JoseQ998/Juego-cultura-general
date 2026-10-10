@@ -14,6 +14,8 @@ export const CATEGORIES = [
   { id: 'cine', name: 'Cine y TV' },
   { id: 'literatura', name: 'Literatura' },
   { id: 'tecnologia', name: 'Tecnología' },
+  // Las categorías nuevas van siempre al final: el código de sala depende de este orden.
+  { id: 'lol', name: 'League of Legends' },
 ];
 
 const RAW = {
@@ -216,6 +218,44 @@ const RAW = {
     ['¿Qué significa "RAM"?', 'Memoria de acceso aleatorio', 'Memoria de solo lectura', 'Registro de almacenamiento masivo', 'Red de acceso múltiple'],
     ['¿Quién cofundó Apple junto a Steve Wozniak?', 'Steve Jobs', 'Bill Gates', 'Jeff Bezos', 'Larry Page'],
     ['¿Qué empresa creó el sistema operativo Windows?', 'Microsoft', 'IBM', 'Apple', 'Intel'],
+  ],
+  lol: [
+    // El juego
+    ['¿Qué empresa desarrolla League of Legends?', 'Riot Games', 'Blizzard', 'Valve', 'Epic Games'],
+    ['¿En qué año se lanzó oficialmente League of Legends?', '2009', '2011', '2007', '2013'],
+    ['¿Cómo se llama el mapa principal de League of Legends?', 'La Grieta del Invocador', 'El Abismo de los Lamentos', 'El Bosque Retorcido', 'La Cicatriz de Cristal'],
+    ['¿En qué mapa se juega el modo ARAM?', 'El Abismo de los Lamentos', 'La Grieta del Invocador', 'El Bosque Retorcido', 'La Cicatriz de Cristal'],
+    ['¿Qué hay que destruir para ganar una partida en la Grieta del Invocador?', 'El Nexo enemigo', 'Todas las torres', 'Al Barón Nashor', 'Los tres inhibidores'],
+    ['¿Qué hechizo de invocador te teletransporta una distancia corta al instante?', 'Destello', 'Fantasmal', 'Teleportar', 'Curar'],
+    ['¿Qué monstruo épico de la Grieta es un enorme gusano del Vacío?', 'El Barón Nashor', 'El Dragón Anciano', 'El Heraldo de la Grieta', 'El Krug'],
+    ['¿Qué significa hacer un "pentakill"?', 'Eliminar a los 5 enemigos seguidos', 'Destruir 5 torres', 'Ganar en 5 minutos', 'Morir 5 veces'],
+    ['¿De qué región de Runaterra es Garen?', 'Demacia', 'Noxus', 'Jonia', 'Freljord'],
+    ['¿Cómo se llama la serie animada de Netflix basada en League of Legends?', 'Arcane', 'Castlevania', 'Cyberpunk: Edgerunners', 'Dota: Dragon\'s Blood'],
+    ['En Arcane, ¿cómo se llama la hermana pequeña de Vi?', 'Jinx', 'Caitlyn', 'Mel', 'Sevika'],
+    ['¿Qué grupo virtual de K-pop forman Ahri, Akali, Evelynn y Kai\'Sa?', 'K/DA', 'True Damage', 'Pentakill', 'Heartsteel'],
+    // Mundial (Worlds)
+    ['¿Qué equipo ganó el primer Mundial de League of Legends, en 2011?', 'Fnatic', 'SK Telecom T1', 'Taipei Assassins', 'Moscow Five'],
+    ['¿Qué equipo ganó el Mundial de 2012?', 'Taipei Assassins', 'Azubu Frost', 'SK Telecom T1', 'Fnatic'],
+    ['¿Qué jugador de T1 es conocido como "The Unkillable Demon King"?', 'Faker', 'Deft', 'Uzi', 'Caps'],
+    ['¿Qué equipo ganó los Mundiales de 2013, 2015 y 2016?', 'SK Telecom T1', 'Samsung Galaxy', 'Royal Club', 'EDward Gaming'],
+    ['¿Qué equipo ganó el Mundial de 2018, celebrado en Corea del Sur?', 'Invictus Gaming', 'Fnatic', 'Gen.G', 'Royal Never Give Up'],
+    ['¿Qué equipo europeo jugó la final del Mundial 2019 en París?', 'G2 Esports', 'Fnatic', 'Origen', 'Splyce'],
+    ['¿Qué equipo ganó el Mundial de 2022 tras vencer a T1 en la final?', 'DRX', 'Gen.G', 'JD Gaming', 'EDward Gaming'],
+    ['¿Cómo se llama el trofeo que recibe el campeón del Mundial?', 'La Copa del Invocador', 'La Copa de Runaterra', 'El Trofeo del Nexo', 'La Corona de Demacia'],
+    ['¿En qué estadio se jugó la final del Mundial 2017?', 'El Estadio Nacional de Pekín (Nido de Pájaro)', 'El Estadio de la Copa del Mundo de Seúl', 'El Madison Square Garden', 'El Staples Center'],
+    // MSI (Mid-Season Invitational)
+    ['¿En qué año se celebró el primer MSI (Mid-Season Invitational)?', '2015', '2013', '2017', '2019'],
+    ['¿Qué equipo ganó el primer MSI, en 2015?', 'EDward Gaming', 'SK Telecom T1', 'Fnatic', 'Royal Never Give Up'],
+    ['¿Qué equipo europeo ganó el MSI de 2019?', 'G2 Esports', 'Fnatic', 'Misfits', 'Origen'],
+    ['¿Por qué no hubo MSI en 2020?', 'Se canceló por la pandemia de COVID-19', 'Se sustituyó por un All-Star', 'Se unió al Mundial', 'No hubo sede disponible'],
+    ['¿Qué equipo chino ganó el MSI en 2018, 2021 y 2022?', 'Royal Never Give Up', 'EDward Gaming', 'JD Gaming', 'Bilibili Gaming'],
+    // LEC
+    ['¿Cómo se llamaba la liga europea de LoL antes de convertirse en la LEC en 2019?', 'EU LCS', 'EU Masters', 'LCK Europe', 'Euro Challenger Series'],
+    ['¿Qué significan hoy las siglas LEC?', 'League of Legends EMEA Championship', 'League of Europe Cup', 'Legends European Circuit', 'LoL Elite Championship'],
+    ['¿Qué equipo ganó el primer split de la historia de la LEC, en la primavera de 2019?', 'G2 Esports', 'Fnatic', 'Origen', 'Splyce'],
+    ['¿Qué club de la LEC fundaron Ibai Llanos y Gerard Piqué?', 'KOI', 'Team Heretics', 'MAD Lions', 'Giants'],
+    ['¿Qué mid laner danés de G2 es conocido como "Baby Faker"?', 'Caps', 'Perkz', 'Jankos', 'Rekkles'],
+    ['¿Qué tirador sueco es una leyenda de Fnatic?', 'Rekkles', 'Upset', 'Hans Sama', 'Perkz'],
   ],
 };
 

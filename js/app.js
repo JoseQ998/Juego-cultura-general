@@ -72,19 +72,21 @@ function validName(n) {
 }
 
 // ---------------- salas (lobbies) ----------------
-// Código de sala = 2 caracteres con las categorías (bits) + 4 con la semilla.
+// Código de sala = categorías (bits, 2 caracteres; 3 si no caben) + 4 caracteres de semilla.
 // Todos los que entran con el mismo código reciben las mismas preguntas.
 function makeLobbyCode(catIds) {
   const mask = CATEGORIES.reduce((m, c, i) => (catIds.includes(c.id) ? m | (1 << i) : m), 0);
   const seed = Math.floor(Math.random() * 36 ** 4);
-  return (mask.toString(36).padStart(2, '0') + seed.toString(36).padStart(4, '0')).toUpperCase();
+  const maskLen = mask < 36 ** 2 ? 2 : 3;
+  return (mask.toString(36).padStart(maskLen, '0') + seed.toString(36).padStart(4, '0')).toUpperCase();
 }
 
 function parseLobbyCode(code) {
   code = String(code || '').trim().toUpperCase();
-  if (!/^[0-9A-Z]{6}$/.test(code)) return null;
-  const mask = parseInt(code.slice(0, 2), 36);
-  const seed = parseInt(code.slice(2), 36);
+  if (!/^[0-9A-Z]{6,7}$/.test(code)) return null;
+  const maskLen = code.length - 4;
+  const mask = parseInt(code.slice(0, maskLen), 36);
+  const seed = parseInt(code.slice(maskLen), 36);
   const cats = CATEGORIES.filter((_, i) => mask & (1 << i)).map((c) => c.id);
   if (!cats.length || mask >= 1 << CATEGORIES.length) return null;
   return { code, cats, seed };
@@ -292,7 +294,7 @@ function renderHome() {
       <label class="field">
         <span>¿Tienes un código de sala?</span>
         <div class="row">
-          <input id="code" maxlength="6" placeholder="Ej. 0FK2J9" autocapitalize="characters" autocomplete="off">
+          <input id="code" maxlength="7" placeholder="Ej. 0FK2J9" autocapitalize="characters" autocomplete="off">
           <button class="btn">Entrar</button>
         </div>
       </label>
