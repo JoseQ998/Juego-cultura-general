@@ -195,7 +195,7 @@ select.tab { padding-right: 10px; }
 .result { text-align: center; }
 .big-score { font-size: 4rem; font-weight: 900; color: var(--accent); line-height: 1; margin: 12px 0; }
 .big-score small { font-size: 1.2rem; color: var(--muted); font-weight: 600; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin: 16px 0; }
 .stats > div { background: rgba(0,0,0,.2); border-radius: 12px; padding: 12px 6px; display: grid; text-align: center; }
 .stats b { font-size: 1.3rem; }
 .stats span { color: var(--muted); font-size: .8rem; }

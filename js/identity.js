@@ -109,6 +109,14 @@ export async function getIdentity() {
   return { ...cache, ip: await getIp() };
 }
 
+// Igual, pero sin esperar a la red (para cuando la página se está cerrando).
+export function getIdentityNow() {
+  if (!cache) cache = { deviceId: getDeviceId(), fp: fingerprint(), ua: shortUA() };
+  let ip = null;
+  try { ip = sessionStorage.getItem('cg_ip'); } catch {}
+  return { ...cache, ip };
+}
+
 // Nombres usados en este navegador (se incluyen en cada entrada del registro).
 export function rememberName(name) {
   try {

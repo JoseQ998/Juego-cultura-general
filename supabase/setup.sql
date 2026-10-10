@@ -75,6 +75,8 @@ create table if not exists public.logs (
   time_ms         int  not null,
   duration_ms     bigint,
   tab_switches    int  not null default 0,
+  finished        boolean not null default true,  -- false = el jugador salió antes de terminar
+  answered        int,                            -- preguntas respondidas
   device_id       text,
   fp              text,
   ip              text,
@@ -99,6 +101,12 @@ create table if not exists public.logs (
                                    and pg_column_size(names_on_device) < 4000))
 );
 create index if not exists logs_created_idx on public.logs (created_at desc);
+
+-- Para quien ya hubiera ejecutado una versión anterior de este archivo.
+alter table public.logs add column if not exists finished boolean not null default true;
+alter table public.logs add column if not exists answered int;
+alter table public.logs drop constraint if exists logs_answered;
+alter table public.logs add constraint logs_answered check (answered is null or answered between 0 and total);
 
 -- Salas.
 create table if not exists public.lobbies (

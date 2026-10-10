@@ -50,6 +50,7 @@ const cleanLog = (l) => ({
   ...cleanScore(l),
   nameKey: str(l.nameKey), mode: str(l.mode), board: str(l.board), boardLabel: str(l.boardLabel),
   tabSwitches: num(l.tabSwitches), deviceId: str(l.deviceId), fp: str(l.fp), ip: l.ip ? str(l.ip) : null, ua: str(l.ua),
+  finished: l.finished !== false, answered: l.answered == null ? num(l.total) || 15 : num(l.answered),
 });
 const cleanLobby = (l) => ({ ...l, code: str(l.code), name: str(l.name), cats: Array.isArray(l.cats) ? l.cats.map(str) : [], createdAt: num(l.createdAt) });
 
@@ -110,7 +111,13 @@ function localImpl() {
 
 async function supabaseImpl({ url, key }) {
   const { createClient } = await import(SUPABASE_JS);
-  const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+  // keepalive: los envíos llegan aunque la pestaña se esté cerrando (partidas abandonadas).
+  const keepaliveFetch = (input, init = {}) =>
+    fetch(input, init.method && init.method !== 'GET' ? { ...init, keepalive: true } : init);
+  const sb = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: keepaliveFetch },
+  });
   const run = async (promise) => {
     const { data, error } = await promise;
     if (error) throw new Error(error.message || 'Error de Supabase');
@@ -121,6 +128,7 @@ async function supabaseImpl({ url, key }) {
   const fromLog = (r) => cleanLog({
     ts: time(r.created_at), name: r.name, nameKey: r.name_key, mode: r.mode, board: r.board, boardLabel: r.board_label,
     score: r.score, correct: r.correct, total: r.total, timeMs: r.time_ms, tabSwitches: r.tab_switches,
+    finished: r.finished, answered: r.answered,
     deviceId: r.device_id, fp: r.fp, ip: r.ip, ua: r.ua,
   });
   const fromLobby = (r) => cleanLobby({ code: r.code, name: r.name, cats: r.cats, createdBy: r.created_by, createdAt: time(r.created_at) });
@@ -146,6 +154,7 @@ async function supabaseImpl({ url, key }) {
       await run(sb.from('logs').insert({
         name: e.name, name_key: e.nameKey, mode: e.mode, board: cut(e.board, 20), board_label: cut(e.boardLabel, 40),
         score: e.score, correct: e.correct, total: e.total, time_ms: e.timeMs, duration_ms: e.durationMs,
+        finished: e.finished !== false, answered: e.answered ?? e.total,
         tab_switches: Math.min(e.tabSwitches || 0, 1000), device_id: cut(e.deviceId, 64), fp: cut(e.fp, 64),
         ip: cut(e.ip, 64), ua: cut(e.ua, 80), names_on_device: (e.namesOnDevice || []).slice(-20),
       }));

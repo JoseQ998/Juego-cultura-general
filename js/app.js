@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { CATEGORIES, QUESTIONS, CLASSIC_IDS, CLASSIC_EXTRA, EXTRA_CATEGORY } from './questions.js';
 import * as store from './storage.js';
-import { getIdentity, rememberName } from './identity.js';
+import { getIdentity, getIdentityNow, rememberName } from './identity.js';
 
 const QUESTION_COUNT = 15;
 const TIME_LIMIT = 10_000; // 10 segundos por pregunta
@@ -154,12 +154,18 @@ async function route() {
   return renderHome();
 }
 
+// Salir de una partida sin terminarla la cierra en ese punto: se guarda con lo que llevaba.
 function stopGame() {
   cancelAnimationFrame(raf);
-  if (game) game.aborted = true;
+  if (game) {
+    game.aborted = true;
+    if (!game.done) saveAbandoned(game);
+  }
   game = null;
   document.body.classList.remove('playing');
 }
+
+const ABANDON_MSG = '¿Abandonar la partida? Se guardará como abandonada con los puntos que llevas.';
 
 function requireName() {
   const n = getName();
@@ -399,7 +405,11 @@ function startGame(cfg) {
     tabSwitches: 0,
     answers: [],
     startedAt: Date.now(),
+    id: Math.random().toString(36).slice(2) + Date.now().toString(36),
   };
+  // La identidad (incluida la IP) se pide ya, para tenerla lista aunque la partida se corte.
+  const g = game;
+  getIdentity().then((id) => { g.identity = id; }).catch(() => {});
   document.body.classList.add('playing');
   showQuestion();
 }
@@ -425,11 +435,13 @@ function showQuestion() {
 
   app.querySelectorAll('.option').forEach((b) => b.addEventListener('click', () => answer(+b.dataset.i)));
   document.getElementById('quit').onclick = () => {
-    if (confirm('¿Abandonar la partida? No se guardará la puntuación.')) {
-      stopGame();
-      route();
-    }
+    if (!confirm(ABANDON_MSG)) return;
+    const pts = g.score;
+    stopGame();
+    route();
+    toast(`Partida guardada como abandonada: ${pts} puntos.`);
   };
+  savePending(g);
   g.locked = false;
   g.qStart = performance.now();
   tick();
@@ -475,6 +487,7 @@ function answer(choice) {
   fb.textContent = ok ? `¡Correcto! +${pts}` : choice === -1 ? '¡Se acabó el tiempo!' : 'Incorrecto';
   const score = app.querySelector('.score b');
   if (score) score.textContent = g.score;
+  savePending(g);
 
   setTimeout(() => {
     if (g.aborted) return;
@@ -488,40 +501,103 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden && game && !game.locked) game.tabSwitches++;
 });
 
-async function finishGame() {
-  const g = game;
-  g.locked = true;
-  g.done = true;
-  document.body.classList.remove('playing');
-  app.innerHTML = `<p class="loading">Guardando resultado…</p>`;
+// ---------------- guardado de partidas (completas y abandonadas) ----------------
+// Datos mínimos de una partida para poder guardarla, aunque sea desde una visita posterior.
+function snapshot(g) {
+  return {
+    id: g.id, name: g.name, mode: g.mode, board: g.board, label: g.label,
+    score: g.score, correct: g.correct, totalMs: g.totalMs, answered: g.answers.length,
+    total: g.questions.length, tabSwitches: g.tabSwitches, startedAt: g.startedAt,
+  };
+}
 
-  const id = await getIdentity();
-  const names = rememberName(g.name);
-  const key = nameKey(g.name);
-  const timeMs = Math.round(g.totalMs);
+function buildEntries(s, id, finished) {
+  const key = nameKey(s.name);
+  const timeMs = Math.round(s.totalMs);
   const now = Date.now();
-
-  const total = g.questions.length;
-  const scoreEntry = { name: g.name, nameKey: key, score: g.score, correct: g.correct, total, timeMs, ts: now, deviceId: id.deviceId };
+  const scoreEntry = { name: s.name, nameKey: key, score: s.score, correct: s.correct, total: s.total, timeMs, ts: now, deviceId: id.deviceId };
   const logEntry = {
     ts: now,
-    name: g.name,
+    name: s.name,
     nameKey: key,
-    mode: g.mode,
-    board: g.board,
-    boardLabel: g.label,
-    score: g.score,
-    correct: g.correct,
-    total,
+    mode: s.mode,
+    board: s.board,
+    boardLabel: s.label,
+    score: s.score,
+    correct: s.correct,
+    total: s.total,
+    answered: s.answered,
+    finished,
     timeMs,
-    durationMs: now - g.startedAt,
-    tabSwitches: g.tabSwitches,
+    durationMs: now - s.startedAt,
+    tabSwitches: s.tabSwitches,
     deviceId: id.deviceId,
     fp: id.fp,
     ip: id.ip ?? null,
     ua: id.ua,
-    namesOnDevice: names.slice(-20),
+    namesOnDevice: rememberName(s.name).slice(-20),
   };
+  return { scoreEntry, logEntry };
+}
+
+// Guarda una partida que no llegó al final. No espera a la red, para que funcione
+// también al cerrar la pestaña (las peticiones salen con keepalive).
+function sendAbandoned(s, id) {
+  const { scoreEntry, logEntry } = buildEntries(s, id, false);
+  const jobs = [store.addLog(logEntry)];
+  if (s.answered > 0) jobs.push(store.submitScore(s.board, scoreEntry));
+  return Promise.all(jobs).catch((e) => console.error('No se pudo guardar la partida abandonada', e));
+}
+
+function saveAbandoned(g) {
+  if (g.done) return;
+  g.done = true;
+  clearPending(g.id);
+  sendAbandoned(snapshot(g), g.identity || getIdentityNow());
+}
+
+// Copia de la partida en curso en el navegador. Si la página se cierra de golpe
+// (por ejemplo, el móvil la mata), se envía como abandonada en la siguiente visita.
+const PENDING_KEY = 'cg_pending';
+function savePending(g) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify({ ...snapshot(g), updatedAt: Date.now() })); } catch {}
+}
+function clearPending(id) {
+  try {
+    const p = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+    if (p && (!id || p.id === id)) localStorage.removeItem(PENDING_KEY);
+  } catch {}
+}
+function recoverPending() {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null'); } catch {}
+  if (!p || !p.id || (game && game.id === p.id)) return;
+  // Si se actualizó hace poco, puede que siga en juego en otra pestaña: se vuelve a mirar más tarde.
+  const age = Date.now() - (p.updatedAt || 0);
+  if (age < 30_000) {
+    setTimeout(recoverPending, 30_000 - age + 1000);
+    return;
+  }
+  clearPending(p.id);
+  getIdentity().then((id) => sendAbandoned(p, id));
+}
+
+window.addEventListener('pagehide', () => {
+  if (game && !game.done) saveAbandoned(game);
+});
+
+async function finishGame() {
+  const g = game;
+  g.locked = true;
+  g.done = true;
+  clearPending(g.id);
+  document.body.classList.remove('playing');
+  app.innerHTML = `<p class="loading">Guardando resultado…</p>`;
+
+  const id = g.identity || (await getIdentity());
+  const key = nameKey(g.name);
+  const timeMs = Math.round(g.totalMs);
+  const { scoreEntry, logEntry } = buildEntries(snapshot(g), id, true);
 
   let saved = true;
   try {
@@ -567,6 +643,9 @@ async function finishGame() {
 }
 
 // ---------------- registro (log) ----------------
+// "Abandonó en la 5/16" = salió mientras estaba en la pregunta 5 (había respondido 4).
+const statusText = (l) => (l.finished ? 'Completa' : `Abandonó en la ${Math.min(l.answered + 1, l.total)}/${l.total}`);
+
 function groupSuspicious(logs, field) {
   const groups = new Map();
   for (const l of logs) {
@@ -680,6 +759,7 @@ async function renderLog() {
         <div><b>${logs.length}</b><span>partidas</span></div>
         <div><b>${uniq('nameKey')}</b><span>nombres</span></div>
         <div><b>${uniq('deviceId')}</b><span>dispositivos</span></div>
+        <div><b>${logs.filter((l) => !l.finished).length}</b><span>abandonadas</span></div>
       </div>
       <p class="muted small">Modo de almacenamiento: <b>${store.kind() === 'supabase' ? 'en línea (Supabase)' : 'local (solo este navegador)'}</b></p>
     </section>
@@ -704,7 +784,7 @@ async function renderLog() {
       <input id="filter" placeholder="Filtrar por nombre, modo, dispositivo o IP…">
       <div class="table-wrap">
         <table class="table log">
-          <thead><tr><th>Fecha</th><th>Nombre</th><th>Modo</th><th>Puntos</th><th>Aciertos</th><th>Tiempo</th><th title="Veces que salió de la pestaña durante la partida">Pestaña</th><th>Dispositivo</th><th>Huella</th><th>IP</th><th>Navegador</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Nombre</th><th>Modo</th><th>Puntos</th><th>Aciertos</th><th>Estado</th><th>Tiempo</th><th title="Veces que salió de la pestaña durante la partida">Pestaña</th><th>Dispositivo</th><th>Huella</th><th>IP</th><th>Navegador</th></tr></thead>
           <tbody id="logBody"></tbody>
         </table>
       </div>
@@ -715,7 +795,7 @@ async function renderLog() {
   const draw = () => {
     const f = filter.value.trim().toLowerCase();
     const rows = f
-      ? logs.filter((l) => [l.name, l.boardLabel, l.mode, l.deviceId, l.fp, l.ip].some((v) => String(v ?? '').toLowerCase().includes(f)))
+      ? logs.filter((l) => [l.name, l.boardLabel, l.mode, l.deviceId, l.fp, l.ip, statusText(l)].some((v) => String(v ?? '').toLowerCase().includes(f)))
       : logs;
     body.innerHTML = rows.slice(0, 500).map((l) => `
       <tr class="${suspectDevices.has(l.deviceId) || suspectDevices.has(l.fp) ? 'suspect' : ''}">
@@ -724,13 +804,14 @@ async function renderLog() {
         <td>${esc(l.boardLabel || l.mode)}</td>
         <td>${l.score}</td>
         <td>${l.correct}/${l.total || QUESTION_COUNT}</td>
+        <td class="${l.finished ? '' : 'warn-text'}">${esc(statusText(l))}</td>
         <td>${fmtTime(l.timeMs)}</td>
         <td class="${l.tabSwitches ? 'warn-text' : ''}">${l.tabSwitches ?? 0}</td>
         <td><button class="link mono" data-filter="${esc(l.deviceId)}">${esc(String(l.deviceId).slice(0, 8))}</button></td>
         <td><button class="link mono" data-filter="${esc(l.fp)}">${esc(String(l.fp).slice(0, 8))}</button></td>
         <td>${l.ip ? `<button class="link mono" data-filter="${esc(l.ip)}">${esc(l.ip)}</button>` : '—'}</td>
         <td class="small">${esc(l.ua || '')}</td>
-      </tr>`).join('') || `<tr><td colspan="11" class="muted">Sin partidas.</td></tr>`;
+      </tr>`).join('') || `<tr><td colspan="12" class="muted">Sin partidas.</td></tr>`;
   };
   filter.oninput = draw;
   app.onclick = (e) => {
@@ -760,9 +841,10 @@ async function renderLog() {
     renderLog();
   };
   document.getElementById('csv').onclick = () => {
-    const cols = ['ts', 'name', 'boardLabel', 'score', 'correct', 'total', 'timeMs', 'tabSwitches', 'deviceId', 'fp', 'ip', 'ua'];
+    const cols = ['ts', 'name', 'boardLabel', 'score', 'correct', 'total', 'status', 'timeMs', 'tabSwitches', 'deviceId', 'fp', 'ip', 'ua'];
+    const value = (l, c) => (c === 'ts' ? new Date(l.ts).toISOString() : c === 'status' ? statusText(l) : l[c] ?? '');
     const csv = [cols.join(',')]
-      .concat(logs.map((l) => cols.map((c) => `"${String(c === 'ts' ? new Date(l.ts).toISOString() : l[c] ?? '').replace(/"/g, '""')}"`).join(',')))
+      .concat(logs.map((l) => cols.map((c) => `"${String(value(l, c)).replace(/"/g, '""')}"`).join(',')))
       .join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
@@ -801,13 +883,18 @@ async function boot() {
   // Las partidas no cambian la URL: si se pulsa un enlace a la página actual, se vuelve a pintar igualmente.
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[href^="#"]');
-    if (a && a.getAttribute('href') === (location.hash || '#/')) {
+    if (!a) return;
+    if (game && !game.done && !confirm(ABANDON_MSG)) {
       e.preventDefault();
-      if (game && !game.done && !confirm('¿Abandonar la partida? No se guardará la puntuación.')) return;
+      return;
+    }
+    if (a.getAttribute('href') === (location.hash || '#/')) {
+      e.preventDefault();
       route();
     }
   });
   route();
+  recoverPending();
 }
 
 boot();
