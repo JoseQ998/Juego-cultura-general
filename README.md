@@ -96,7 +96,7 @@ La respuesta correcta siempre va en segundo lugar; el juego baraja las opciones 
 
 ## Donaciones
 
-La tarjeta "Apoya el juego" (con el logo de Binance, de [Simple Icons](https://simpleicons.org), licencia CC0) aparece en el inicio, al terminar cada partida y en la página **Donar** del pie. El Binance ID se cambia en `js/config.js` → `DONATION.binanceId`. Solo sirve para recibir; no pongas ahí tu correo ni tu teléfono.
+La tarjeta "Apoya el juego" (con el logo de Binance, de [Simple Icons](https://simpleicons.org), licencia CC0) se abre con el botón **Donar** de la barra de arriba, en una ventana sobre la pantalla actual. El Binance ID se cambia en `js/config.js` → `DONATION.binanceId`. Solo sirve para recibir; no pongas ahí tu correo ni tu teléfono.
 
 ## Diseño
 

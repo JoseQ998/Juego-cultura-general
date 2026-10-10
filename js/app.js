@@ -209,8 +209,8 @@ function donationCard() {
     </section>`;
 }
 
-function bindCopyButtons() {
-  app.querySelectorAll('[data-copy]').forEach((btn) => {
+function bindCopyButtons(root = app) {
+  root.querySelectorAll('[data-copy]').forEach((btn) => {
     btn.onclick = async () => {
       try {
         await navigator.clipboard.writeText(btn.dataset.copy);
@@ -220,6 +220,30 @@ function bindCopyButtons() {
       }
     };
   });
+}
+
+// Ventana emergente de donación (botón "Donar" de la barra de arriba).
+function openDonate() {
+  if (document.querySelector('.modal')) return;
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label="Donar">
+      ${donationCard()}
+      <button type="button" class="btn ghost sm modal-close">Cerrar</button>
+    </div>`;
+  const close = () => {
+    modal.remove();
+    document.removeEventListener('keydown', onKey);
+  };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal || e.target.closest('.modal-close')) close();
+  });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(modal);
+  bindCopyButtons(modal);
+  modal.querySelector('.modal-close').focus();
 }
 
 function renderDonate() {
@@ -278,8 +302,7 @@ function renderHome() {
       <h3>Cómo se puntúa</h3>
       <p class="muted">Cada acierto vale <b>100 puntos</b> + un bonus de hasta <b>100</b> según lo rápido que respondas. Si se acaban los 10 segundos, cuenta como fallo. En caso de empate gana quien tardó menos.</p>
       <p class="muted small">Para evitar trampas se guarda tu nombre y un identificador anónimo de tu navegador. No se guarda tu IP ni ningún otro dato personal.</p>
-    </section>
-    ${donationCard()}`;
+    </section>`;
 
   bindNameField();
   bindCopyButtons();
@@ -683,10 +706,8 @@ async function finishGame() {
     <section class="card">
       <h3>Ranking · ${esc(g.label)}</h3>
       <div id="rank"><p class="loading">Cargando…</p></div>
-    </section>
-    ${donationCard()}`;
+    </section>`;
   document.getElementById('again').onclick = again;
-  bindCopyButtons();
   const rows = await fillRanking(document.getElementById('rank'), g.board, key);
   const pos = rows.findIndex((r) => nameKey(r.name) === key);
   const posEl = document.getElementById('pos');
@@ -927,6 +948,11 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   const code = params.get('sala') || params.get('lobby');
   if (code && !location.hash) location.hash = `#/sala/${code.toUpperCase()}`;
+  const donateBtn = document.getElementById('donateBtn');
+  if (donateBtn && CONFIG.DONATION?.binanceId) {
+    donateBtn.hidden = false;
+    donateBtn.onclick = openDonate;
+  }
   window.addEventListener('hashchange', route);
   // Las partidas no cambian la URL: si se pulsa un enlace a la página actual, se vuelve a pintar igualmente.
   document.addEventListener('click', (e) => {
