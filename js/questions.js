@@ -234,5 +234,5 @@ export const CLASSIC_IDS = [
 // No forman parte del banco general, así que no salen en el modo Aleatorio ni en las salas.
 export const EXTRA_CATEGORY = { id: 'extra', name: 'Pregunta extra', icon: '⚔️' };
 export const CLASSIC_EXTRA = [
-  ['¿Cuál es el mejor espadachín de la historia?', 'Roronoa Zoro', 'Ichigo Kurosaki', 'Zenitsu Agatsuma', 'Kenshin Himura'],
+  ['¿Cuál es el mejor espadachín de la historia?', 'Zenitsu Agatsuma', 'Roronoa Zoro', 'Ichigo Kurosaki', 'Kenshin Himura'],
 ].map(([text, ...options], i) => ({ id: `extra-${i + 1}`, cat: EXTRA_CATEGORY.id, text, options }));
