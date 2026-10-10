@@ -12,8 +12,8 @@ export const CONFIG = {
   // Si los dejas vacíos, el juego funciona en "modo local": el ranking y el
   // registro solo se guardan en el navegador de cada dispositivo.
   supabase: {
-    url: '',
-    key: '',
+    url: 'https://antbxtpogiecbjndsfop.supabase.co',
+    key: 'sb_publishable_1bpDx145jTUvQUMsktj6Hw_HK-J-aLo',
   },
 
   // PIN del Registro SOLO para el modo local.
