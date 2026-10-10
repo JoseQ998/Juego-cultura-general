@@ -110,14 +110,34 @@ function buildClassic() {
   return [...CLASSIC_IDS.map((id) => BY_ID[id]), ...CLASSIC_EXTRA].map((q) => prepare(q, seededRandom(hashStr('clasico:' + q.id))));
 }
 
+// Reparte las preguntas entre las categorías para que ninguna acapare la partida
+// (League of Legends tiene muchas más preguntas que el resto). Dentro de cada
+// categoría se eligen primero las que tengan menor "rank" (p. ej. las menos vistas).
+function pickBalanced(questions, count, rnd, rank = () => 0) {
+  const byCat = new Map();
+  for (const q of shuffle(questions, rnd)) {
+    if (!byCat.has(q.cat)) byCat.set(q.cat, []);
+    byCat.get(q.cat).push(q);
+  }
+  for (const list of byCat.values()) list.sort((a, b) => rank(a) - rank(b));
+  const cats = shuffle([...byCat.keys()], rnd);
+  const picked = [];
+  while (picked.length < count && cats.some((c) => byCat.get(c).length)) {
+    for (const c of cats) {
+      if (picked.length >= count) break;
+      const list = byCat.get(c);
+      if (list.length) picked.push(list.shift());
+    }
+  }
+  return shuffle(picked, rnd);
+}
+
 function buildRandom() {
   let seen = [];
   try { seen = JSON.parse(localStorage.getItem('cg_seen') || '[]'); } catch {}
-  const seenSet = new Set(seen);
-  // Primero preguntas que no has visto recientemente; si no alcanzan, se completan con el resto.
-  const fresh = shuffle(QUESTIONS.filter((q) => !seenSet.has(q.id)));
-  const old = shuffle(QUESTIONS.filter((q) => seenSet.has(q.id)));
-  const picked = fresh.concat(old).slice(0, QUESTION_COUNT);
+  // Primero las que no has visto; si no quedan, las que viste hace más tiempo.
+  const seenAt = new Map(seen.map((id, i) => [id, i]));
+  const picked = pickBalanced(QUESTIONS, QUESTION_COUNT, Math.random, (q) => seenAt.get(q.id) ?? -1);
   try {
     const next = seen.filter((id) => !picked.some((q) => q.id === id)).concat(picked.map((q) => q.id));
     localStorage.setItem('cg_seen', JSON.stringify(next.slice(-(QUESTIONS.length - QUESTION_COUNT))));
@@ -128,7 +148,7 @@ function buildRandom() {
 function buildLobby(lobby) {
   const rnd = seededRandom(lobby.seed);
   const pool = QUESTIONS.filter((q) => lobby.cats.includes(q.cat));
-  return shuffle(pool, rnd).slice(0, QUESTION_COUNT).map((q) => prepare(q, rnd));
+  return pickBalanced(pool, QUESTION_COUNT, rnd).map((q) => prepare(q, rnd));
 }
 
 const BOARDS = {
