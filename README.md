@@ -71,7 +71,7 @@ update private.settings set value = 'TuNuevoPIN' where key = 'admin_pin';
 - Abre el enlace **Registro** que está al pie de la página y escribe tu PIN.
 - Con Supabase, el PIN se comprueba en el servidor y no aparece en el código de la web. En modo local se usa `ADMIN_PIN` de `js/config.js`.
 - En `SUSPICIOUS_NAMES` (en `js/config.js`) decides a partir de cuántos nombres distintos se marca un dispositivo como sospechoso (por defecto 3).
-- Puedes descargar todo el registro en CSV o borrarlo con **Borrar todo**.
+- Puedes descargar todo el registro en CSV. **Borrar todo** borra el registro y también todos los rankings (Clásico, Aleatorio y los de cada sala); las salas siguen existiendo.
 
 **Cómo detecta a quien usa varios nombres:**
 

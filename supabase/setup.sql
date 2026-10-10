@@ -258,7 +258,8 @@ begin
 end;
 $$;
 
--- Borra todo el registro (solo con el PIN correcto).
+-- Borra todo el registro y todos los rankings (solo con el PIN correcto).
+-- Las salas se mantienen, pero sus rankings quedan vacíos.
 create or replace function public.clear_logs(p_pin text)
 returns void
 language plpgsql
@@ -270,6 +271,7 @@ begin
     raise exception 'PIN incorrecto' using errcode = '28000';
   end if;
   delete from public.logs where true;
+  delete from public.scores where true;
 end;
 $$;
 

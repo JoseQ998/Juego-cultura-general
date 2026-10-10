@@ -90,6 +90,7 @@ function localImpl() {
     async clearLogs(pin) {
       if ((await this.checkPin(pin)) !== 'ok') throw new Error('PIN incorrecto');
       write('cg_log', []);
+      write('cg_rank', {});
     },
     async saveLobby(lobby) {
       const all = read('cg_lobbies', {});

@@ -899,10 +899,10 @@ async function renderLog() {
   };
   document.getElementById('clear').onclick = async () => {
     const where = store.kind() === 'supabase' ? 'de TODOS los jugadores' : 'de este navegador';
-    if (!confirm(`¿Borrar todo el registro ${where}? No se puede deshacer.`)) return;
+    if (!confirm(`¿Borrar todo el registro y todos los rankings ${where}? No se puede deshacer.`)) return;
     try {
       await store.clearLogs(pin);
-      toast('Registro borrado.');
+      toast('Registro y rankings borrados.');
     } catch (e) {
       console.error(e);
       toast('No se pudo borrar el registro.', 'error');
