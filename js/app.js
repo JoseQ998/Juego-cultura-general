@@ -189,7 +189,7 @@ const BINANCE_LOGO = `<svg class="binance-logo" viewBox="0 0 24 24" role="img" a
 
 function donationCard() {
   const d = CONFIG.DONATION || {};
-  if (!d.binanceUser && !d.binanceId) return '';
+  if (!d.binanceId) return '';
   const row = (label, value) => `
     <div class="donate-row">
       <span class="muted small">${label}</span>
@@ -202,11 +202,10 @@ function donationCard() {
         ${BINANCE_LOGO}
         <div>
           <h3>Apoya el juego</h3>
-          <p class="muted small">Si te gusta, puedes invitarme a algo por Binance Pay.</p>
+          <p class="muted small">Si te gusta, puedes invitarme a algo por Binance Pay: en la app de Binance ve a Pay → Enviar y pega este Binance ID.</p>
         </div>
       </div>
-      ${d.binanceUser ? row('Usuario', d.binanceUser) : ''}
-      ${d.binanceId ? row('Binance ID', d.binanceId) : ''}
+      ${row('Binance ID', d.binanceId)}
     </section>`;
 }
 

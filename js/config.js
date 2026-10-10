@@ -16,14 +16,11 @@ export const CONFIG = {
     key: 'sb_publishable_1bpDx145jTUvQUMsktj6Hw_HK-J-aLo',
   },
 
-  // Donaciones por Binance Pay.
-  //   binanceUser: tu nombre de usuario de Binance (se muestra en la página).
-  //   binanceId:   tu Binance ID (número que aparece en tu perfil de Binance). Binance Pay
-  //                solo permite enviar dinero al Binance ID, correo o teléfono, no al usuario,
-  //                así que conviene rellenarlo. Si lo dejas vacío, no se muestra.
+  // Donaciones por Binance Pay: tu Binance ID (el número de tu perfil de Binance).
+  // Solo sirve para recibir. No pongas aquí tu correo ni tu teléfono.
+  // Si lo dejas vacío, la tarjeta de donación no se muestra.
   DONATION: {
-    binanceUser: 'JoseQ998',
-    binanceId: '',
+    binanceId: '217244021',
   },
 
   // PIN del Registro SOLO para el modo local.
