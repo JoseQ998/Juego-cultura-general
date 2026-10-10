@@ -54,7 +54,7 @@ Sin este paso el juego funciona en **modo local**: cada dispositivo ve solo sus 
    },
    ```
 
-8. Guarda con **Commit changes**. En uno o dos minutos, al pie de la página verás **🟢 Ranking en línea**. Si ves 🔴, mantén el dedo (o el ratón) sobre ese texto para ver el error.
+8. Guarda con **Commit changes**. En uno o dos minutos, al pie de la página verás **Ranking en línea** con un cuadradito verde. Si sale **Sin conexión con Supabase** (cuadradito rojo), mantén el dedo (o el ratón) sobre ese texto para ver el error.
 
 > La URL y la publishable key no son secretas: están pensadas para ir en el código de la web. Lo que protege los datos son los permisos que crea `setup.sql`: desde la web solo se puede leer el ranking, crear salas y añadir partidas. Nadie puede leer, cambiar ni borrar el registro sin el PIN, ni poner puntuaciones imposibles.
 
@@ -68,7 +68,7 @@ update private.settings set value = 'TuNuevoPIN' where key = 'admin_pin';
 
 ## 3. Registro (log) y PIN
 
-- Abre el enlace **📋 Registro** que está al pie de la página y escribe tu PIN.
+- Abre el enlace **Registro** que está al pie de la página y escribe tu PIN.
 - Con Supabase, el PIN se comprueba en el servidor y no aparece en el código de la web. En modo local se usa `ADMIN_PIN` de `js/config.js`.
 - En `SUSPICIOUS_NAMES` (en `js/config.js`) decides a partir de cuántos nombres distintos se marca un dispositivo como sospechoso (por defecto 3).
 - Puedes descargar todo el registro en CSV o borrarlo con **Borrar todo**.
@@ -94,11 +94,16 @@ Están en [`js/questions.js`](js/questions.js). Cada pregunta es una línea:
 
 La respuesta correcta siempre va en segundo lugar; el juego baraja las opciones al mostrarlas. Las 15 preguntas del modo Clásico se eligen en `CLASSIC_IDS`, al final del mismo archivo (por ejemplo `'historia-1'` es la primera pregunta de Historia). Las preguntas extra del Clásico están justo debajo, en `CLASSIC_EXTRA`: solo aparecen en ese modo.
 
+## Diseño
+
+El estilo "Arcade neón" está en [`css/styles.css`](css/styles.css): arriba la estructura base y abajo el tema (colores en `:root`, tipografías y brillos). Las tipografías *Press Start 2P* y *Space Grotesk* van incluidas en la carpeta `fonts/` (licencia SIL OFL), así que no dependen de servicios externos.
+
 ## Archivos
 
 ```
 index.html        Página principal
-css/styles.css    Estilos
+css/styles.css    Estilos (tema Arcade neón)
+fonts/            Tipografías del tema
 js/app.js         Lógica del juego, salas, rankings y registro
 js/questions.js   Banco de preguntas (180 preguntas, 10 categorías)
 js/storage.js     Guardado en Supabase o en el navegador

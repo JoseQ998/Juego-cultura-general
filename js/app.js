@@ -49,7 +49,7 @@ function shuffle(arr, rnd = Math.random) {
 const nameKey = (n) => n.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
 const fmtTime = (ms) => `${(ms / 1000).toFixed(1)} s`;
 const fmtDate = (ts) => new Date(ts).toLocaleString('es', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-const catChip = (id) => `<span class="chip">${CAT[id]?.icon ?? ''} ${esc(CAT[id]?.name ?? id)}</span>`;
+const catChip = (id) => `<span class="chip">${esc(CAT[id]?.name ?? id)}</span>`;
 
 function toast(msg, type = '') {
   const el = document.createElement('div');
@@ -130,8 +130,8 @@ function buildLobby(lobby) {
 }
 
 const BOARDS = {
-  clasico: { label: 'Clásico', icon: '🏛️' },
-  aleatorio: { label: 'Aleatorio', icon: '🎲' },
+  clasico: { label: 'Clásico' },
+  aleatorio: { label: 'Aleatorio' },
 };
 
 // ---------------- navegación ----------------
@@ -200,15 +200,15 @@ function renderHome() {
 
     <section class="modes">
       <button class="mode" data-mode="clasico">
-        <span class="mode-icon">🏛️</span>
+        <span class="mode-icon">16</span>
         <span><strong>Clásico</strong><small>Siempre las mismas 15 preguntas + 1 pregunta extra. ¿Quién consigue la mejor puntuación?</small></span>
       </button>
       <button class="mode" data-mode="aleatorio">
-        <span class="mode-icon">🎲</span>
+        <span class="mode-icon">??</span>
         <span><strong>Aleatorio</strong><small>15 preguntas distintas en cada partida, de todas las categorías.</small></span>
       </button>
       <a class="mode" href="#/crear">
-        <span class="mode-icon">👥</span>
+        <span class="mode-icon">VS</span>
         <span><strong>Crear sala</strong><small>Elige las categorías y comparte el código con tus amigos. Cada sala tiene su propio ranking.</small></span>
       </a>
     </section>
@@ -259,7 +259,7 @@ function renderCreateLobby() {
           ${CATEGORIES.map((c) => `
             <label class="cat">
               <input type="checkbox" value="${c.id}" checked>
-              <span>${c.icon} ${esc(c.name)}</span>
+              <span>${esc(c.name)}</span>
             </label>`).join('')}
         </div>
         <div class="row small-gap">
@@ -320,7 +320,7 @@ async function renderLobby(code) {
     if (navigator.share) {
       try { await navigator.share({ title: lobby.name, text: `¡Únete a mi sala de Cultura General! Código ${lobby.code}`, url: link }); return; } catch {}
     }
-    try { await navigator.clipboard.writeText(link); toast('Enlace copiado ✔'); } catch { prompt('Copia el enlace:', link); }
+    try { await navigator.clipboard.writeText(link); toast('Enlace copiado'); } catch { prompt('Copia el enlace:', link); }
   };
   document.getElementById('play').onclick = () => {
     if (!requireName()) return;
@@ -342,7 +342,7 @@ async function fillRanking(el, board, highlight = '') {
         <tbody>
           ${rows.map((r, i) => `
             <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
-              <td>${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</td>
+              <td class="pos pos-${i + 1}">${i + 1}</td>
               <td>${esc(r.name)}</td>
               <td><b>${r.score}</b></td>
               <td>${r.correct}/${r.total || QUESTION_COUNT}</td>
@@ -364,9 +364,9 @@ async function renderRanking(board) {
     <section class="card">
       <h2>Rankings</h2>
       <div class="tabs" id="tabs">
-        ${Object.entries(BOARDS).map(([k, b]) => `<a class="tab ${board === k ? 'active' : ''}" href="#/ranking/${k}">${b.icon} ${b.label}</a>`).join('')}
+        ${Object.entries(BOARDS).map(([k, b]) => `<a class="tab ${board === k ? 'active' : ''}" href="#/ranking/${k}">${b.label}</a>`).join('')}
         <select id="lobbySel" class="tab ${board.startsWith('sala_') ? 'active' : ''}">
-          <option value="">👥 Salas…</option>
+          <option value="">Salas…</option>
         </select>
       </div>
       <div id="rank"><p class="loading">Cargando…</p></div>
@@ -377,7 +377,7 @@ async function renderRanking(board) {
   store.listLobbies(50).then((lobbies) => {
     const current = board.startsWith('sala_') ? board.slice(5) : '';
     if (current && !lobbies.some((l) => l.code === current)) lobbies.unshift({ code: current, name: `Sala ${current}` });
-    sel.innerHTML = `<option value="">👥 Salas…</option>` +
+    sel.innerHTML = `<option value="">Salas…</option>` +
       lobbies.map((l) => `<option value="${esc(l.code)}" ${l.code === current ? 'selected' : ''}>${esc(l.name)} (${esc(l.code)})</option>`).join('');
   }).catch(() => {});
 
@@ -412,7 +412,7 @@ function showQuestion() {
       <div class="game-top">
         <span class="counter">Pregunta <b>${g.idx + 1}</b>/${g.questions.length}</span>
         ${catChip(q.cat)}
-        <span class="score">⭐ <b>${g.score}</b></span>
+        <span class="score">PTS <b>${g.score}</b></span>
       </div>
       <div class="timer"><div class="track"><div class="timer-bar" id="bar"></div></div><span id="secs">10</span></div>
       <h2 class="question">${esc(q.text)}</h2>
@@ -472,7 +472,7 @@ function answer(choice) {
   });
   const fb = document.getElementById('feedback');
   fb.className = `feedback ${ok ? 'ok' : 'bad'}`;
-  fb.textContent = ok ? `¡Correcto! +${pts}` : choice === -1 ? '⏰ ¡Se acabó el tiempo!' : '✖ Incorrecto';
+  fb.textContent = ok ? `¡Correcto! +${pts}` : choice === -1 ? '¡Se acabó el tiempo!' : 'Incorrecto';
   const score = app.querySelector('.score b');
   if (score) score.textContent = g.score;
 
@@ -538,7 +538,7 @@ async function finishGame() {
   };
 
   const pct = g.correct / g.questions.length;
-  const msg = pct === 1 ? '¡Perfecto! 🤯' : pct >= 0.8 ? '¡Excelente! 🏆' : pct >= 0.5 ? '¡Bien hecho! 👏' : '¡Sigue practicando! 💪';
+  const msg = pct === 1 ? '¡Perfecto!' : pct >= 0.8 ? '¡Excelente!' : pct >= 0.5 ? '¡Bien hecho!' : '¡Sigue practicando!';
   app.innerHTML = `
     <section class="card result">
       <p class="eyebrow">${esc(g.label)}</p>
@@ -598,7 +598,7 @@ function renderPinForm() {
   app.innerHTML = `
     <a class="back" href="#/">← Volver</a>
     <form class="card narrow" id="pin">
-      <h2>🔒 Registro</h2>
+      <h2>Registro</h2>
       <p class="muted">Introduce el PIN de administrador.</p>
       <input id="pinInput" type="password" autocomplete="current-password">
       <button class="btn big" id="pinBtn">Entrar</button>
@@ -675,7 +675,7 @@ async function renderLog() {
   app.innerHTML = `
     <a class="back" href="#/">← Volver</a>
     <section class="card">
-      <h2>📋 Registro de partidas</h2>
+      <h2>Registro de partidas</h2>
       <div class="stats">
         <div><b>${logs.length}</b><span>partidas</span></div>
         <div><b>${uniq('nameKey')}</b><span>nombres</span></div>
@@ -685,7 +685,7 @@ async function renderLog() {
     </section>
 
     <section class="card">
-      <h3>⚠️ Posibles cuentas múltiples</h3>
+      <h3>Posibles cuentas múltiples</h3>
       <p class="muted small">Se marcan los dispositivos, huellas o IPs desde los que se jugó con ${CONFIG.SUSPICIOUS_NAMES} o más nombres distintos.</p>
       ${groupHtml('Por dispositivo', byDevice, 'deviceId', '(identificador guardado en el navegador)')}
       ${groupHtml('Por huella del navegador', byFp, 'fp', '(detecta incógnito o datos borrados)')}
@@ -779,14 +779,17 @@ async function boot() {
   if (badge) {
     const err = store.error();
     if (kind === 'supabase' && err) {
-      badge.textContent = '🔴 Sin conexión con Supabase';
+      badge.textContent = 'Sin conexión con Supabase';
+      badge.dataset.state = 'error';
       badge.title = err;
       toast(`No se pudo conectar con Supabase: ${err}`, 'error');
     } else if (kind === 'supabase') {
-      badge.textContent = '🟢 Ranking en línea';
+      badge.textContent = 'Ranking en línea';
+      badge.dataset.state = 'ok';
       badge.title = 'Los resultados se comparten entre todos los jugadores.';
     } else {
-      badge.textContent = '🟡 Modo local (ranking solo en este dispositivo)';
+      badge.textContent = 'Modo local (ranking solo en este dispositivo)';
+      badge.dataset.state = 'local';
       badge.title = 'Configura Supabase en js/config.js para compartir el ranking.';
     }
   }

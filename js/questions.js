@@ -4,16 +4,16 @@
 // Para añadir preguntas basta con agregar filas a la categoría que quieras.
 
 export const CATEGORIES = [
-  { id: 'videojuegos', name: 'Videojuegos', icon: '🎮' },
-  { id: 'musica', name: 'Música', icon: '🎵' },
-  { id: 'deportes', name: 'Deportes', icon: '⚽' },
-  { id: 'arte', name: 'Arte', icon: '🎨' },
-  { id: 'historia', name: 'Historia', icon: '🏛️' },
-  { id: 'geografia', name: 'Geografía', icon: '🌍' },
-  { id: 'ciencia', name: 'Ciencia', icon: '🔬' },
-  { id: 'cine', name: 'Cine y TV', icon: '🎬' },
-  { id: 'literatura', name: 'Literatura', icon: '📚' },
-  { id: 'tecnologia', name: 'Tecnología', icon: '💻' },
+  { id: 'videojuegos', name: 'Videojuegos' },
+  { id: 'musica', name: 'Música' },
+  { id: 'deportes', name: 'Deportes' },
+  { id: 'arte', name: 'Arte' },
+  { id: 'historia', name: 'Historia' },
+  { id: 'geografia', name: 'Geografía' },
+  { id: 'ciencia', name: 'Ciencia' },
+  { id: 'cine', name: 'Cine y TV' },
+  { id: 'literatura', name: 'Literatura' },
+  { id: 'tecnologia', name: 'Tecnología' },
 ];
 
 const RAW = {
@@ -232,7 +232,7 @@ export const CLASSIC_IDS = [
 
 // Preguntas extra que se añaden al final del modo Clásico.
 // No forman parte del banco general, así que no salen en el modo Aleatorio ni en las salas.
-export const EXTRA_CATEGORY = { id: 'extra', name: 'Pregunta extra', icon: '⚔️' };
+export const EXTRA_CATEGORY = { id: 'extra', name: 'Pregunta extra' };
 export const CLASSIC_EXTRA = [
   ['¿Cuál es el mejor espadachín de la historia?', 'Zenitsu Agatsuma', 'Roronoa Zoro', 'Ichigo Kurosaki', 'Kenshin Himura'],
 ].map(([text, ...options], i) => ({ id: `extra-${i + 1}`, cat: EXTRA_CATEGORY.id, text, options }));
