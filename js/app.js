@@ -583,36 +583,72 @@ function groupSuspicious(logs, field) {
     .sort((a, b) => b.names.size - a.names.size);
 }
 
+function getAdminPin() {
+  try { return sessionStorage.getItem('cg_admin_pin'); } catch { return null; }
+}
+function setAdminPin(pin) {
+  try {
+    if (pin) sessionStorage.setItem('cg_admin_pin', pin);
+    else sessionStorage.removeItem('cg_admin_pin');
+  } catch {}
+}
+
+function renderPinForm() {
+  const online = store.kind() === 'supabase';
+  app.innerHTML = `
+    <a class="back" href="#/">← Volver</a>
+    <form class="card narrow" id="pin">
+      <h2>🔒 Registro</h2>
+      <p class="muted">Introduce el PIN de administrador.</p>
+      <input id="pinInput" type="password" autocomplete="current-password">
+      <button class="btn big" id="pinBtn">Entrar</button>
+      ${online ? '' : '<p class="muted small">Modo local: el PIN se cambia en <code>js/config.js</code>.</p>'}
+    </form>`;
+  const input = document.getElementById('pinInput');
+  const btn = document.getElementById('pinBtn');
+  input.focus();
+  document.getElementById('pin').onsubmit = async (e) => {
+    e.preventDefault();
+    btn.disabled = true;
+    btn.textContent = 'Comprobando…';
+    let res;
+    try {
+      res = await store.checkPin(input.value);
+    } catch (err) {
+      console.error(err);
+      res = 'error';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+    if (res === 'ok') {
+      setAdminPin(input.value);
+      renderLog();
+    } else if (res === 'unset') {
+      toast('Primero pon tu PIN en Supabase (mira el README).', 'error');
+    } else if (res === 'bad') {
+      toast('PIN incorrecto.', 'error');
+      input.select();
+    } else {
+      toast('No se pudo conectar con el servidor.', 'error');
+    }
+  };
+}
+
 async function renderLog() {
-  let ok = false;
-  try { ok = sessionStorage.getItem('cg_admin') === '1'; } catch {}
-  if (!ok) {
-    app.innerHTML = `
-      <a class="back" href="#/">← Volver</a>
-      <form class="card narrow" id="pin">
-        <h2>🔒 Registro</h2>
-        <p class="muted">Introduce el PIN de administrador.</p>
-        <input id="pinInput" type="password" inputmode="numeric" autocomplete="off">
-        <button class="btn big">Entrar</button>
-      </form>`;
-    document.getElementById('pinInput').focus();
-    document.getElementById('pin').onsubmit = (e) => {
-      e.preventDefault();
-      if (document.getElementById('pinInput').value === String(CONFIG.ADMIN_PIN)) {
-        try { sessionStorage.setItem('cg_admin', '1'); } catch {}
-        renderLog();
-      } else toast('PIN incorrecto.', 'error');
-    };
-    return;
-  }
+  const pin = getAdminPin();
+  if (!pin) return renderPinForm();
 
   app.innerHTML = `<p class="loading">Cargando registro…</p>`;
   let logs = [];
   try {
-    logs = await store.getLogs(1000);
+    logs = await store.getLogs(pin, 1000);
   } catch (e) {
     console.error(e);
-    app.innerHTML = `<a class="back" href="#/">← Volver</a><section class="card"><p class="error-text">No se pudo cargar el registro.</p></section>`;
+    if (/PIN/i.test(e.message)) {
+      setAdminPin(null);
+      return renderPinForm();
+    }
+    app.innerHTML = `<a class="back" href="#/">← Volver</a><section class="card"><p class="error-text">No se pudo cargar el registro: ${esc(e.message)}</p></section>`;
     return;
   }
 
@@ -645,7 +681,7 @@ async function renderLog() {
         <div><b>${uniq('nameKey')}</b><span>nombres</span></div>
         <div><b>${uniq('deviceId')}</b><span>dispositivos</span></div>
       </div>
-      <p class="muted small">Modo de almacenamiento: <b>${store.kind() === 'firebase' ? 'en línea (Firebase)' : 'local (solo este navegador)'}</b></p>
+      <p class="muted small">Modo de almacenamiento: <b>${store.kind() === 'supabase' ? 'en línea (Supabase)' : 'local (solo este navegador)'}</b></p>
     </section>
 
     <section class="card">
@@ -661,7 +697,7 @@ async function renderLog() {
         <h3>Todas las partidas</h3>
         <div class="row small-gap">
           <button class="btn ghost sm" id="csv">Descargar CSV</button>
-          ${store.canClearLogs() ? '<button class="btn ghost sm danger" id="clear">Borrar</button>' : ''}
+          <button class="btn ghost sm danger" id="clear">Borrar todo</button>
           <button class="btn ghost sm" id="logout">Salir</button>
         </div>
       </div>
@@ -708,14 +744,21 @@ async function renderLog() {
   draw();
 
   document.getElementById('logout').onclick = () => {
-    try { sessionStorage.removeItem('cg_admin'); } catch {}
+    setAdminPin(null);
     go('#/');
   };
-  document.getElementById('clear')?.addEventListener('click', async () => {
-    if (!confirm('¿Borrar todo el registro de este navegador?')) return;
-    await store.clearLogs();
+  document.getElementById('clear').onclick = async () => {
+    const where = store.kind() === 'supabase' ? 'de TODOS los jugadores' : 'de este navegador';
+    if (!confirm(`¿Borrar todo el registro ${where}? No se puede deshacer.`)) return;
+    try {
+      await store.clearLogs(pin);
+      toast('Registro borrado.');
+    } catch (e) {
+      console.error(e);
+      toast('No se pudo borrar el registro.', 'error');
+    }
     renderLog();
-  });
+  };
   document.getElementById('csv').onclick = () => {
     const cols = ['ts', 'name', 'boardLabel', 'score', 'correct', 'total', 'timeMs', 'tabSwitches', 'deviceId', 'fp', 'ip', 'ua'];
     const csv = [cols.join(',')]
@@ -734,8 +777,18 @@ async function boot() {
   const kind = await store.init();
   const badge = document.getElementById('storageBadge');
   if (badge) {
-    badge.textContent = kind === 'firebase' ? '🟢 Ranking en línea' : '🟡 Modo local (ranking solo en este dispositivo)';
-    badge.title = kind === 'firebase' ? 'Los resultados se comparten entre todos los jugadores.' : 'Configura Firebase en js/config.js para compartir el ranking.';
+    const err = store.error();
+    if (kind === 'supabase' && err) {
+      badge.textContent = '🔴 Sin conexión con Supabase';
+      badge.title = err;
+      toast(`No se pudo conectar con Supabase: ${err}`, 'error');
+    } else if (kind === 'supabase') {
+      badge.textContent = '🟢 Ranking en línea';
+      badge.title = 'Los resultados se comparten entre todos los jugadores.';
+    } else {
+      badge.textContent = '🟡 Modo local (ranking solo en este dispositivo)';
+      badge.title = 'Configura Supabase en js/config.js para compartir el ranking.';
+    }
   }
   // Compatibilidad con enlaces tipo ?sala=CODIGO
   const params = new URLSearchParams(location.search);

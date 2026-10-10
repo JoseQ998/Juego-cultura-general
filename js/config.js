@@ -2,24 +2,22 @@
 // Puedes editar este archivo directamente desde GitHub (icono del lápiz).
 
 export const CONFIG = {
-  // Pega aquí la configuración de tu proyecto de Firebase para que el ranking
-  // y el registro sean COMPARTIDOS entre todos los jugadores (ver README.md).
-  // Si lo dejas en null, el juego funciona en "modo local": el ranking y el
-  // registro solo se guardan en el navegador de cada dispositivo.
+  // Datos de tu proyecto de Supabase para que el ranking y el registro sean
+  // COMPARTIDOS entre todos los jugadores (ver README.md).
+  // Los encuentras en Supabase → botón "Connect" (o Project Settings → API Keys):
+  //   url: "Project URL"      (https://xxxxxxxx.supabase.co)
+  //   key: "Publishable key"  (sb_publishable_...)  o la "anon key" antigua (eyJ...)
+  // NUNCA pongas aquí la "secret key" ni la "service_role key".
   //
-  // Ejemplo:
-  // firebase: {
-  //   apiKey: "AIza...",
-  //   authDomain: "mi-juego.firebaseapp.com",
-  //   projectId: "mi-juego",
-  //   storageBucket: "mi-juego.appspot.com",
-  //   messagingSenderId: "123456789",
-  //   appId: "1:123456789:web:abc123"
-  // },
-  firebase: null,
+  // Si los dejas vacíos, el juego funciona en "modo local": el ranking y el
+  // registro solo se guardan en el navegador de cada dispositivo.
+  supabase: {
+    url: '',
+    key: '',
+  },
 
-  // PIN para entrar a la página de Registro (log). ¡Cámbialo!
-  // Ojo: es una protección básica, cualquiera que lea el código puede verlo.
+  // PIN del Registro SOLO para el modo local.
+  // Con Supabase, el PIN se configura en Supabase (supabase/setup.sql) y no aparece en el código.
   ADMIN_PIN: '1234',
 
   // A partir de cuántos nombres distintos desde un mismo dispositivo/IP
@@ -27,5 +25,6 @@ export const CONFIG = {
   SUSPICIOUS_NAMES: 3,
 
   // Guardar la IP pública del jugador en el registro (usa api.ipify.org).
+  // Con Supabase la IP la toma además el propio servidor.
   LOG_IP: true,
 };
