@@ -11,7 +11,7 @@ Página web de preguntas de cultura general. Funciona sin servidor propio: se pu
 | 👥 **Salas** | Eliges las categorías (videojuegos, música, deportes, arte, historia, geografía, ciencia, cine y TV, literatura, tecnología) y se genera un código de 6 caracteres. Todos los que entran con ese código reciben las mismas preguntas. |
 | 🏆 **Rankings** | Uno por modo (Clásico, Aleatorio) y uno por cada sala. Se guarda la mejor partida de cada nombre. |
 | ⏱️ **10 segundos** | Límite por pregunta. Si se acaba el tiempo, cuenta como fallo. |
-| 📋 **Registro** | Página protegida con PIN que muestra todas las partidas y marca los dispositivos, huellas de navegador e IPs desde los que se jugó con varios nombres distintos. También cuenta cuántas veces salió el jugador de la pestaña durante la partida (por ejemplo, para buscar la respuesta). |
+| 📋 **Registro** | Página protegida con PIN que muestra todas las partidas y marca los dispositivos y navegadores desde los que se jugó con varios nombres distintos. También registra las partidas abandonadas a mitad. También cuenta cuántas veces salió el jugador de la pestaña durante la partida (por ejemplo, para buscar la respuesta). |
 
 **Puntuación:** cada acierto vale 100 puntos, más un bonus de hasta 100 según lo rápido que respondas (máximo 3000 en Aleatorio y salas, 3200 en Clásico). Si hay empate, gana quien tardó menos.
 
@@ -77,7 +77,7 @@ update private.settings set value = 'TuNuevoPIN' where key = 'admin_pin';
 
 - **Dispositivo:** identificador aleatorio que se guarda en el navegador la primera vez que alguien juega.
 - **Huella del navegador:** se calcula con datos del navegador y la pantalla. Detecta al mismo móvil aunque borre los datos o use el modo incógnito.
-- **IP:** con Supabase la toma el propio servidor, así que no se puede falsear desde la web. En modo local se usa `api.ipify.org`. Ojo: todos los que están en la misma wifi comparten IP.
+- **Privacidad:** no se guarda la IP ni ningún otro dato personal; solo el nombre que pone cada jugador y estos dos identificadores anónimos. El inicio del juego lo avisa.
 
 **Limitaciones (es una web sin servidor propio):**
 

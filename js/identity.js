@@ -2,8 +2,7 @@
 // - deviceId: identificador aleatorio guardado en el navegador.
 // - fp: "huella" calculada a partir de características del navegador/pantalla.
 //   Sirve para detectar al mismo dispositivo aunque borre datos o use incógnito.
-// - ip: IP pública (opcional).
-import { CONFIG } from './config.js';
+// No se guarda la IP ni ningún otro dato personal.
 
 function fnv(str, seed = 2166136261) {
   let h = seed >>> 0;
@@ -68,25 +67,6 @@ function fingerprint() {
   return fnv(parts) + fnv(parts, 0x811c9dc5 ^ 0x5bd1e995);
 }
 
-async function getIp() {
-  if (!CONFIG.LOG_IP) return null;
-  try {
-    const cached = sessionStorage.getItem('cg_ip');
-    if (cached) return cached;
-  } catch {}
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 3000);
-    const res = await fetch('https://api.ipify.org?format=json', { signal: ctrl.signal });
-    clearTimeout(t);
-    const { ip } = await res.json();
-    try { sessionStorage.setItem('cg_ip', ip); } catch {}
-    return ip || null;
-  } catch {
-    return null;
-  }
-}
-
 function shortUA() {
   const ua = navigator.userAgent;
   const os = /Android/i.test(ua) ? 'Android'
@@ -104,17 +84,9 @@ function shortUA() {
 }
 
 let cache = null;
-export async function getIdentity() {
+export function getIdentity() {
   if (!cache) cache = { deviceId: getDeviceId(), fp: fingerprint(), ua: shortUA() };
-  return { ...cache, ip: await getIp() };
-}
-
-// Igual, pero sin esperar a la red (para cuando la página se está cerrando).
-export function getIdentityNow() {
-  if (!cache) cache = { deviceId: getDeviceId(), fp: fingerprint(), ua: shortUA() };
-  let ip = null;
-  try { ip = sessionStorage.getItem('cg_ip'); } catch {}
-  return { ...cache, ip };
+  return cache;
 }
 
 // Nombres usados en este navegador (se incluyen en cada entrada del registro).

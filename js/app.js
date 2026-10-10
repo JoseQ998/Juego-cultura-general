@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { CATEGORIES, QUESTIONS, CLASSIC_IDS, CLASSIC_EXTRA, EXTRA_CATEGORY } from './questions.js';
 import * as store from './storage.js';
-import { getIdentity, getIdentityNow, rememberName } from './identity.js';
+import { getIdentity, rememberName } from './identity.js';
 
 const QUESTION_COUNT = 15;
 const TIME_LIMIT = 10_000; // 10 segundos por pregunta
@@ -232,6 +232,7 @@ function renderHome() {
     <section class="card">
       <h3>Cómo se puntúa</h3>
       <p class="muted">Cada acierto vale <b>100 puntos</b> + un bonus de hasta <b>100</b> según lo rápido que respondas. Si se acaban los 10 segundos, cuenta como fallo. En caso de empate gana quien tardó menos.</p>
+      <p class="muted small">Para evitar trampas se guarda tu nombre y un identificador anónimo de tu navegador. No se guarda tu IP ni ningún otro dato personal.</p>
     </section>`;
 
   bindNameField();
@@ -407,9 +408,6 @@ function startGame(cfg) {
     startedAt: Date.now(),
     id: Math.random().toString(36).slice(2) + Date.now().toString(36),
   };
-  // La identidad (incluida la IP) se pide ya, para tenerla lista aunque la partida se corte.
-  const g = game;
-  getIdentity().then((id) => { g.identity = id; }).catch(() => {});
   document.body.classList.add('playing');
   showQuestion();
 }
@@ -533,7 +531,6 @@ function buildEntries(s, id, finished) {
     tabSwitches: s.tabSwitches,
     deviceId: id.deviceId,
     fp: id.fp,
-    ip: id.ip ?? null,
     ua: id.ua,
     namesOnDevice: rememberName(s.name).slice(-20),
   };
@@ -553,7 +550,7 @@ function saveAbandoned(g) {
   if (g.done) return;
   g.done = true;
   clearPending(g.id);
-  sendAbandoned(snapshot(g), g.identity || getIdentityNow());
+  sendAbandoned(snapshot(g), getIdentity());
 }
 
 // Copia de la partida en curso en el navegador. Si la página se cierra de golpe
@@ -579,7 +576,7 @@ function recoverPending() {
     return;
   }
   clearPending(p.id);
-  getIdentity().then((id) => sendAbandoned(p, id));
+  sendAbandoned(p, getIdentity());
 }
 
 window.addEventListener('pagehide', () => {
@@ -594,7 +591,7 @@ async function finishGame() {
   document.body.classList.remove('playing');
   app.innerHTML = `<p class="loading">Guardando resultado…</p>`;
 
-  const id = g.identity || (await getIdentity());
+  const id = getIdentity();
   const key = nameKey(g.name);
   const timeMs = Math.round(g.totalMs);
   const { scoreEntry, logEntry } = buildEntries(snapshot(g), id, true);
@@ -733,7 +730,6 @@ async function renderLog() {
 
   const byDevice = groupSuspicious(logs, 'deviceId');
   const byFp = groupSuspicious(logs, 'fp');
-  const byIp = groupSuspicious(logs, 'ip');
   const suspectDevices = new Set([...byDevice, ...byFp].map((g) => g.key));
   const uniq = (f) => new Set(logs.map((l) => l[f]).filter(Boolean)).size;
 
@@ -766,10 +762,9 @@ async function renderLog() {
 
     <section class="card">
       <h3>Posibles cuentas múltiples</h3>
-      <p class="muted small">Se marcan los dispositivos, huellas o IPs desde los que se jugó con ${CONFIG.SUSPICIOUS_NAMES} o más nombres distintos.</p>
+      <p class="muted small">Se marcan los dispositivos y navegadores desde los que se jugó con ${CONFIG.SUSPICIOUS_NAMES} o más nombres distintos.</p>
       ${groupHtml('Por dispositivo', byDevice, 'deviceId', '(identificador guardado en el navegador)')}
       ${groupHtml('Por huella del navegador', byFp, 'fp', '(detecta incógnito o datos borrados)')}
-      ${groupHtml('Por IP', byIp, 'ip', '(puede ser la misma red wifi/casa)')}
     </section>
 
     <section class="card">
@@ -781,10 +776,10 @@ async function renderLog() {
           <button class="btn ghost sm" id="logout">Salir</button>
         </div>
       </div>
-      <input id="filter" placeholder="Filtrar por nombre, modo, dispositivo o IP…">
+      <input id="filter" placeholder="Filtrar por nombre, modo, dispositivo o estado…">
       <div class="table-wrap">
         <table class="table log">
-          <thead><tr><th>Fecha</th><th>Nombre</th><th>Modo</th><th>Puntos</th><th>Aciertos</th><th>Estado</th><th>Tiempo</th><th title="Veces que salió de la pestaña durante la partida">Pestaña</th><th>Dispositivo</th><th>Huella</th><th>IP</th><th>Navegador</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Nombre</th><th>Modo</th><th>Puntos</th><th>Aciertos</th><th>Estado</th><th>Tiempo</th><th title="Veces que salió de la pestaña durante la partida">Pestaña</th><th>Dispositivo</th><th>Huella</th><th>Navegador</th></tr></thead>
           <tbody id="logBody"></tbody>
         </table>
       </div>
@@ -795,7 +790,7 @@ async function renderLog() {
   const draw = () => {
     const f = filter.value.trim().toLowerCase();
     const rows = f
-      ? logs.filter((l) => [l.name, l.boardLabel, l.mode, l.deviceId, l.fp, l.ip, statusText(l)].some((v) => String(v ?? '').toLowerCase().includes(f)))
+      ? logs.filter((l) => [l.name, l.boardLabel, l.mode, l.deviceId, l.fp, statusText(l)].some((v) => String(v ?? '').toLowerCase().includes(f)))
       : logs;
     body.innerHTML = rows.slice(0, 500).map((l) => `
       <tr class="${suspectDevices.has(l.deviceId) || suspectDevices.has(l.fp) ? 'suspect' : ''}">
@@ -809,9 +804,8 @@ async function renderLog() {
         <td class="${l.tabSwitches ? 'warn-text' : ''}">${l.tabSwitches ?? 0}</td>
         <td><button class="link mono" data-filter="${esc(l.deviceId)}">${esc(String(l.deviceId).slice(0, 8))}</button></td>
         <td><button class="link mono" data-filter="${esc(l.fp)}">${esc(String(l.fp).slice(0, 8))}</button></td>
-        <td>${l.ip ? `<button class="link mono" data-filter="${esc(l.ip)}">${esc(l.ip)}</button>` : '—'}</td>
         <td class="small">${esc(l.ua || '')}</td>
-      </tr>`).join('') || `<tr><td colspan="12" class="muted">Sin partidas.</td></tr>`;
+      </tr>`).join('') || `<tr><td colspan="11" class="muted">Sin partidas.</td></tr>`;
   };
   filter.oninput = draw;
   app.onclick = (e) => {
@@ -841,7 +835,7 @@ async function renderLog() {
     renderLog();
   };
   document.getElementById('csv').onclick = () => {
-    const cols = ['ts', 'name', 'boardLabel', 'score', 'correct', 'total', 'status', 'timeMs', 'tabSwitches', 'deviceId', 'fp', 'ip', 'ua'];
+    const cols = ['ts', 'name', 'boardLabel', 'score', 'correct', 'total', 'status', 'timeMs', 'tabSwitches', 'deviceId', 'fp', 'ua'];
     const value = (l, c) => (c === 'ts' ? new Date(l.ts).toISOString() : c === 'status' ? statusText(l) : l[c] ?? '');
     const csv = [cols.join(',')]
       .concat(logs.map((l) => cols.map((c) => `"${String(value(l, c)).replace(/"/g, '""')}"`).join(',')))

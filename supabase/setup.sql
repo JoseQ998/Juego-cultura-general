@@ -79,7 +79,6 @@ create table if not exists public.logs (
   answered        int,                            -- preguntas respondidas
   device_id       text,
   fp              text,
-  ip              text,
   ua              text,
   names_on_device jsonb,
   constraint logs_text check (char_length(name) between 2 and 20
@@ -89,7 +88,6 @@ create table if not exists public.logs (
                               and char_length(coalesce(board_label, '')) <= 40
                               and char_length(coalesce(device_id, '')) <= 64
                               and char_length(coalesce(fp, '')) <= 64
-                              and char_length(coalesce(ip, '')) <= 64
                               and char_length(coalesce(ua, '')) <= 80),
   constraint logs_values check (total between 1 and 20
                                 and score between 0 and total * 200
@@ -108,6 +106,18 @@ alter table public.logs add column if not exists answered int;
 alter table public.logs drop constraint if exists logs_answered;
 alter table public.logs add constraint logs_answered check (answered is null or answered between 0 and total);
 
+-- Las versiones anteriores guardaban la IP: se borra la columna y todas las IPs guardadas.
+alter table public.logs drop constraint if exists logs_text;
+alter table public.logs drop column if exists ip;
+alter table public.logs add constraint logs_text check (char_length(name) between 2 and 20
+                                                        and char_length(name_key) <= 40
+                                                        and char_length(mode) <= 20
+                                                        and char_length(board) <= 20
+                                                        and char_length(coalesce(board_label, '')) <= 40
+                                                        and char_length(coalesce(device_id, '')) <= 64
+                                                        and char_length(coalesce(fp, '')) <= 64
+                                                        and char_length(coalesce(ua, '')) <= 80);
+
 -- Salas.
 create table if not exists public.lobbies (
   code       text primary key,
@@ -123,30 +133,14 @@ create index if not exists lobbies_created_idx on public.lobbies (created_at des
 
 
 -- ---------------------------------------------------------------------
--- El registro guarda la hora y la IP que ve el servidor (no se pueden falsear desde la web)
+-- La hora del registro la pone el servidor (no se puede falsear desde la web)
 -- ---------------------------------------------------------------------
 create or replace function private.logs_before_insert()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
-declare
-  h   json;
-  srv text;
 begin
-  begin
-    h := nullif(current_setting('request.headers', true), '')::json;
-  exception when others then
-    h := null;
-  end;
-  if h is not null then
-    srv := coalesce(h ->> 'cf-connecting-ip',
-                    nullif(trim(split_part(h ->> 'x-forwarded-for', ',', 1)), ''),
-                    h ->> 'x-real-ip');
-  end if;
-  if srv is not null then
-    new.ip := left(srv, 64);
-  end if;
   new.created_at := now();
   return new;
 end;

@@ -20,11 +20,7 @@ export const CONFIG = {
   // Con Supabase, el PIN se configura en Supabase (supabase/setup.sql) y no aparece en el código.
   ADMIN_PIN: '1234',
 
-  // A partir de cuántos nombres distintos desde un mismo dispositivo/IP
+  // A partir de cuántos nombres distintos desde un mismo dispositivo o navegador
   // se marca como "sospechoso" en el registro.
   SUSPICIOUS_NAMES: 3,
-
-  // Guardar la IP pública del jugador en el registro (usa api.ipify.org).
-  // Con Supabase la IP la toma además el propio servidor.
-  LOG_IP: true,
 };
