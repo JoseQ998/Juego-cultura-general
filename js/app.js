@@ -54,6 +54,11 @@ const fmtDate = (ts) => new Date(ts).toLocaleString('es', { day: '2-digit', mont
 const fmtDay = (ts) => new Date(ts).toLocaleDateString('es', { timeZone: TZ, day: '2-digit', month: '2-digit' });
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const catName = (id) => CAT[id]?.name ?? 'Todas las categorías';
+// Insignia de cuenta verificada (la pone el administrador).
+const VERIFIED_BADGE = `<svg class="verified" viewBox="0 0 24 24" role="img" aria-label="Verificado"><title>Cuenta verificada</title>
+  <rect x="4.5" y="4.5" width="15" height="15" rx="3"/><rect x="4.5" y="4.5" width="15" height="15" rx="3" transform="rotate(45 12 12)"/>
+  <path d="M7.9 12.2l2.7 2.7 5.5-5.7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const nameWithBadge = (name, verified) => `<span class="who-name">${esc(name)}${verified ? VERIFIED_BADGE : ''}</span>`;
 const catChip = (id) => `<span class="chip">${esc(CAT[id]?.name ?? id)}</span>`;
 // Año y mes (1-12) de una fecha en hora de Venezuela.
 function ymVet(ts) {
@@ -221,8 +226,8 @@ async function refreshAccount() {
 }
 
 const STATUS_TEXT = {
-  pending: 'Pendiente de aprobación',
-  approved: 'Aprobada',
+  pending: 'Pendiente',
+  approved: 'Activa',
   rejected: 'Rechazada',
   blocked: 'Bloqueada',
 };
@@ -246,7 +251,7 @@ async function route() {
   if (page === 'ranking') return renderRanking(arg ? decodeURIComponent(arg) : 'semanal', arg2 ? decodeURIComponent(arg2) : '');
   if (page === 'registro') return renderLog();
   if (page === 'donar') return renderDonate();
-  if (page === 'cuenta') return renderAccount();
+  if (page === 'cuenta') return renderAccount(arg);
   if (page === 'admin') return renderAdmin();
   return renderHome();
 }
@@ -365,9 +370,9 @@ function accountBar() {
   if (!store.online()) return '';
   const p = profileOf();
   if (!p) {
-    return `<div class="account-bar"><a class="btn ghost sm" href="#/cuenta">Entrar o crear cuenta</a><span class="muted small">Necesaria para el reto semanal</span></div>`;
+    return `<div class="account-bar"><a class="btn ghost sm" href="#/cuenta">Entrar</a><a class="btn ghost sm" href="#/cuenta/crear">Crear cuenta</a><span class="muted small">Necesaria para el reto semanal</span></div>`;
   }
-  return `<div class="account-bar"><span class="muted small">Conectado como</span> <a href="#/cuenta"><b>${esc(p.displayName)}</b></a>${p.status === 'approved' ? '' : ` <span class="chip warn">${STATUS_TEXT[p.status]}</span>`}</div>`;
+  return `<div class="account-bar"><span class="muted small">Conectado como</span> <a href="#/cuenta"><b>${nameWithBadge(p.displayName, p.verified)}</b></a>${p.status === 'approved' ? '' : ` <span class="chip warn">${STATUS_TEXT[p.status]}</span>`}</div>`;
 }
 
 function renderHome() {
@@ -461,9 +466,9 @@ async function fillWeeklyCard() {
   if (!week.open) {
     set(`<small>15 preguntas iguales para todos. Una sola partida por semana.</small>${theme}${countdown('Empieza en', week.startsAt)}`);
   } else if (!p) {
-    set(`<small>15 preguntas iguales para todos. Una sola partida por semana. <a href="#/cuenta">Entra con tu cuenta</a> para jugar.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`);
+    set(`<small>15 preguntas iguales para todos. Una sola partida por semana. <a href="#/cuenta">Entra</a> o <a href="#/cuenta/crear">crea tu cuenta</a> para jugar.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`);
   } else if (p.status !== 'approved') {
-    set(`<small>Tu cuenta está <b>${esc(STATUS_TEXT[p.status].toLowerCase())}</b>. Cuando el administrador la apruebe podrás jugar.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`);
+    set(`<small>Tu cuenta está <b>${esc((STATUS_TEXT[p.status] || p.status).toLowerCase())}</b> y no puede jugar el reto semanal. Habla con el administrador.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`);
   } else if (week.myPlay) {
     const mp = week.myPlay;
     set(`<small>Ya jugaste esta semana: <b>${mp.correct}/${mp.total}</b> aciertos en ${fmtTime(mp.timeMs)}${mp.finished ? '' : ' (abandonada)'}. Toca para ver el ranking.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`,
@@ -641,7 +646,7 @@ async function fillWeeklyRanking(el, weekId, highlight = '', weekOver = false) {
     el.innerHTML = rankTable(['Nombre', 'Aciertos', 'Tiempo'], rows.map((r, i) => `
       <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
         <td class="pos pos-${i + 1}">${i + 1}</td>
-        <td>${esc(r.name)} ${playState(r, weekOver)}</td>
+        <td>${nameWithBadge(r.name, r.verified)} ${playState(r, weekOver)}</td>
         <td><b>${r.correct}</b><span class="muted">/${r.total}</span></td>
         <td>${fmtTime(r.timeMs)}</td>
       </tr>`));
@@ -663,7 +668,7 @@ async function fillPeriodRanking(el, year, month, highlight = '') {
     el.innerHTML = rankTable(['Nombre', 'Aciertos', 'Tiempo', 'Semanas'], rows.map((r, i) => `
       <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
         <td class="pos pos-${i + 1}">${i + 1}</td>
-        <td>${esc(r.name)}</td>
+        <td>${nameWithBadge(r.name, r.verified)}</td>
         <td><b>${r.correct}</b></td>
         <td>${fmtTime(r.timeMs)}</td>
         <td>${r.weeks}</td>
@@ -1011,7 +1016,7 @@ async function finishGame() {
 }
 
 // ---------------- cuenta ----------------
-function renderAccount() {
+function renderAccount(tab) {
   if (!store.online()) {
     app.innerHTML = `<a class="back" href="#/">← Volver</a><section class="card narrow"><h2>Cuenta</h2><p class="muted">Las cuentas necesitan conexión con el servidor.</p></section>`;
     return;
@@ -1022,9 +1027,9 @@ function renderAccount() {
       <a class="back" href="#/">← Volver</a>
       <section class="card narrow">
         <p class="eyebrow">Mi cuenta</p>
-        <h2>${esc(p.displayName)}</h2>
-        <p>Estado: <span class="chip ${p.status === 'approved' ? 'ok' : 'warn'}">${STATUS_TEXT[p.status] || esc(p.status)}</span></p>
-        ${p.status === 'pending' ? '<p class="muted small">El administrador tiene que aprobar tu cuenta para que puedas jugar el reto semanal. Mientras tanto puedes jugar al Aleatorio y en salas.</p>' : ''}
+        <h2>${nameWithBadge(p.displayName, p.verified)}</h2>
+        <p>Estado: <span class="chip ${p.status === 'approved' ? 'ok' : 'warn'}">${STATUS_TEXT[p.status] || esc(p.status)}</span>${p.verified ? ' <span class="chip verified-chip">Verificada</span>' : ''}</p>
+        ${p.verified ? '' : '<p class="muted small">El administrador puede marcar tu cuenta como verificada cuando compruebe que eres quien dices ser. Saldrá una insignia junto a tu nombre en los rankings.</p>'}
         ${p.status === 'rejected' || p.status === 'blocked' ? '<p class="muted small">Tu cuenta no puede jugar el reto semanal. Si crees que es un error, habla con el administrador.</p>' : ''}
         ${isAdmin() ? '<a class="btn big" href="#/admin">Panel de administrador</a>' : ''}
         <form id="pwForm" class="stack">
@@ -1057,36 +1062,49 @@ function renderAccount() {
 
   app.innerHTML = `
     <a class="back" href="#/">← Volver</a>
-    <section class="card narrow">
-      <div class="tabs">
-        <button class="tab active" data-tab="login">Entrar</button>
-        <button class="tab" data-tab="register">Crear cuenta</button>
+    <section class="card narrow auth">
+      <div class="auth-switch" role="tablist">
+        <button type="button" role="tab" data-tab="login">Entrar</button>
+        <button type="button" role="tab" data-tab="register">Crear cuenta</button>
       </div>
       <form id="loginForm" class="stack">
+        <h2>Entrar</h2>
+        <p class="muted small">Con tu usuario y contraseña. La sesión se queda abierta en este dispositivo.</p>
         <label class="field"><span>Usuario</span><input id="lUser" autocomplete="username" maxlength="20" autocapitalize="none"></label>
         <label class="field"><span>Contraseña</span><input id="lPass" type="password" autocomplete="current-password" maxlength="72"></label>
         <button class="btn big">Entrar</button>
+        <p class="auth-alt">¿No tienes cuenta? <button type="button" class="link" data-tab="register">Crea una aquí</button></p>
         <p class="muted small">Si olvidaste tu contraseña, pídele al administrador que te ponga una nueva.</p>
       </form>
-      <form id="registerForm" class="stack" hidden>
-        <label class="field"><span>Usuario (3 a 20 letras, números, punto, guion o guion bajo)</span>
-          <input id="rUser" autocomplete="username" maxlength="20" autocapitalize="none" placeholder="Ej. jose_q"></label>
+      <form id="registerForm" class="stack">
+        <h2>Crear cuenta</h2>
+        <p class="muted small">No se pide correo ni teléfono. Podrás jugar el reto semanal en cuanto crees la cuenta.</p>
+        <label class="field"><span>Usuario</span>
+          <input id="rUser" autocomplete="username" maxlength="20" autocapitalize="none" placeholder="Ej. jose_q">
+          <small class="muted">De 3 a 20 letras, números, punto, guion o guion bajo. Sin espacios.</small></label>
         <label class="field"><span>Contraseña (mínimo 6)</span><input id="rPass" type="password" autocomplete="new-password" maxlength="72"></label>
         <label class="field"><span>Repite la contraseña</span><input id="rPass2" type="password" autocomplete="new-password" maxlength="72"></label>
         <label class="field"><span>¿Quién eres? (solo lo ve el administrador)</span>
           <input id="rWho" maxlength="120" placeholder="Tu nombre real o cómo te conoce"></label>
         <button class="btn big">Crear cuenta</button>
-        <p class="muted small">No se pide correo ni teléfono. Tu cuenta quedará pendiente hasta que el administrador la apruebe.</p>
+        <p class="auth-alt">¿Ya tienes cuenta? <button type="button" class="link" data-tab="login">Entra aquí</button></p>
       </form>
     </section>`;
 
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
-  app.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => {
-    app.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('active', x === b));
-    loginForm.hidden = b.dataset.tab !== 'login';
-    registerForm.hidden = b.dataset.tab !== 'register';
-  }));
+  // Solo se ve un formulario a la vez: "Entrar" o "Crear cuenta".
+  const show = (which, focus) => {
+    app.querySelectorAll('.auth-switch [data-tab]').forEach((x) => {
+      x.classList.toggle('active', x.dataset.tab === which);
+      x.setAttribute('aria-selected', String(x.dataset.tab === which));
+    });
+    loginForm.hidden = which !== 'login';
+    registerForm.hidden = which !== 'register';
+    if (focus) (which === 'login' ? loginForm : registerForm).querySelector('input').focus();
+  };
+  app.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => show(b.dataset.tab, true)));
+  show(tab === 'crear' ? 'register' : 'login', false);
   const busy = (form, on) => form.querySelectorAll('button').forEach((b) => (b.disabled = on));
 
   loginForm.onsubmit = async (e) => {
@@ -1120,7 +1138,7 @@ function renderAccount() {
     try {
       await store.signUp(user, pass, who);
       await refreshAccount();
-      toast('Cuenta creada. Avisa al administrador para que la apruebe.');
+      toast('Cuenta creada. ¡Ya puedes jugar el reto semanal!');
       go('#/cuenta');
     } catch (err) {
       toast(err.message, 'error');
@@ -1145,19 +1163,23 @@ async function renderAdmin() {
     app.innerHTML = `<a class="back" href="#/">← Volver</a><section class="card"><p class="error-text">No se pudo cargar el panel: ${esc(e.message)}</p></section>`;
     return;
   }
-  const pending = users.filter((u) => u.status === 'pending');
+  const verifiedCount = users.filter((u) => u.verified).length;
   const me = profileOf()?.username;
 
   const userRow = (u) => {
-    const actions = u.username === me ? '<span class="muted small">(tú)</span>' : [
-      u.status !== 'approved' ? `<button class="btn sm" data-act="approved" data-id="${u.id}">Aprobar</button>` : '',
-      u.status === 'pending' ? `<button class="btn ghost sm danger" data-act="rejected" data-id="${u.id}">Rechazar</button>` : '',
-      u.status === 'approved' ? `<button class="btn ghost sm danger" data-act="blocked" data-id="${u.id}">Bloquear</button>` : '',
-      `<button class="btn ghost sm" data-pass="${u.id}" data-name="${esc(u.displayName)}">Contraseña</button>`,
+    const self = u.username === me;
+    const actions = [
+      u.verified
+        ? `<button class="btn ghost sm" data-verify="0" data-id="${u.id}">Quitar verificado</button>`
+        : `<button class="btn sm" data-verify="1" data-id="${u.id}">Verificar</button>`,
+      self ? '' : u.status === 'approved'
+        ? `<button class="btn ghost sm danger" data-act="blocked" data-id="${u.id}">Bloquear</button>`
+        : `<button class="btn ghost sm" data-act="approved" data-id="${u.id}">${u.status === 'blocked' ? 'Desbloquear' : 'Activar'}</button>`,
+      self ? '' : `<button class="btn ghost sm" data-pass="${u.id}" data-name="${esc(u.displayName)}">Contraseña</button>`,
     ].join(' ');
     return `
       <tr>
-        <td><b>${esc(u.displayName)}</b>${u.isAdmin ? ' <span class="chip">admin</span>' : ''}</td>
+        <td><b>${nameWithBadge(u.displayName, u.verified)}</b>${u.isAdmin ? ' <span class="chip">admin</span>' : ''}${self ? ' <span class="muted small">(tú)</span>' : ''}</td>
         <td class="wrap">${esc(u.who) || '<span class="muted">—</span>'}</td>
         <td><span class="chip ${u.status === 'approved' ? 'ok' : 'warn'}">${STATUS_TEXT[u.status] || esc(u.status)}</span></td>
         <td>${fmtDate(u.createdAt)}</td>
@@ -1215,14 +1237,14 @@ async function renderAdmin() {
       <h2>Panel de administrador</h2>
       <div class="stats">
         <div><b>${users.length}</b><span>cuentas</span></div>
-        <div><b>${pending.length}</b><span>pendientes</span></div>
+        <div><b>${verifiedCount}</b><span>verificadas</span></div>
         <div><b>${current.plays.length}</b><span>jugaron esta semana</span></div>
       </div>
       <a class="btn ghost sm" href="#/registro">Ver registro de partidas</a>
     </section>
     <section class="card">
       <h3>Cuentas</h3>
-      <p class="muted small">Comprueba por fuera (por ejemplo, por WhatsApp) que cada persona es quien dice ser antes de aprobarla.</p>
+      <p class="muted small">Las cuentas se pueden usar nada más crearlas. Pon la insignia de <b>verificado</b> a quien hayas comprobado por fuera (por ejemplo, por WhatsApp) que es quien dice ser. Bloquea a quien haga trampas: no podrá jugar el reto semanal y desaparece de los rankings.</p>
       <div class="table-wrap"><table class="table users">
         <thead><tr><th>Usuario</th><th>¿Quién es?</th><th>Estado</th><th>Creada</th><th>Semanas</th><th></th></tr></thead>
         <tbody>${users.map(userRow).join('') || '<tr><td colspan="6" class="muted">No hay cuentas.</td></tr>'}</tbody>
@@ -1234,10 +1256,16 @@ async function renderAdmin() {
   const reload = () => renderAdmin();
   app.onclick = async (e) => {
     const act = e.target.closest('[data-act]');
+    const verify = e.target.closest('[data-verify]');
     const pass = e.target.closest('[data-pass]');
     const del = e.target.closest('[data-del-play]');
     const clearExtra = e.target.closest('[data-clear-extra]');
     try {
+      if (verify) {
+        await store.adminSetVerified(verify.dataset.id, verify.dataset.verify === '1');
+        toast(verify.dataset.verify === '1' ? 'Cuenta verificada.' : 'Verificado quitado.');
+        return reload();
+      }
       if (act) {
         await store.adminSetStatus(act.dataset.id, act.dataset.act);
         toast('Cuenta actualizada.');

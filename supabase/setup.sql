@@ -136,8 +136,9 @@ create table if not exists public.profiles (
   username     text not null unique,
   display_name text not null,
   who          text,
-  status       text not null default 'pending',
+  status       text not null default 'approved',
   is_admin     boolean not null default false,
+  verified     boolean not null default false,  -- insignia de verificado (la pone el administrador)
   created_at   timestamptz not null default now(),
   constraint profiles_username check (username ~ '^[a-z0-9_.-]{3,20}$'),
   constraint profiles_display  check (char_length(display_name) between 3 and 20),
@@ -182,6 +183,12 @@ create table if not exists public.weekly_plays (
                                and char_length(coalesce(ua, '')) <= 80)
 );
 create index if not exists weekly_plays_user_idx on public.weekly_plays (user_id);
+
+-- Las cuentas ya no esperan aprobación: se pueden usar nada más crearlas.
+-- El administrador marca como verificadas las que ha comprobado.
+alter table public.profiles add column if not exists verified boolean not null default false;
+alter table public.profiles alter column status set default 'approved';
+update public.profiles set status = 'approved' where status = 'pending';
 
 -- La puntuación pasó de "puntos" a "aciertos": se vacían una sola vez los rankings antiguos.
 do $$
@@ -369,11 +376,11 @@ security definer
 set search_path = ''
 as $$
   select json_build_object('username', username, 'display_name', display_name,
-                           'status', status, 'is_admin', is_admin)
+                           'status', status, 'is_admin', is_admin, 'verified', verified)
   from public.profiles where id = auth.uid();
 $$;
 
--- Crea el perfil del usuario recién registrado (queda pendiente de aprobación).
+-- Crea el perfil del usuario recién registrado (puede jugar desde ese momento).
 -- El nombre y el "¿Quién eres?" se leen de los datos con los que se registró.
 create or replace function public.register_profile()
 returns json
@@ -393,8 +400,8 @@ begin
   if lower(v_display) <> v_user then
     v_display := v_user;
   end if;
-  insert into public.profiles (id, username, display_name, who)
-  values (v_uid, v_user, v_display, nullif(v_who, ''))
+  insert into public.profiles (id, username, display_name, who, status)
+  values (v_uid, v_user, v_display, nullif(v_who, ''), 'approved')
   on conflict (id) do nothing;
   return public.my_profile();
 end;
@@ -455,7 +462,7 @@ set search_path = ''
 as $$
 begin
   if not private.is_approved() then
-    raise exception 'Tu cuenta no está aprobada' using errcode = '28000';
+    raise exception 'Tu cuenta está bloqueada' using errcode = '28000';
   end if;
   if p_week <> private.current_week() then
     raise exception 'Esa semana no está en curso';
@@ -488,7 +495,7 @@ declare
   v_rows  int;
 begin
   if not private.is_approved() then
-    raise exception 'Tu cuenta no está aprobada' using errcode = '28000';
+    raise exception 'Tu cuenta está bloqueada' using errcode = '28000';
   end if;
   if now() < public.week_start(v_id) then
     raise exception 'El modo semanal todavía no ha empezado';
@@ -542,14 +549,16 @@ end;
 $$;
 
 -- Ranking de una semana: más aciertos primero; en empate, menos tiempo.
+drop function if exists public.weekly_ranking(int);
 create or replace function public.weekly_ranking(p_week int)
-returns table (name text, correct int, total int, answered int, time_ms int, finished boolean, started_at timestamptz)
+returns table (name text, correct int, total int, answered int, time_ms int, finished boolean, started_at timestamptz,
+               verified boolean)
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select pr.display_name, p.correct, p.total, p.answered, p.time_ms, p.finished, p.started_at
+  select pr.display_name, p.correct, p.total, p.answered, p.time_ms, p.finished, p.started_at, pr.verified
   from public.weekly_plays p
   join public.profiles pr on pr.id = p.user_id
   where p.week_id = p_week and pr.status <> 'blocked'
@@ -558,21 +567,22 @@ $$;
 
 -- Ranking mensual (p_month) o anual (p_month null): suma de aciertos de todas las
 -- semanas. Cada semana cuenta para el mes en que empieza (hora de Venezuela).
+drop function if exists public.period_ranking(int, int);
 create or replace function public.period_ranking(p_year int, p_month int default null)
-returns table (name text, correct bigint, time_ms bigint, weeks bigint)
+returns table (name text, correct bigint, time_ms bigint, weeks bigint, verified boolean)
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select pr.display_name, sum(p.correct), sum(p.time_ms), count(*)
+  select pr.display_name, sum(p.correct), sum(p.time_ms), count(*), pr.verified
   from public.weekly_plays p
   join public.profiles pr on pr.id = p.user_id
   where pr.status <> 'blocked'
     and extract(year from public.week_start(p.week_id) at time zone 'America/Caracas') = p_year
     and (p_month is null
          or extract(month from public.week_start(p.week_id) at time zone 'America/Caracas') = p_month)
-  group by pr.id, pr.display_name
+  group by pr.id, pr.display_name, pr.verified
   order by sum(p.correct) desc, sum(p.time_ms) asc;
 $$;
 
@@ -597,9 +607,10 @@ $$;
 -- Panel del administrador
 -- ---------------------------------------------------------------------
 
+drop function if exists public.admin_users();
 create or replace function public.admin_users()
 returns table (id uuid, username text, display_name text, who text, status text, is_admin boolean,
-               created_at timestamptz, plays bigint)
+               verified boolean, created_at timestamptz, plays bigint)
 language plpgsql
 stable
 security definer
@@ -608,10 +619,10 @@ as $$
 begin
   perform private.require_admin();
   return query
-    select p.id, p.username, p.display_name, p.who, p.status, p.is_admin, p.created_at,
+    select p.id, p.username, p.display_name, p.who, p.status, p.is_admin, p.verified, p.created_at,
            (select count(*) from public.weekly_plays w where w.user_id = p.id)
     from public.profiles p
-    order by (p.status = 'pending') desc, p.created_at desc;
+    order by p.created_at desc;
 end;
 $$;
 
@@ -627,6 +638,19 @@ begin
     raise exception 'No puedes cambiar el estado de tu propia cuenta';
   end if;
   update public.profiles set status = p_status where id = p_user;
+end;
+$$;
+
+-- Pone o quita la insignia de verificado.
+create or replace function public.admin_set_verified(p_user uuid, p_verified boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform private.require_admin();
+  update public.profiles set verified = coalesce(p_verified, false) where id = p_user;
 end;
 $$;
 
@@ -778,6 +802,7 @@ begin
     'public.list_weeks()',
     'public.admin_users()',
     'public.admin_set_status(uuid, text)',
+    'public.admin_set_verified(uuid, boolean)',
     'public.admin_set_password(uuid, text)',
     'public.admin_week(int)',
     'public.admin_delete_play(int, uuid)',

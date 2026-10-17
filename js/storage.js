@@ -63,6 +63,7 @@ export const listWeeks = call('listWeeks');
 // Panel del administrador (solo con Supabase)
 export const adminUsers = call('adminUsers');
 export const adminSetStatus = call('adminSetStatus');
+export const adminSetVerified = call('adminSetVerified');
 export const adminSetPassword = call('adminSetPassword');
 export const adminWeek = call('adminWeek');
 export const adminDeletePlay = call('adminDeletePlay');
@@ -91,7 +92,7 @@ const cleanLobby = (l) => ({ ...l, code: str(l.code), name: str(l.name), cats: A
 const cleanPlay = (p) => ({
   name: str(p.name), userId: str(p.user_id), correct: num(p.correct), total: num(p.total) || 15,
   answered: num(p.answered), timeMs: num(p.time_ms), finished: p.finished === true, startedAt: time(p.started_at),
-  deviceId: str(p.device_id), fp: str(p.fp), ua: str(p.ua),
+  deviceId: str(p.device_id), fp: str(p.fp), ua: str(p.ua), verified: p.verified === true,
 });
 
 function localImpl() {
@@ -196,7 +197,7 @@ async function supabaseImpl({ url, key }) {
   const profile = async () => {
     let p = await run(sb.rpc('my_profile'));
     if (!p) p = await run(sb.rpc('register_profile'));
-    return p && { username: str(p.username), displayName: str(p.display_name), status: str(p.status), isAdmin: p.is_admin === true };
+    return p && { username: str(p.username), displayName: str(p.display_name), status: str(p.status), isAdmin: p.is_admin === true, verified: p.verified === true };
   };
 
   return {
@@ -312,7 +313,7 @@ async function supabaseImpl({ url, key }) {
     },
     async periodRanking(year, month = null) {
       const rows = await run(sb.rpc('period_ranking', { p_year: year, p_month: month }));
-      return rows.map((r) => ({ name: str(r.name), correct: num(r.correct), timeMs: num(r.time_ms), weeks: num(r.weeks) }));
+      return rows.map((r) => ({ name: str(r.name), correct: num(r.correct), timeMs: num(r.time_ms), weeks: num(r.weeks), verified: r.verified === true }));
     },
     async listWeeks() {
       const rows = await run(sb.rpc('list_weeks'));
@@ -324,11 +325,14 @@ async function supabaseImpl({ url, key }) {
       const rows = await run(sb.rpc('admin_users'));
       return rows.map((r) => ({
         id: str(r.id), username: str(r.username), displayName: str(r.display_name), who: str(r.who),
-        status: str(r.status), isAdmin: r.is_admin === true, createdAt: time(r.created_at), plays: num(r.plays),
+        status: str(r.status), isAdmin: r.is_admin === true, verified: r.verified === true, createdAt: time(r.created_at), plays: num(r.plays),
       }));
     },
     async adminSetStatus(userId, status) {
       await run(sb.rpc('admin_set_status', { p_user: userId, p_status: status }));
+    },
+    async adminSetVerified(userId, verified) {
+      await run(sb.rpc('admin_set_verified', { p_user: userId, p_verified: verified }));
     },
     async adminSetPassword(userId, password) {
       await run(sb.rpc('admin_set_password', { p_user: userId, p_password: password }));

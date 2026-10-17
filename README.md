@@ -6,12 +6,12 @@ Página web de preguntas de cultura general. Funciona sin servidor propio: se pu
 
 | Función | Detalle |
 |---|---|
-| **Reto semanal** | 15 preguntas iguales para todos, una sola partida por semana y por cuenta. Se renueva cada **sábado a las 8pm (hora de Venezuela)**. Las preguntas de una semana nunca se repiten en otra. Necesita cuenta aprobada por el administrador. |
+| **Reto semanal** | 15 preguntas iguales para todos, una sola partida por semana y por cuenta. Se renueva cada **sábado a las 8pm (hora de Venezuela)**. Las preguntas de una semana nunca se repiten en otra. Necesita cuenta (se crea al momento, sin esperar aprobación). |
 | **Modo Aleatorio** | 15 preguntas distintas en cada partida, repartidas entre todas las categorías (evita repetir las que ya viste). Libre, sin cuenta. |
 | **Salas** | Eliges las categorías (videojuegos, música, deportes, arte, historia, geografía, ciencia, cine y TV, literatura, tecnología, League of Legends y fútbol) y se genera un código de 6 o 7 caracteres. Todos los que entran con ese código reciben las mismas preguntas. Libre, sin cuenta. |
 | **Rankings** | Semanal (en directo), mensual y anual del reto semanal; uno del Aleatorio y uno por cada sala. |
 | **10 segundos** | Límite por pregunta. Si se acaba el tiempo, cuenta como fallo. |
-| **Panel de administrador** | Aprobar, rechazar o bloquear cuentas, cambiar contraseñas, borrar la partida semanal de alguien, elegir el tema de la semana y añadir la pregunta extra. |
+| **Panel de administrador** | Dar la insignia de **verificado** (como la de Twitter) a las cuentas que hayas comprobado, bloquear cuentas, cambiar contraseñas, borrar la partida semanal de alguien, elegir el tema de la semana y añadir la pregunta extra. |
 | **Registro** | Solo para el administrador: todas las partidas, con aviso de los dispositivos y navegadores desde los que se jugó con varios nombres. |
 
 **Puntuación (todos los modos):** cuenta el número de aciertos. Se mide el tiempo total de la partida y, si hay empate, gana quien tardó menos. El ranking mensual y el anual suman los aciertos de todas las semanas (y el tiempo total para desempatar). Cada semana cuenta para el mes en que empieza.
@@ -60,7 +60,9 @@ Sin este paso el juego funciona en **modo local**: cada dispositivo ve solo sus 
 
 ## 4. Cuentas y reto semanal
 
-- **Crear cuenta:** usuario, contraseña y "¿Quién eres?" (solo lo ve el administrador). No se pide correo ni teléfono. La cuenta queda **pendiente** hasta que la apruebes en el panel. La sesión se queda abierta en ese dispositivo hasta que se cierre.
+- **Crear cuenta:** usuario, contraseña y "¿Quién eres?" (solo lo ve el administrador). No se pide correo ni teléfono. La cuenta se puede usar **al momento**, sin esperar aprobación. La sesión se queda abierta en ese dispositivo hasta que se cierre.
+- **Verificado:** en el panel, botón **Verificar** de cada cuenta. Pónselo a quien hayas comprobado por fuera (por ejemplo, por WhatsApp) que es quien dice ser: sale una insignia azul junto a su nombre en los rankings del reto semanal y en su cuenta. Se quita con **Quitar verificado**.
+- **Bloquear:** una cuenta bloqueada no puede jugar el reto semanal y desaparece de los rankings. Se deshace con **Desbloquear**.
 - **Contraseña olvidada:** en el panel, botón **Contraseña** de esa cuenta; pon una nueva y díselo por privado. Cada jugador puede cambiar la suya en **Mi cuenta**.
 - **Una partida por semana:** cuenta como jugada en cuanto empieza. Si alguien sale a mitad, queda guardada como abandonada con lo que llevaba. Si tuvo un problema de verdad, en el panel puedes **Borrar partida** y podrá repetirla.
 - **Tema de la semana:** en el panel eliges la categoría de la semana en curso (si nadie la ha jugado todavía) y de la siguiente. "Todas las categorías" reparte las 15 preguntas entre todas. La primera semana (desde el sábado 17 de octubre de 2026 a las 8pm) es solo de **fútbol**.
