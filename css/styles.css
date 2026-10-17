@@ -189,7 +189,6 @@ select.tab { padding-right: 10px; }
 .feedback { text-align: center; font-weight: 800; font-size: 1.2rem; min-height: 1.6em; margin: 16px 0 0; }
 .feedback.ok { color: var(--ok); }
 .feedback.bad { color: var(--bad); }
-.quit { display: block; margin: 24px auto 0; }
 
 /* ---------- resultado ---------- */
 .result { text-align: center; }

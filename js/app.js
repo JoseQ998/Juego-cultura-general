@@ -525,17 +525,9 @@ function showQuestion() {
         ${q.options.map((o, i) => `<button class="option" data-i="${i}"><span class="letter">${'ABCD'[i]}</span>${esc(o)}</button>`).join('')}
       </div>
       <p class="feedback" id="feedback"></p>
-      <button class="btn ghost sm quit" id="quit">Abandonar partida</button>
     </section>`;
 
   app.querySelectorAll('.option').forEach((b) => b.addEventListener('click', () => answer(+b.dataset.i)));
-  document.getElementById('quit').onclick = () => {
-    if (!confirm(ABANDON_MSG)) return;
-    const pts = g.score;
-    stopGame();
-    route();
-    toast(`Partida guardada como abandonada: ${pts} puntos.`);
-  };
   savePending(g);
   g.locked = false;
   g.qStart = performance.now();
