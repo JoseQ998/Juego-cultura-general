@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Cultura General · Trivia</title>
-  <meta name="description" content="Juego de preguntas de cultura general con rankings, salas por categorías y 10 segundos por pregunta.">
+  <meta name="description" content="Juego de preguntas de cultura general: reto semanal con ranking, partidas aleatorias y salas por categorías. 10 segundos por pregunta.">
   <meta name="theme-color" content="#07051a">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'><rect width='9' height='9' fill='%2307051a'/><g fill='%23ff2e97'><rect x='3' y='1' width='3' height='1'/><rect x='2' y='2' width='1' height='1'/><rect x='6' y='2' width='1' height='2'/><rect x='5' y='4' width='1' height='1'/><rect x='4' y='5' width='1' height='1'/><rect x='4' y='7' width='1' height='1'/></g></svg>">
   <link rel="stylesheet" href="css/styles.css">
@@ -13,7 +13,7 @@
   <header class="topbar">
     <a href="#/" class="logo">Cultura General</a>
     <nav>
-      <a href="#/ranking/clasico">Rankings</a>
+      <a href="#/ranking/semanal" id="rankingLink">Rankings</a>
       <button type="button" id="donateBtn" class="donate-btn" hidden>Donar</button>
     </nav>
   </header>
@@ -22,7 +22,11 @@
 
   <footer class="footer">
     <span id="storageBadge"></span>
-    <a href="#/registro">Registro</a>
+    <span class="footer-links">
+      <a href="#/cuenta" id="accountLink" hidden>Mi cuenta</a>
+      <a href="#/admin" id="adminLink" hidden>Admin</a>
+      <a href="#/registro" id="logLink">Registro</a>
+    </span>
   </footer>
 
   <noscript>Necesitas activar JavaScript para jugar.</noscript>

@@ -23,18 +23,52 @@ export async function init() {
 
 export const kind = () => impl?.kind;
 export const error = () => impl?.error || null;
+export const online = () => impl?.kind === 'supabase' && !impl.error;
+const call = (name) => (...args) => {
+  if (!impl?.[name]) throw new Error('Necesitas conexión con el servidor');
+  return impl[name](...args);
+};
+
+// Modos libres
 export const submitScore = (board, entry) => impl.submitScore(board, entry);
 export const getRanking = (board, n = 50) => impl.getRanking(board, n);
 export const addLog = (entry) => impl.addLog(entry);
-// Devuelve 'ok', 'bad' (PIN incorrecto) o 'unset' (PIN sin configurar en Supabase).
-export const checkPin = (pin) => impl.checkPin(pin);
-export const getLogs = (pin, n = 1000) => impl.getLogs(pin, n);
-export const clearLogs = (pin) => impl.clearLogs(pin);
 export const saveLobby = (lobby) => impl.saveLobby(lobby);
 export const getLobby = (code) => impl.getLobby(code);
 export const listLobbies = (n = 30) => impl.listLobbies(n);
 
-// ¿La partida a es mejor que b? (más puntos; a igualdad, menos tiempo)
+// Registro: en modo local se protege con el PIN de config.js; con Supabase,
+// solo lo puede ver la cuenta de administrador.
+export const checkPin = (pin) => impl.checkPin(pin);
+export const getLogs = (pin, n = 1000) => impl.getLogs(pin, n);
+export const clearLogs = (pin) => impl.clearLogs(pin);
+
+// Cuentas (solo con Supabase)
+export const getAccount = call('getAccount');
+export const signUp = call('signUp');
+export const signIn = call('signIn');
+export const signOut = call('signOut');
+export const changePassword = call('changePassword');
+export const onAuthChange = (cb) => impl?.onAuthChange?.(cb);
+
+// Modo semanal (solo con Supabase)
+export const getWeek = call('getWeek');
+export const setWeekQuestions = call('setWeekQuestions');
+export const startWeekly = call('startWeekly');
+export const weeklyProgress = call('weeklyProgress');
+export const weeklyRanking = call('weeklyRanking');
+export const periodRanking = call('periodRanking');
+export const listWeeks = call('listWeeks');
+
+// Panel del administrador (solo con Supabase)
+export const adminUsers = call('adminUsers');
+export const adminSetStatus = call('adminSetStatus');
+export const adminSetPassword = call('adminSetPassword');
+export const adminWeek = call('adminWeek');
+export const adminDeletePlay = call('adminDeletePlay');
+export const adminSetWeek = call('adminSetWeek');
+
+// ¿La partida a es mejor que b? (más aciertos; a igualdad, menos tiempo)
 function isBetter(a, b) {
   if (!b) return true;
   return a.score > b.score || (a.score === b.score && a.timeMs < b.timeMs);
@@ -45,6 +79,7 @@ const sortRanking = (list) => list.sort((a, b) => b.score - a.score || a.timeMs 
 // manipulado no pueda romper la página.
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const str = (v) => (v == null ? '' : String(v));
+const time = (v) => (v ? Date.parse(v) || 0 : 0);
 const cleanScore = (r) => ({ ...r, name: str(r.name), score: num(r.score), correct: num(r.correct), total: num(r.total) || 15, timeMs: num(r.timeMs), ts: num(r.ts) });
 const cleanLog = (l) => ({
   ...cleanScore(l),
@@ -53,6 +88,11 @@ const cleanLog = (l) => ({
   finished: l.finished !== false, answered: l.answered == null ? num(l.total) || 15 : num(l.answered),
 });
 const cleanLobby = (l) => ({ ...l, code: str(l.code), name: str(l.name), cats: Array.isArray(l.cats) ? l.cats.map(str) : [], createdAt: num(l.createdAt) });
+const cleanPlay = (p) => ({
+  name: str(p.name), userId: str(p.user_id), correct: num(p.correct), total: num(p.total) || 15,
+  answered: num(p.answered), timeMs: num(p.time_ms), finished: p.finished === true, startedAt: time(p.started_at),
+  deviceId: str(p.device_id), fp: str(p.fp), ua: str(p.ua),
+});
 
 function localImpl() {
   const read = (k, d) => {
@@ -61,6 +101,11 @@ function localImpl() {
   const write = (k, v) => {
     try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
   };
+  // La puntuación pasó de "puntos" a "aciertos": los rankings antiguos se vacían una vez.
+  if (read('cg_scoring', 0) !== 2) {
+    write('cg_rank', {});
+    write('cg_scoring', 2);
+  }
   return {
     kind: 'local',
     async submitScore(board, entry) {
@@ -110,13 +155,26 @@ function localImpl() {
   };
 }
 
+// Mensajes de error de Supabase Auth, en español.
+function authMessage(error) {
+  const m = String(error?.message || error || '');
+  if (/invalid login credentials/i.test(m)) return 'Usuario o contraseña incorrectos.';
+  if (/already registered|already exists/i.test(m)) return 'Ese usuario ya existe. Elige otro nombre.';
+  if (/password should be at least|weak password/i.test(m)) return 'La contraseña es demasiado corta (mínimo 6 caracteres).';
+  if (/email address .* invalid|unable to validate email/i.test(m)) return 'Ese nombre de usuario no es válido.';
+  if (/rate limit|too many/i.test(m)) return 'Demasiados intentos. Espera unos minutos.';
+  if (/signups not allowed/i.test(m)) return 'El registro de cuentas nuevas está desactivado.';
+  return m || 'Error de conexión.';
+}
+
 async function supabaseImpl({ url, key }) {
   const { createClient } = await import(SUPABASE_JS);
   // keepalive: los envíos llegan aunque la pestaña se esté cerrando (partidas abandonadas).
   const keepaliveFetch = (input, init = {}) =>
     fetch(input, init.method && init.method !== 'GET' ? { ...init, keepalive: true } : init);
   const sb = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    // La sesión se guarda en el navegador: la cuenta queda abierta hasta que se cierre.
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'cg_auth' },
     global: { fetch: keepaliveFetch },
   });
   const run = async (promise) => {
@@ -124,7 +182,6 @@ async function supabaseImpl({ url, key }) {
     if (error) throw new Error(error.message || 'Error de Supabase');
     return data;
   };
-  const time = (v) => (v ? Date.parse(v) || 0 : 0);
   const fromScore = (r) => cleanScore({ name: r.name, nameKey: r.name_key, score: r.score, correct: r.correct, total: r.total, timeMs: r.time_ms, ts: time(r.updated_at), deviceId: r.device_id });
   const fromLog = (r) => cleanLog({
     ts: time(r.created_at), name: r.name, nameKey: r.name_key, mode: r.mode, board: r.board, boardLabel: r.board_label,
@@ -134,12 +191,21 @@ async function supabaseImpl({ url, key }) {
   });
   const fromLobby = (r) => cleanLobby({ code: r.code, name: r.name, cats: r.cats, createdBy: r.created_by, createdAt: time(r.created_at) });
   const cut = (v, n) => (v == null ? null : String(v).slice(0, n));
+  // Supabase Auth necesita un correo: se usa uno interno que nunca recibe nada.
+  const emailOf = (username) => `${username.trim().toLowerCase()}@${CONFIG.ACCOUNT_EMAIL_DOMAIN}`;
+  const profile = async () => {
+    let p = await run(sb.rpc('my_profile'));
+    if (!p) p = await run(sb.rpc('register_profile'));
+    return p && { username: str(p.username), displayName: str(p.display_name), status: str(p.status), isAdmin: p.is_admin === true };
+  };
 
   return {
     kind: 'supabase',
     async ping() {
       await run(sb.from('lobbies').select('code').limit(1));
     },
+
+    // ----- modos libres -----
     async submitScore(board, e) {
       await run(sb.rpc('submit_score', {
         p_board: board, p_name: e.name, p_name_key: e.nameKey, p_score: e.score, p_correct: e.correct,
@@ -160,16 +226,6 @@ async function supabaseImpl({ url, key }) {
         ua: cut(e.ua, 80), names_on_device: (e.namesOnDevice || []).slice(-20),
       }));
     },
-    async checkPin(pin) {
-      return run(sb.rpc('check_admin_pin', { p_pin: pin }));
-    },
-    async getLogs(pin, n) {
-      const rows = await run(sb.rpc('get_logs', { p_pin: pin, p_limit: n }));
-      return rows.map(fromLog);
-    },
-    async clearLogs(pin) {
-      await run(sb.rpc('clear_logs', { p_pin: pin }));
-    },
     async saveLobby(l) {
       await run(sb.from('lobbies').insert({ code: l.code, name: cut(l.name, 40), cats: l.cats, created_by: cut(l.createdBy, 20) || null }));
     },
@@ -180,6 +236,117 @@ async function supabaseImpl({ url, key }) {
     async listLobbies(n) {
       const rows = await run(sb.from('lobbies').select('*').order('created_at', { ascending: false }).limit(n));
       return rows.map(fromLobby);
+    },
+
+    // ----- registro (solo administrador) -----
+    async getLogs(_pin, n) {
+      const rows = await run(sb.rpc('get_logs', { p_limit: n }));
+      return rows.map(fromLog);
+    },
+    async clearLogs() {
+      await run(sb.rpc('clear_logs'));
+    },
+
+    // ----- cuentas -----
+    async getAccount() {
+      const { data } = await sb.auth.getSession();
+      if (!data?.session) return null;
+      return { profile: await profile() };
+    },
+    async signUp(username, password, who) {
+      const { data, error } = await sb.auth.signUp({
+        email: emailOf(username),
+        password,
+        options: { data: { display: username.trim(), who: String(who || '').trim().slice(0, 120) } },
+      });
+      if (error) throw new Error(authMessage(error));
+      if (!data.session) {
+        throw new Error('La cuenta se creó, pero Supabase pide confirmar el correo. El administrador debe desactivar "Confirm email" en Supabase.');
+      }
+      return { profile: await profile() };
+    },
+    async signIn(username, password) {
+      const { error } = await sb.auth.signInWithPassword({ email: emailOf(username), password });
+      if (error) throw new Error(authMessage(error));
+      return { profile: await profile() };
+    },
+    async signOut() {
+      await sb.auth.signOut();
+    },
+    async changePassword(password) {
+      const { error } = await sb.auth.updateUser({ password });
+      if (error) throw new Error(authMessage(error));
+    },
+    onAuthChange(cb) {
+      sb.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') setTimeout(() => cb(event), 0);
+      });
+    },
+
+    // ----- modo semanal -----
+    async getWeek() {
+      const w = await run(sb.rpc('get_week'));
+      return {
+        id: num(w.id), startsAt: time(w.starts_at), endsAt: time(w.ends_at), serverNow: time(w.now), open: w.open === true,
+        theme: w.theme ? str(w.theme) : null,
+        questionIds: Array.isArray(w.question_ids) ? w.question_ids.map(str) : null,
+        extra: w.extra && typeof w.extra.text === 'string' && Array.isArray(w.extra.options) && w.extra.options.length === 4
+          ? { text: str(w.extra.text), options: w.extra.options.map(str) } : null,
+        usedIds: Array.isArray(w.used_ids) ? w.used_ids.map(str) : [],
+        myPlay: w.my_play ? cleanPlay(w.my_play) : null,
+      };
+    },
+    async setWeekQuestions(weekId, ids) {
+      return (await run(sb.rpc('set_week_questions', { p_week: weekId, p_ids: ids }))).map(str);
+    },
+    async startWeekly({ deviceId, fp, ua }) {
+      return run(sb.rpc('start_weekly', { p_device: cut(deviceId, 64), p_fp: cut(fp, 64), p_ua: cut(ua, 80) }));
+    },
+    async weeklyProgress(weekId, answered, correct, timeMs, finished) {
+      return run(sb.rpc('weekly_progress', {
+        p_week: weekId, p_answered: answered, p_correct: correct, p_time_ms: Math.round(timeMs), p_finished: finished,
+      }));
+    },
+    async weeklyRanking(weekId) {
+      return (await run(sb.rpc('weekly_ranking', { p_week: weekId }))).map(cleanPlay);
+    },
+    async periodRanking(year, month = null) {
+      const rows = await run(sb.rpc('period_ranking', { p_year: year, p_month: month }));
+      return rows.map((r) => ({ name: str(r.name), correct: num(r.correct), timeMs: num(r.time_ms), weeks: num(r.weeks) }));
+    },
+    async listWeeks() {
+      const rows = await run(sb.rpc('list_weeks'));
+      return rows.map((r) => ({ id: num(r.id), startsAt: time(r.starts_at), theme: r.theme ? str(r.theme) : null, plays: num(r.plays) }));
+    },
+
+    // ----- administrador -----
+    async adminUsers() {
+      const rows = await run(sb.rpc('admin_users'));
+      return rows.map((r) => ({
+        id: str(r.id), username: str(r.username), displayName: str(r.display_name), who: str(r.who),
+        status: str(r.status), isAdmin: r.is_admin === true, createdAt: time(r.created_at), plays: num(r.plays),
+      }));
+    },
+    async adminSetStatus(userId, status) {
+      await run(sb.rpc('admin_set_status', { p_user: userId, p_status: status }));
+    },
+    async adminSetPassword(userId, password) {
+      await run(sb.rpc('admin_set_password', { p_user: userId, p_password: password }));
+    },
+    async adminWeek(weekId) {
+      const w = await run(sb.rpc('admin_week', { p_week: weekId }));
+      return {
+        id: num(w.id), startsAt: time(w.starts_at), theme: w.theme ? str(w.theme) : null,
+        hasQuestions: Array.isArray(w.question_ids),
+        extra: w.extra && Array.isArray(w.extra.options) ? { text: str(w.extra.text), options: w.extra.options.map(str) } : null,
+        plays: (w.plays || []).map(cleanPlay),
+      };
+    },
+    async adminDeletePlay(weekId, userId) {
+      await run(sb.rpc('admin_delete_play', { p_week: weekId, p_user: userId }));
+    },
+    async adminSetWeek(weekId, theme, extra) {
+      await run(sb.rpc('admin_set_week', { p_week: weekId, p_theme: theme || null, p_extra: extra || null }));
     },
   };
 }

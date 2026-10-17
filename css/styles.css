@@ -405,3 +405,30 @@ input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(25,240,255,.6
   .logo { font-size: .66rem; }
   .topbar nav a, .donate-btn { padding: 7px 9px; font-size: .78rem; }
 }
+
+/* reto semanal, cuentas y panel de administrador */
+.account-bar { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+.account-bar b { color: var(--cyan); }
+.mode.weekly { cursor: default; border-color: rgba(255,243,92,.7); box-shadow: 0 0 22px rgba(255,243,92,.25); }
+.mode.weekly:not(.clickable):hover { transform: none; border-color: rgba(255,243,92,.7); box-shadow: 0 0 22px rgba(255,243,92,.25); }
+.mode.weekly.clickable { cursor: pointer; }
+.mode.weekly .mode-icon { color: var(--yellow); border-color: rgba(255,243,92,.6); text-shadow: 0 0 8px rgba(255,243,92,.7); }
+.weekly-body { display: grid; gap: 6px; min-width: 0; }
+.weekly-body small { display: block; }
+.weekly-body .chip { justify-self: start; }
+.countdown { color: var(--text) !important; }
+.countdown b { font-family: 'Press Start 2P', monospace; font-size: .7rem; color: var(--yellow); text-shadow: 0 0 8px rgba(255,243,92,.6); margin-left: 4px; }
+.chip.ok { color: var(--ok); border-color: var(--ok); }
+.chip.warn { color: var(--warn); border-color: var(--warn); }
+.stack { display: grid; gap: 4px; }
+.stack .btn { margin-top: 8px; }
+.period-select { width: auto; min-width: 200px; margin-bottom: 4px; }
+.extra-box { border: 1px dashed rgba(255,243,92,.5); border-radius: 2px; padding: 12px; margin: 8px 0; display: grid; gap: 8px; min-width: 0; }
+.extra-box legend { color: var(--yellow); font-size: .85rem; padding: 0 6px; }
+.extra-box:disabled { opacity: .6; }
+.table td.wrap { white-space: normal; min-width: 160px; max-width: 280px; word-break: break-word; }
+.table td.actions { display: flex; gap: 6px; flex-wrap: nowrap; }
+button.tab { font: inherit; font-family: 'Press Start 2P', monospace; font-size: .6rem; cursor: pointer; }
+.footer-links { display: flex; gap: 14px; flex-wrap: wrap; }
+.footer-links a[hidden] { display: none; }
+.card h4 { margin-top: 18px; }

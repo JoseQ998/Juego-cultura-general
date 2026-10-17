@@ -1,19 +1,20 @@
-# 🧠 Cultura General — juego de trivia
+# Cultura General — juego de trivia
 
-Página web de preguntas de cultura general. Funciona sin servidor propio: se publica gratis con **GitHub Pages** y, para que el ranking y el registro sean compartidos entre todos, se conecta a **Supabase** (también gratis).
+Página web de preguntas de cultura general. Funciona sin servidor propio: se publica gratis con **GitHub Pages** y, para que los rankings, las cuentas y el registro sean compartidos entre todos, se conecta a **Supabase** (también gratis).
 
 ## Qué incluye
 
 | Función | Detalle |
 |---|---|
-| 🏛️ **Modo Clásico** | Siempre las mismas 15 preguntas, en el mismo orden, más 1 pregunta extra al final (16 en total). |
-| 🎲 **Modo Aleatorio** | 15 preguntas distintas en cada partida, repartidas entre todas las categorías (evita repetir las que ya viste). |
-| 👥 **Salas** | Eliges las categorías (videojuegos, música, deportes, arte, historia, geografía, ciencia, cine y TV, literatura, tecnología y League of Legends, con preguntas del juego y del competitivo: Mundial, MSI y LEC) y se genera un código de 6 o 7 caracteres. Todos los que entran con ese código reciben las mismas preguntas. |
-| 🏆 **Rankings** | Uno por modo (Clásico, Aleatorio) y uno por cada sala. Se guarda la mejor partida de cada nombre. |
-| ⏱️ **10 segundos** | Límite por pregunta. Si se acaba el tiempo, cuenta como fallo. |
-| 📋 **Registro** | Página protegida con PIN que muestra todas las partidas y marca los dispositivos y navegadores desde los que se jugó con varios nombres distintos. También registra las partidas abandonadas a mitad. También cuenta cuántas veces salió el jugador de la pestaña durante la partida (por ejemplo, para buscar la respuesta). |
+| **Reto semanal** | 15 preguntas iguales para todos, una sola partida por semana y por cuenta. Se renueva cada **sábado a las 8pm (hora de Venezuela)**. Las preguntas de una semana nunca se repiten en otra. Necesita cuenta aprobada por el administrador. |
+| **Modo Aleatorio** | 15 preguntas distintas en cada partida, repartidas entre todas las categorías (evita repetir las que ya viste). Libre, sin cuenta. |
+| **Salas** | Eliges las categorías (videojuegos, música, deportes, arte, historia, geografía, ciencia, cine y TV, literatura, tecnología, League of Legends y fútbol) y se genera un código de 6 o 7 caracteres. Todos los que entran con ese código reciben las mismas preguntas. Libre, sin cuenta. |
+| **Rankings** | Semanal (en directo), mensual y anual del reto semanal; uno del Aleatorio y uno por cada sala. |
+| **10 segundos** | Límite por pregunta. Si se acaba el tiempo, cuenta como fallo. |
+| **Panel de administrador** | Aprobar, rechazar o bloquear cuentas, cambiar contraseñas, borrar la partida semanal de alguien, elegir el tema de la semana y añadir la pregunta extra. |
+| **Registro** | Solo para el administrador: todas las partidas, con aviso de los dispositivos y navegadores desde los que se jugó con varios nombres. |
 
-**Puntuación:** cada acierto vale 100 puntos, más un bonus de hasta 100 según lo rápido que respondas (máximo 3000 en Aleatorio y salas, 3200 en Clásico). Si hay empate, gana quien tardó menos.
+**Puntuación (todos los modos):** cuenta el número de aciertos. Se mide el tiempo total de la partida y, si hay empate, gana quien tardó menos. El ranking mensual y el anual suman los aciertos de todas las semanas (y el tiempo total para desempatar). Cada semana cuenta para el mes en que empieza.
 
 ---
 
@@ -31,88 +32,81 @@ Todo esto se puede hacer desde el navegador del móvil en github.com:
 
 Cada vez que edites un archivo en GitHub la página se actualiza sola en uno o dos minutos.
 
-## 2. Ranking y registro compartidos con Supabase (recomendado)
+## 2. Conectar Supabase
 
-Sin este paso el juego funciona en **modo local**: cada dispositivo ve solo sus propias partidas en el ranking y en el registro. Para que todos compartan el mismo ranking y tú veas en el registro las partidas de todo el mundo:
+Sin este paso el juego funciona en **modo local**: cada dispositivo ve solo sus propias partidas, y no hay cuentas ni reto semanal.
 
-1. Entra en <https://supabase.com/dashboard> y crea un proyecto (**New project**). Apunta la contraseña de la base de datos que te pide, aunque el juego no la necesita.
-2. Cuando el proyecto esté listo, ve a **SQL Editor** → **New query**.
-3. Copia todo el contenido de [`supabase/setup.sql`](supabase/setup.sql) y pégalo.
-4. En la línea marcada con **▶**, cambia `CAMBIA_ESTE_PIN` por el PIN que quieras para el Registro (mínimo 6 caracteres; mejor con letras y números). **Cámbialo solo allí, en Supabase, no en GitHub.**
-5. Pulsa **Run**. Debe terminar con *Success*.
-6. Pulsa el botón **Connect** (arriba) o ve a **Project Settings → API Keys** y copia:
-   - la **Project URL** (`https://xxxxxxxx.supabase.co`)
-   - la **Publishable key** (`sb_publishable_...`) o, en proyectos antiguos, la **anon public key** (`eyJ...`).
+1. Entra en <https://supabase.com/dashboard> y crea un proyecto (**New project**).
+2. **Authentication → Sign In / Providers → Email**: deja **Email** activado y **desactiva "Confirm email"**. Guarda.
+   Las cuentas del juego no usan correo: por dentro se crean como `usuario@joseq998.github.io`, una dirección que no existe y a la que nunca se envía nada. **No vuelvas a activar "Confirm email"**, porque entonces nadie podría entrar.
+3. **SQL Editor** → **New query** → copia todo el contenido de [`supabase/setup.sql`](supabase/setup.sql), pégalo y pulsa **Run**. Debe terminar con *Success*. Se puede volver a ejecutar sin perder datos (hazlo cada vez que cambie ese archivo).
+4. Pulsa **Connect** (arriba) o ve a **Project Settings → API Keys** y copia la **Project URL** y la **Publishable key** (`sb_publishable_...`). **Nunca** uses la *secret key* ni la *service_role key*.
+5. En GitHub abre [`js/config.js`](js/config.js), pulsa el lápiz y rellena `supabase.url` y `supabase.key`. Guarda con **Commit changes**. Al pie de la página verás **Ranking en línea** con un cuadradito verde.
 
-   ⚠️ **Nunca** uses la *secret key* ni la *service_role key*.
-7. En GitHub abre [`js/config.js`](js/config.js), pulsa el lápiz ✏️ y rellena:
+> La URL y la publishable key no son secretas: están pensadas para ir en el código de la web. Lo que protege los datos son los permisos que crea `setup.sql`: la hora de la semana la decide el servidor, cada cuenta solo puede jugar una vez por semana, y solo la cuenta de administrador puede ver el registro o tocar las cuentas.
 
-   ```js
-   supabase: {
-     url: 'https://xxxxxxxx.supabase.co',
-     key: 'sb_publishable_...',
-   },
+**Proyecto en pausa:** en el plan gratuito, Supabase pausa los proyectos que pasan una semana sin actividad. Si el juego deja de guardar partidas, entra en el panel de Supabase y pulsa **Restore project**.
+
+## 3. Hacerte administrador
+
+1. En el juego, pulsa **Entrar** (al pie de la página) → **Crear cuenta** y regístrate con tu usuario.
+2. En Supabase → **SQL Editor**, ejecuta (cambiando `tu_usuario` por el tuyo, en minúsculas):
+
+   ```sql
+   update public.profiles set is_admin = true, status = 'approved' where username = 'tu_usuario';
    ```
 
-8. Guarda con **Commit changes**. En uno o dos minutos, al pie de la página verás **Ranking en línea** con un cuadradito verde. Si sale **Sin conexión con Supabase** (cuadradito rojo), mantén el dedo (o el ratón) sobre ese texto para ver el error.
+3. Recarga el juego: al pie aparecen **Admin** y **Registro**.
 
-> La URL y la publishable key no son secretas: están pensadas para ir en el código de la web. Lo que protege los datos son los permisos que crea `setup.sql`: desde la web solo se puede leer el ranking, crear salas y añadir partidas. Nadie puede leer, cambiar ni borrar el registro sin el PIN, ni poner puntuaciones imposibles.
+## 4. Cuentas y reto semanal
 
-**Cambiar el PIN más adelante:** en **SQL Editor** ejecuta
+- **Crear cuenta:** usuario, contraseña y "¿Quién eres?" (solo lo ve el administrador). No se pide correo ni teléfono. La cuenta queda **pendiente** hasta que la apruebes en el panel. La sesión se queda abierta en ese dispositivo hasta que se cierre.
+- **Contraseña olvidada:** en el panel, botón **Contraseña** de esa cuenta; pon una nueva y díselo por privado. Cada jugador puede cambiar la suya en **Mi cuenta**.
+- **Una partida por semana:** cuenta como jugada en cuanto empieza. Si alguien sale a mitad, queda guardada como abandonada con lo que llevaba. Si tuvo un problema de verdad, en el panel puedes **Borrar partida** y podrá repetirla.
+- **Tema de la semana:** en el panel eliges la categoría de la semana en curso (si nadie la ha jugado todavía) y de la siguiente. "Todas las categorías" reparte las 15 preguntas entre todas. La primera semana (desde el sábado 17 de octubre de 2026 a las 8pm) es solo de **fútbol**.
+- **Pregunta extra o trampa:** en el mismo formulario escribe la pregunta, la respuesta correcta y 3 incorrectas. Sale **por sorpresa** al final, después de las 15 (el contador dice /15), y suma 1 acierto. Se puede cambiar o quitar mientras nadie haya jugado esa semana.
+- **Preguntas que no se repiten:** Supabase guarda qué preguntas usó cada semana. Hay más de 800, suficientes para más de un año.
 
-```sql
-update private.settings set value = 'TuNuevoPIN' where key = 'admin_pin';
-```
+## 5. Registro (log)
 
-**Proyecto en pausa:** en el plan gratuito, Supabase pausa los proyectos que pasan una semana sin actividad. Si el juego deja de guardar partidas tras un tiempo sin uso, entra en el panel de Supabase y pulsa **Restore project**.
-
-## 3. Registro (log) y PIN
-
-- Abre el enlace **Registro** que está al pie de la página y escribe tu PIN.
-- Con Supabase, el PIN se comprueba en el servidor y no aparece en el código de la web. En modo local se usa `ADMIN_PIN` de `js/config.js`.
+- Con Supabase solo lo ve la cuenta de administrador (enlace **Registro** al pie o desde el panel). En modo local se protege con `ADMIN_PIN` de `js/config.js`.
+- Muestra todas las partidas (reto semanal, Aleatorio y salas), incluidas las abandonadas, y cuántas veces salió el jugador de la pestaña.
 - En `SUSPICIOUS_NAMES` (en `js/config.js`) decides a partir de cuántos nombres distintos se marca un dispositivo como sospechoso (por defecto 3).
-- Puedes descargar todo el registro en CSV. **Borrar todo** borra el registro y también todos los rankings (Clásico, Aleatorio y los de cada sala); las salas siguen existiendo.
+- Puedes descargarlo en CSV. **Borrar todo** borra el registro y los rankings de Aleatorio y salas; no toca el reto semanal.
 
-**Cómo detecta a quien usa varios nombres:**
+**Cómo detecta a quien usa varios nombres:** un identificador aleatorio guardado en el navegador (dispositivo) y una huella calculada con datos del navegador y la pantalla. **No se guarda la IP** ni ningún otro dato personal.
 
-- **Dispositivo:** identificador aleatorio que se guarda en el navegador la primera vez que alguien juega.
-- **Huella del navegador:** se calcula con datos del navegador y la pantalla. Detecta al mismo móvil aunque borre los datos o use el modo incógnito.
-- **Privacidad:** no se guarda la IP ni ningún otro dato personal; solo el nombre que pone cada jugador y estos dos identificadores anónimos. El inicio del juego lo avisa.
-
-**Limitaciones (es una web sin servidor propio):**
-
-- Las respuestas van dentro del código de la página, así que un jugador con conocimientos técnicos podría buscarlas, o enviar una puntuación alta pero posible sin jugar. Para jugar entre amigos es suficiente, y el registro te ayuda a detectar cosas raras.
-- Para borrar a alguien del ranking: en Supabase → **Table Editor** → tabla `scores`, selecciona la fila y bórrala.
+**Limitaciones (es una web sin servidor propio):** las respuestas van dentro del código de la página, así que alguien con conocimientos técnicos podría buscarlas. Para jugar entre amigos es suficiente, y el panel te deja ver y borrar partidas raras.
 
 ## Añadir o cambiar preguntas
 
-Están en [`js/questions.js`](js/questions.js): 31 por categoría y 167 de League of Legends. Las partidas reparten las preguntas entre las categorías elegidas, así que ninguna acapara la partida aunque tenga muchas más. Cada pregunta es una línea:
+Están en [`js/questions.js`](js/questions.js). Cada pregunta es una línea:
 
 ```js
 ['Texto de la pregunta', 'Respuesta correcta', 'Incorrecta 1', 'Incorrecta 2', 'Incorrecta 3'],
 ```
 
-Las preguntas nuevas se añaden al **final** de su categoría (el modo Clásico las identifica por su posición) y las categorías nuevas al **final** de `CATEGORIES` (el código de sala depende de ese orden). La respuesta correcta siempre va en segundo lugar; el juego baraja las opciones al mostrarlas. Las 15 preguntas del modo Clásico se eligen en `CLASSIC_IDS`, al final del mismo archivo (por ejemplo `'historia-1'` es la primera pregunta de Historia). Las preguntas extra del Clásico están justo debajo, en `CLASSIC_EXTRA`: solo aparecen en ese modo.
+Las preguntas nuevas se añaden al **final** de su categoría (el reto semanal las identifica por su posición, por ejemplo `futbol-3`) y las categorías nuevas al **final** de `CATEGORIES` (el código de sala depende de ese orden). La respuesta correcta siempre va en segundo lugar; el juego baraja las opciones al mostrarlas.
 
 ## Donaciones
 
-La tarjeta "Apoya el juego" (con el logo de Binance, de [Simple Icons](https://simpleicons.org), licencia CC0) se abre con el botón **Donar** de la barra de arriba, en una ventana sobre la pantalla actual. El Binance ID se cambia en `js/config.js` → `DONATION.binanceId`. Solo sirve para recibir; no pongas ahí tu correo ni tu teléfono.
+La tarjeta "Apoya el juego" (con el logo de Binance, de [Simple Icons](https://simpleicons.org), licencia CC0) se abre con el botón **Donar** de la barra de arriba. El Binance ID se cambia en `js/config.js` → `DONATION.binanceId`. Solo sirve para recibir; no pongas ahí tu correo ni tu teléfono.
 
 ## Diseño
 
-El estilo "Arcade neón" está en [`css/styles.css`](css/styles.css): arriba la estructura base y abajo el tema (colores en `:root`, tipografías y brillos). Las tipografías *Press Start 2P* y *Space Grotesk* van incluidas en la carpeta `fonts/` (licencia SIL OFL), así que no dependen de servicios externos.
+El estilo "Arcade neón" está en [`css/styles.css`](css/styles.css): arriba la estructura base y abajo el tema (colores en `:root`, tipografías y brillos). Las tipografías *Press Start 2P* y *Space Grotesk* van incluidas en la carpeta `fonts/` (licencia SIL OFL).
 
 ## Archivos
 
 ```
-index.html        Página principal
-css/styles.css    Estilos (tema Arcade neón)
-fonts/            Tipografías del tema
-js/app.js         Lógica del juego, salas, rankings y registro
-js/questions.js   Banco de preguntas (477 preguntas, 11 categorías)
-js/storage.js     Guardado en Supabase o en el navegador
-js/identity.js    Identificación del dispositivo para el registro
-js/config.js      Configuración (Supabase, etc.)
+index.html          Página principal
+css/styles.css      Estilos (tema Arcade neón)
+fonts/              Tipografías del tema
+js/app.js           Lógica del juego, reto semanal, salas, rankings, cuentas y panel
+js/questions.js     Banco de preguntas (807 preguntas, 12 categorías)
+js/storage.js       Guardado en Supabase o en el navegador
+js/identity.js      Identificación del dispositivo para el registro
+js/config.js        Configuración (Supabase, etc.)
 supabase/setup.sql  Tablas, permisos y funciones para Supabase
 ```
 

@@ -1,12 +1,12 @@
 import { CONFIG } from './config.js';
-import { CATEGORIES, QUESTIONS, CLASSIC_IDS, CLASSIC_EXTRA, EXTRA_CATEGORY } from './questions.js';
+import { CATEGORIES, QUESTIONS, EXTRA_CATEGORY } from './questions.js';
 import * as store from './storage.js';
 import { getIdentity, rememberName } from './identity.js';
 
 const QUESTION_COUNT = 15;
 const TIME_LIMIT = 10_000; // 10 segundos por pregunta
 const REVEAL_MS = 1400;
-const POINTS_PER_QUESTION = 200;
+const TZ = 'America/Caracas'; // el semanal se reinicia los sábados a las 8pm de Venezuela
 
 const CAT = Object.fromEntries([...CATEGORIES, EXTRA_CATEGORY].map((c) => [c.id, c]));
 const BY_ID = Object.fromEntries(QUESTIONS.map((q) => [q.id, q]));
@@ -14,6 +14,8 @@ const app = document.getElementById('app');
 
 let game = null;
 let raf = 0;
+let account = null; // { profile: { username, displayName, status, isAdmin } } o null
+let ticker = 0; // cuenta atrás del inicio
 
 // ---------------- utilidades ----------------
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -49,7 +51,20 @@ function shuffle(arr, rnd = Math.random) {
 const nameKey = (n) => n.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
 const fmtTime = (ms) => `${(ms / 1000).toFixed(1)} s`;
 const fmtDate = (ts) => new Date(ts).toLocaleString('es', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+const fmtDay = (ts) => new Date(ts).toLocaleDateString('es', { timeZone: TZ, day: '2-digit', month: '2-digit' });
+const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const catName = (id) => CAT[id]?.name ?? 'Todas las categorías';
 const catChip = (id) => `<span class="chip">${esc(CAT[id]?.name ?? id)}</span>`;
+// Año y mes (1-12) de una fecha en hora de Venezuela.
+function ymVet(ts) {
+  const [y, m] = new Date(ts).toLocaleDateString('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit' }).split('-');
+  return { year: +y, month: +m };
+}
+function fmtCountdown(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return d > 0 ? `${d}d ${h}h ${m}m` : `${h}h ${String(m).padStart(2, '0')}m ${String(sec).padStart(2, '0')}s`;
+}
 
 function toast(msg, type = '') {
   const el = document.createElement('div');
@@ -57,7 +72,7 @@ function toast(msg, type = '') {
   el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el.classList.add('show'), 10);
-  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2800);
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 3200);
 }
 
 function getName() {
@@ -70,6 +85,9 @@ function validName(n) {
   const t = n.trim();
   return /^[\p{L}\p{N} _.\-]{2,20}$/u.test(t) && /[\p{L}\p{N}]/u.test(t);
 }
+const validUsername = (u) => /^[A-Za-z0-9_.-]{3,20}$/.test(u.trim());
+const profileOf = () => account?.profile || null;
+const isAdmin = () => profileOf()?.isAdmin === true && profileOf()?.status === 'approved';
 
 // ---------------- salas (lobbies) ----------------
 // Código de sala = categorías (bits, 2 caracteres; 3 si no caben) + 4 caracteres de semilla.
@@ -104,10 +122,6 @@ async function resolveLobby(code) {
 function prepare(q, rnd) {
   const order = shuffle([0, 1, 2, 3], rnd);
   return { id: q.id, cat: q.cat, text: q.text, options: order.map((i) => q.options[i]), correct: order.indexOf(0) };
-}
-
-function buildClassic() {
-  return [...CLASSIC_IDS.map((id) => BY_ID[id]), ...CLASSIC_EXTRA].map((q) => prepare(q, seededRandom(hashStr('clasico:' + q.id))));
 }
 
 // Reparte las preguntas entre las categorías para que ninguna acapare la partida
@@ -151,9 +165,66 @@ function buildLobby(lobby) {
   return pickBalanced(pool, QUESTION_COUNT, rnd).map((q) => prepare(q, rnd));
 }
 
+// Elige las 15 preguntas de una semana: nunca usadas en otra semana, del tema de
+// la semana si lo tiene (y si no alcanzan, se completan con el resto).
+function pickWeekIds(week) {
+  const used = new Set(week.usedIds);
+  const pool = QUESTIONS.filter((q) => !used.has(q.id));
+  const rnd = seededRandom(hashStr(`semana:${week.id}`));
+  let picked = pickBalanced(week.theme ? pool.filter((q) => q.cat === week.theme) : pool, QUESTION_COUNT, rnd);
+  if (picked.length < QUESTION_COUNT) {
+    const rest = pool.filter((q) => !picked.includes(q));
+    picked = picked.concat(pickBalanced(rest, QUESTION_COUNT - picked.length, rnd));
+  }
+  return picked.map((q) => q.id);
+}
+
+// Preguntas de la semana, con las opciones en el mismo orden para todos.
+function buildWeekly(week) {
+  const qs = week.questionIds
+    .map((id) => BY_ID[id])
+    .filter(Boolean)
+    .map((q) => prepare(q, seededRandom(hashStr(`semana:${week.id}:${q.id}`))));
+  if (week.extra) {
+    const extra = { id: `extra-${week.id}`, cat: EXTRA_CATEGORY.id, text: week.extra.text, options: week.extra.options };
+    qs.push(prepare(extra, seededRandom(hashStr(`semana:${week.id}:extra`))));
+  }
+  return qs;
+}
+
 const BOARDS = {
-  clasico: { label: 'Clásico' },
   aleatorio: { label: 'Aleatorio' },
+};
+
+// ---------------- cuenta ----------------
+async function refreshAccount() {
+  account = null;
+  if (store.online()) {
+    try {
+      account = await store.getAccount();
+    } catch (e) {
+      console.error('No se pudo cargar la cuenta', e);
+    }
+  }
+  const online = store.online();
+  const accountLink = document.getElementById('accountLink');
+  const adminLink = document.getElementById('adminLink');
+  const logLink = document.getElementById('logLink');
+  if (accountLink) {
+    accountLink.hidden = !online;
+    accountLink.textContent = profileOf() ? profileOf().displayName : 'Entrar';
+  }
+  if (adminLink) adminLink.hidden = !isAdmin();
+  if (logLink) logLink.hidden = online && !isAdmin();
+  const rankingLink = document.getElementById('rankingLink');
+  if (rankingLink) rankingLink.href = online ? '#/ranking/semanal' : '#/ranking/aleatorio';
+}
+
+const STATUS_TEXT = {
+  pending: 'Pendiente de aprobación',
+  approved: 'Aprobada',
+  rejected: 'Rechazada',
+  blocked: 'Bloqueada',
 };
 
 // ---------------- navegación ----------------
@@ -164,16 +235,19 @@ function go(hash) {
 
 async function route() {
   stopGame();
+  clearInterval(ticker);
   app.onclick = null;
   const h = location.hash || '#/';
-  const [, page, arg] = h.split('/');
+  const [, page, arg, arg2] = h.split('/');
   window.scrollTo(0, 0);
-  document.body.classList.toggle('wide', page === 'registro');
+  document.body.classList.toggle('wide', page === 'registro' || page === 'admin');
   if (page === 'sala' && arg) return renderLobby(arg);
   if (page === 'crear') return renderCreateLobby();
-  if (page === 'ranking') return renderRanking(arg ? decodeURIComponent(arg) : 'clasico');
+  if (page === 'ranking') return renderRanking(arg ? decodeURIComponent(arg) : 'semanal', arg2 ? decodeURIComponent(arg2) : '');
   if (page === 'registro') return renderLog();
   if (page === 'donar') return renderDonate();
+  if (page === 'cuenta') return renderAccount();
+  if (page === 'admin') return renderAdmin();
   return renderHome();
 }
 
@@ -188,7 +262,7 @@ function stopGame() {
   document.body.classList.remove('playing');
 }
 
-const ABANDON_MSG = '¿Abandonar la partida? Se guardará como abandonada con los puntos que llevas.';
+const ABANDON_MSG = '¿Salir de la partida? Se guardará como abandonada con los aciertos que llevas.';
 
 function requireName() {
   const n = getName();
@@ -273,11 +347,11 @@ function renderDonate() {
   bindCopyButtons();
 }
 
-// ---------------- vistas ----------------
+// ---------------- inicio ----------------
 function nameField() {
   return `
     <label class="field">
-      <span>Tu nombre</span>
+      <span>Tu nombre (para Aleatorio y salas)</span>
       <input id="name" maxlength="20" autocomplete="nickname" placeholder="Ej. Ana" value="${esc(getName())}">
     </label>`;
 }
@@ -287,28 +361,40 @@ function bindNameField() {
   input?.addEventListener('input', () => setName(input.value.trim()));
 }
 
+function accountBar() {
+  if (!store.online()) return '';
+  const p = profileOf();
+  if (!p) {
+    return `<div class="account-bar"><a class="btn ghost sm" href="#/cuenta">Entrar o crear cuenta</a><span class="muted small">Necesaria para el reto semanal</span></div>`;
+  }
+  return `<div class="account-bar"><span class="muted small">Conectado como</span> <a href="#/cuenta"><b>${esc(p.displayName)}</b></a>${p.status === 'approved' ? '' : ` <span class="chip warn">${STATUS_TEXT[p.status]}</span>`}</div>`;
+}
+
 function renderHome() {
+  if (!getName() && profileOf()) setName(profileOf().displayName);
   app.innerHTML = `
     <section class="hero">
       <h1>¿Cuánto sabes?</h1>
-      <p class="muted">Preguntas de cultura general · 10 segundos por pregunta · ranking por modo de juego</p>
-      ${nameField()}
+      <p class="muted">Preguntas de cultura general · 10 segundos por pregunta · gana quien más acierta</p>
+      ${accountBar()}
     </section>
 
     <section class="modes">
-      <button class="mode" data-mode="clasico">
-        <span class="mode-icon">15</span>
-        <span><strong>Clásico</strong><small>Las mismas 15 preguntas para todos tus amigos. Compara quién sabe más.</small></span>
-      </button>
+      <div class="mode weekly" id="weeklyCard">
+        <span class="mode-icon">SEM</span>
+        <span class="weekly-body"><strong>Semanal</strong><small class="muted">Cargando el reto de la semana…</small></span>
+      </div>
       <button class="mode" data-mode="aleatorio">
         <span class="mode-icon">??</span>
-        <span><strong>Aleatorio</strong><small>15 preguntas distintas en cada partida, de todas las categorías.</small></span>
+        <span><strong>Aleatorio</strong><small>15 preguntas distintas en cada partida, de todas las categorías. Juega las veces que quieras.</small></span>
       </button>
       <a class="mode" href="#/crear">
         <span class="mode-icon">VS</span>
         <span><strong>Crear sala</strong><small>Elige las categorías y comparte el código con tus amigos. Cada sala tiene su propio ranking.</small></span>
       </a>
     </section>
+
+    <section class="card">${nameField()}</section>
 
     <form class="card join" id="join">
       <label class="field">
@@ -322,17 +408,16 @@ function renderHome() {
 
     <section class="card">
       <h3>Cómo se puntúa</h3>
-      <p class="muted">Cada acierto vale <b>100 puntos</b> + un bonus de hasta <b>100</b> según lo rápido que respondas. Si se acaban los 10 segundos, cuenta como fallo. En caso de empate gana quien tardó menos.</p>
+      <p class="muted">Cada respuesta correcta suma <b>1 acierto</b>. Gana quien tenga más aciertos y, en caso de empate, quien tardó menos en total. Si se acaban los 10 segundos, cuenta como fallo.</p>
+      <p class="muted">En el <b>reto semanal</b> todos tienen las mismas 15 preguntas, solo hay <b>una partida por semana</b> y se renueva cada <b>sábado a las 8pm</b> (hora de Venezuela). Los rankings mensual y anual suman los aciertos de todas las semanas.</p>
       <p class="muted small">Para evitar trampas se guarda tu nombre y un identificador anónimo de tu navegador. No se guarda tu IP ni ningún otro dato personal.</p>
     </section>`;
 
   bindNameField();
-  bindCopyButtons();
   app.querySelectorAll('[data-mode]').forEach((b) =>
     b.addEventListener('click', () => {
       if (!requireName()) return;
-      const mode = b.dataset.mode;
-      startGame({ mode, board: mode, label: BOARDS[mode].label, questions: mode === 'clasico' ? buildClassic() : buildRandom() });
+      startGame({ mode: 'aleatorio', board: 'aleatorio', label: BOARDS.aleatorio.label, questions: buildRandom() });
     })
   );
   document.getElementById('join').addEventListener('submit', (e) => {
@@ -341,8 +426,91 @@ function renderHome() {
     if (!parseLobbyCode(code)) return toast('Código de sala no válido.', 'error');
     go(`#/sala/${code.trim().toUpperCase()}`);
   });
+  fillWeeklyCard();
 }
 
+// Tarjeta del reto semanal: cambia según la cuenta y si ya se jugó.
+async function fillWeeklyCard() {
+  const card = document.getElementById('weeklyCard');
+  if (!card) return;
+  const body = card.querySelector('.weekly-body');
+  const set = (html, action = null) => {
+    if (!document.body.contains(card)) return;
+    body.innerHTML = `<strong>Semanal</strong>${html}`;
+    card.classList.toggle('clickable', !!action);
+    card.onclick = action;
+    card.tabIndex = action ? 0 : -1;
+    card.onkeydown = action ? (e) => { if (e.key === 'Enter') action(); } : null;
+  };
+  if (!store.online()) {
+    set('<small>El reto semanal necesita conexión con el servidor.</small>');
+    return;
+  }
+  let week;
+  try {
+    week = await store.getWeek();
+  } catch (e) {
+    console.error(e);
+    set('<small class="error-text">No se pudo cargar el reto de la semana.</small>');
+    return;
+  }
+  const offset = week.serverNow - Date.now();
+  const theme = `<span class="chip">${esc(catName(week.theme))}</span>`;
+  const countdown = (label, target) => `<small class="countdown">${label} <b data-until="${target}">${fmtCountdown(target - (Date.now() + offset))}</b></small>`;
+  const p = profileOf();
+  if (!week.open) {
+    set(`<small>15 preguntas iguales para todos. Una sola partida por semana.</small>${theme}${countdown('Empieza en', week.startsAt)}`);
+  } else if (!p) {
+    set(`<small>15 preguntas iguales para todos. Una sola partida por semana. <a href="#/cuenta">Entra con tu cuenta</a> para jugar.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`);
+  } else if (p.status !== 'approved') {
+    set(`<small>Tu cuenta está <b>${esc(STATUS_TEXT[p.status].toLowerCase())}</b>. Cuando el administrador la apruebe podrás jugar.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`);
+  } else if (week.myPlay) {
+    const mp = week.myPlay;
+    set(`<small>Ya jugaste esta semana: <b>${mp.correct}/${mp.total}</b> aciertos en ${fmtTime(mp.timeMs)}${mp.finished ? '' : ' (abandonada)'}. Toca para ver el ranking.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`,
+      () => go(`#/ranking/semanal/${week.id}`));
+  } else {
+    set(`<small>15 preguntas iguales para todos. <b>Solo tienes una partida</b>: en cuanto empiece, cuenta. Toca para jugar.</small>${theme}${countdown('Termina en', week.endsAt)}`,
+      () => startWeeklyGame());
+  }
+  ticker = setInterval(() => {
+    const el = document.querySelector('[data-until]');
+    if (!el) return clearInterval(ticker);
+    const left = +el.dataset.until - (Date.now() + offset);
+    el.textContent = fmtCountdown(left);
+    if (left <= 0) {
+      clearInterval(ticker);
+      setTimeout(fillWeeklyCard, 1500);
+    }
+  }, 1000);
+}
+
+async function startWeeklyGame() {
+  const p = profileOf();
+  if (!p || p.status !== 'approved') return go('#/cuenta');
+  let week;
+  try {
+    week = await store.getWeek();
+    if (!week.open) return toast('El reto semanal todavía no ha empezado.', 'error');
+    if (week.myPlay) return toast('Ya jugaste esta semana.', 'error');
+    if (!week.questionIds) week.questionIds = await store.setWeekQuestions(week.id, pickWeekIds(week));
+  } catch (e) {
+    console.error(e);
+    return toast(`No se pudo preparar el reto: ${e.message}`, 'error');
+  }
+  const questions = buildWeekly(week);
+  if (!questions.length) return toast('No se encontraron las preguntas de la semana. Recarga la página.', 'error');
+  if (!confirm(`Reto semanal: ${QUESTION_COUNT} preguntas de ${catName(week.theme).toLowerCase()}.\n\nSolo tienes UNA partida esta semana y cuenta desde que empieza. Si sales a mitad, se guarda con lo que lleves.\n\n¿Empezar ahora?`)) return;
+  try {
+    await store.startWeekly(getIdentity());
+  } catch (e) {
+    console.error(e);
+    toast(e.message, 'error');
+    return renderHome();
+  }
+  startGame({ mode: 'semanal', board: 'semanal', label: 'Semanal', weekId: week.id, questions, name: p.displayName });
+}
+
+// ---------------- salas ----------------
 function renderCreateLobby() {
   app.innerHTML = `
     <a class="back" href="#/">← Volver</a>
@@ -428,6 +596,13 @@ async function renderLobby(code) {
   fillRanking(document.getElementById('rank'), `sala_${lobby.code}`);
 }
 
+// ---------------- rankings ----------------
+const rankTable = (head, rows) => `
+  <table class="table rank">
+    <thead><tr><th>#</th>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.join('')}</tbody>
+  </table>`;
+
 async function fillRanking(el, board, highlight = '') {
   try {
     const rows = await store.getRanking(board, 50);
@@ -435,20 +610,13 @@ async function fillRanking(el, board, highlight = '') {
       el.innerHTML = `<p class="muted">Todavía nadie ha jugado. ¡Sé el primero!</p>`;
       return rows;
     }
-    el.innerHTML = `
-      <table class="table rank">
-        <thead><tr><th>#</th><th>Nombre</th><th>Puntos</th><th>Aciertos</th><th>Tiempo</th></tr></thead>
-        <tbody>
-          ${rows.map((r, i) => `
-            <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
-              <td class="pos pos-${i + 1}">${i + 1}</td>
-              <td>${esc(r.name)}</td>
-              <td><b>${r.score}</b></td>
-              <td>${r.correct}</td>
-              <td>${fmtTime(r.timeMs)}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>`;
+    el.innerHTML = rankTable(['Nombre', 'Aciertos', 'Tiempo'], rows.map((r, i) => `
+      <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
+        <td class="pos pos-${i + 1}">${i + 1}</td>
+        <td>${esc(r.name)}</td>
+        <td><b>${r.correct}</b><span class="muted">/${r.total}</span></td>
+        <td>${fmtTime(r.timeMs)}</td>
+      </tr>`));
     return rows;
   } catch (e) {
     console.error(e);
@@ -457,17 +625,74 @@ async function fillRanking(el, board, highlight = '') {
   }
 }
 
-async function renderRanking(board) {
+function playState(p, weekOver) {
+  if (p.finished) return '';
+  const live = !weekOver && Date.now() - p.startedAt < 60 * 60 * 1000;
+  return live ? '<span class="chip">jugando</span>' : '<span class="chip warn">abandonó</span>';
+}
+
+async function fillWeeklyRanking(el, weekId, highlight = '', weekOver = false) {
+  try {
+    const rows = await store.weeklyRanking(weekId);
+    if (!rows.length) {
+      el.innerHTML = `<p class="muted">Todavía nadie ha jugado esta semana.</p>`;
+      return rows;
+    }
+    el.innerHTML = rankTable(['Nombre', 'Aciertos', 'Tiempo'], rows.map((r, i) => `
+      <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
+        <td class="pos pos-${i + 1}">${i + 1}</td>
+        <td>${esc(r.name)} ${playState(r, weekOver)}</td>
+        <td><b>${r.correct}</b><span class="muted">/${r.total}</span></td>
+        <td>${fmtTime(r.timeMs)}</td>
+      </tr>`));
+    return rows;
+  } catch (e) {
+    console.error(e);
+    el.innerHTML = `<p class="error-text">No se pudo cargar el ranking.</p>`;
+    return [];
+  }
+}
+
+async function fillPeriodRanking(el, year, month, highlight = '') {
+  try {
+    const rows = await store.periodRanking(year, month);
+    if (!rows.length) {
+      el.innerHTML = `<p class="muted">Todavía no hay partidas en este periodo.</p>`;
+      return;
+    }
+    el.innerHTML = rankTable(['Nombre', 'Aciertos', 'Tiempo', 'Semanas'], rows.map((r, i) => `
+      <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
+        <td class="pos pos-${i + 1}">${i + 1}</td>
+        <td>${esc(r.name)}</td>
+        <td><b>${r.correct}</b></td>
+        <td>${fmtTime(r.timeMs)}</td>
+        <td>${r.weeks}</td>
+      </tr>`));
+  } catch (e) {
+    console.error(e);
+    el.innerHTML = `<p class="error-text">No se pudo cargar el ranking.</p>`;
+  }
+}
+
+async function renderRanking(board, sub) {
+  if (board === 'clasico') board = 'semanal';
+  const online = store.online();
+  if (!online && ['semanal', 'mensual', 'anual'].includes(board)) board = 'aleatorio';
+  const tabs = [
+    ...(online ? [['semanal', 'Semanal'], ['mensual', 'Mensual'], ['anual', 'Anual']] : []),
+    ['aleatorio', 'Aleatorio'],
+  ];
   app.innerHTML = `
     <a class="back" href="#/">← Volver</a>
     <section class="card">
       <h2>Rankings</h2>
       <div class="tabs" id="tabs">
-        ${Object.entries(BOARDS).map(([k, b]) => `<a class="tab ${board === k ? 'active' : ''}" href="#/ranking/${k}">${b.label}</a>`).join('')}
+        ${tabs.map(([k, l]) => `<a class="tab ${board === k ? 'active' : ''}" href="#/ranking/${k}">${l}</a>`).join('')}
         <select id="lobbySel" class="tab ${board.startsWith('sala_') ? 'active' : ''}">
           <option value="">Salas…</option>
         </select>
       </div>
+      <div id="periodBox"></div>
       <div id="rank"><p class="loading">Cargando…</p></div>
     </section>`;
 
@@ -480,19 +705,60 @@ async function renderRanking(board) {
       lobbies.map((l) => `<option value="${esc(l.code)}" ${l.code === current ? 'selected' : ''}>${esc(l.name)} (${esc(l.code)})</option>`).join('');
   }).catch(() => {});
 
-  fillRanking(document.getElementById('rank'), board, nameKey(getName()));
+  const rank = document.getElementById('rank');
+  const box = document.getElementById('periodBox');
+  const me = nameKey(profileOf()?.displayName || getName());
+  const periodSelect = (options, value, onChange) => {
+    box.innerHTML = `<select id="periodSel" class="period-select">${options.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(value) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+    document.getElementById('periodSel').onchange = (e) => onChange(e.target.value);
+  };
+
+  if (board === 'semanal') {
+    let weeks = [];
+    try { weeks = await store.listWeeks(); } catch (e) { console.error(e); }
+    if (!weeks.length) {
+      rank.innerHTML = `<p class="muted">El reto semanal todavía no ha empezado.</p>`;
+      return;
+    }
+    const id = +sub || weeks[0].id;
+    periodSelect(weeks.map((w, i) => [w.id, `${i === 0 ? 'Esta semana' : `Semana del ${fmtDay(w.startsAt)}`} · ${catName(w.theme)} (${w.plays})`]), id,
+      (v) => go(`#/ranking/semanal/${v}`));
+    fillWeeklyRanking(rank, id, me, id !== weeks[0].id);
+  } else if (board === 'mensual' || board === 'anual') {
+    let weeks = [];
+    try { weeks = await store.listWeeks(); } catch (e) { console.error(e); }
+    const now = ymVet(Date.now());
+    const first = weeks.length ? ymVet(weeks[weeks.length - 1].startsAt) : now;
+    if (board === 'mensual') {
+      const months = [];
+      for (let y = now.year, m = now.month; y > first.year || (y === first.year && m >= first.month); m === 1 ? (y--, m = 12) : m--) {
+        months.push([`${y}-${m}`, `${MONTHS[m - 1]} ${y}`]);
+      }
+      const value = sub || `${now.year}-${now.month}`;
+      periodSelect(months, value, (v) => go(`#/ranking/mensual/${v}`));
+      const [y, m] = value.split('-').map(Number);
+      fillPeriodRanking(rank, y, m, me);
+    } else {
+      const years = [];
+      for (let y = now.year; y >= first.year; y--) years.push([y, String(y)]);
+      const value = +sub || now.year;
+      periodSelect(years, value, (v) => go(`#/ranking/anual/${v}`));
+      fillPeriodRanking(rank, value, null, me);
+    }
+  } else {
+    fillRanking(rank, board, nameKey(getName()));
+  }
 }
 
 // ---------------- partida ----------------
 function startGame(cfg) {
   stopGame();
-  const name = requireName();
+  const name = cfg.name || requireName();
   if (!name) return;
   game = {
     ...cfg,
     name,
     idx: 0,
-    score: 0,
     correct: 0,
     totalMs: 0,
     tabSwitches: 0,
@@ -517,7 +783,7 @@ function showQuestion() {
         ${isExtra
           ? '<span class="counter extra-flag">¡Pregunta extra!</span>'
           : `<span class="counter">Pregunta <b>${g.idx + 1}</b>/${normal}</span>${catChip(q.cat)}`}
-        <span class="score">PTS <b>${g.score}</b></span>
+        <span class="score">ACIERTOS <b>${g.correct}</b></span>
       </div>
       <div class="timer"><div class="track"><div class="timer-bar" id="bar"></div></div><span id="secs">10</span></div>
       <h2 class="question">${esc(q.text)}</h2>
@@ -557,8 +823,6 @@ function answer(choice) {
   const q = g.questions[g.idx];
   const elapsed = Math.min(TIME_LIMIT, performance.now() - g.qStart);
   const ok = choice === q.correct;
-  const pts = ok ? 100 + Math.round((TIME_LIMIT - elapsed) / 100) : 0;
-  g.score += pts;
   g.correct += ok ? 1 : 0;
   g.totalMs += elapsed;
   g.answers.push({ id: q.id, ok, ms: Math.round(elapsed) });
@@ -571,10 +835,15 @@ function answer(choice) {
   });
   const fb = document.getElementById('feedback');
   fb.className = `feedback ${ok ? 'ok' : 'bad'}`;
-  fb.textContent = ok ? `¡Correcto! +${pts}` : choice === -1 ? '¡Se acabó el tiempo!' : 'Incorrecto';
+  fb.textContent = ok ? '¡Correcto!' : choice === -1 ? '¡Se acabó el tiempo!' : 'Incorrecto';
   const score = app.querySelector('.score b');
-  if (score) score.textContent = g.score;
+  if (score) score.textContent = g.correct;
   savePending(g);
+  // El semanal se guarda en el servidor tras cada respuesta (la última, al terminar).
+  if (g.mode === 'semanal' && g.answers.length < g.questions.length) {
+    store.weeklyProgress(g.weekId, g.answers.length, g.correct, g.totalMs, false)
+      .catch((e) => console.error('No se pudo guardar el progreso', e));
+  }
 
   setTimeout(() => {
     if (g.aborted) return;
@@ -593,7 +862,7 @@ document.addEventListener('visibilitychange', () => {
 function snapshot(g) {
   return {
     id: g.id, name: g.name, mode: g.mode, board: g.board, label: g.label,
-    score: g.score, correct: g.correct, totalMs: g.totalMs, answered: g.answers.length,
+    correct: g.correct, totalMs: g.totalMs, answered: g.answers.length,
     total: g.questions.length, tabSwitches: g.tabSwitches, startedAt: g.startedAt,
   };
 }
@@ -602,7 +871,8 @@ function buildEntries(s, id, finished) {
   const key = nameKey(s.name);
   const timeMs = Math.round(s.totalMs);
   const now = Date.now();
-  const scoreEntry = { name: s.name, nameKey: key, score: s.score, correct: s.correct, total: s.total, timeMs, ts: now, deviceId: id.deviceId };
+  // La puntuación es el número de aciertos.
+  const scoreEntry = { name: s.name, nameKey: key, score: s.correct, correct: s.correct, total: s.total, timeMs, ts: now, deviceId: id.deviceId };
   const logEntry = {
     ts: now,
     name: s.name,
@@ -610,7 +880,7 @@ function buildEntries(s, id, finished) {
     mode: s.mode,
     board: s.board,
     boardLabel: s.label,
-    score: s.score,
+    score: s.correct,
     correct: s.correct,
     total: s.total,
     answered: s.answered,
@@ -627,11 +897,12 @@ function buildEntries(s, id, finished) {
 }
 
 // Guarda una partida que no llegó al final. No espera a la red, para que funcione
-// también al cerrar la pestaña (las peticiones salen con keepalive).
+// también al cerrar la pestaña (las peticiones salen con keepalive). En el semanal
+// el progreso ya está en el servidor: solo se añade al registro.
 function sendAbandoned(s, id) {
   const { scoreEntry, logEntry } = buildEntries(s, id, false);
   const jobs = [store.addLog(logEntry)];
-  if (s.answered > 0) jobs.push(store.submitScore(s.board, scoreEntry));
+  if (s.answered > 0 && s.mode !== 'semanal') jobs.push(store.submitScore(s.board, scoreEntry));
   return Promise.all(jobs).catch((e) => console.error('No se pudo guardar la partida abandonada', e));
 }
 
@@ -683,53 +954,345 @@ async function finishGame() {
   const id = getIdentity();
   const key = nameKey(g.name);
   const timeMs = Math.round(g.totalMs);
+  const total = g.questions.length;
   const { scoreEntry, logEntry } = buildEntries(snapshot(g), id, true);
+  const weekly = g.mode === 'semanal';
 
   let saved = true;
   try {
-    await Promise.all([store.submitScore(g.board, scoreEntry), store.addLog(logEntry)]);
+    await Promise.all([
+      weekly
+        ? store.weeklyProgress(g.weekId, g.answers.length, g.correct, g.totalMs, true)
+        : store.submitScore(g.board, scoreEntry),
+      store.addLog(logEntry),
+    ]);
   } catch (e) {
     console.error(e);
     saved = false;
   }
   if (game !== g) return; // el usuario navegó a otra página mientras se guardaba
 
-  const again = () => {
-    if (g.mode === 'sala') return go(`#/sala/${g.lobbyCode}`);
-    startGame({ mode: g.mode, board: g.board, label: g.label, questions: g.mode === 'clasico' ? buildClassic() : buildRandom() });
-  };
-
-  const pct = g.correct / g.questions.length;
+  const pct = g.correct / total;
   const msg = pct === 1 ? '¡Perfecto!' : pct >= 0.8 ? '¡Excelente!' : pct >= 0.5 ? '¡Bien hecho!' : '¡Sigue practicando!';
   app.innerHTML = `
     <section class="card result">
       <p class="eyebrow">${esc(g.label)}</p>
       <h2>${msg}</h2>
-      <div class="big-score">${g.score}<small> / ${g.questions.length * POINTS_PER_QUESTION}</small></div>
+      <div class="big-score">${g.correct}<small> / ${total}</small></div>
+      <p class="muted small">aciertos</p>
       <div class="stats">
-        <div><b>${g.correct}/${g.questions.length}</b><span>aciertos</span></div>
+        <div><b>${Math.round(pct * 100)}%</b><span>precisión</span></div>
         <div><b>${fmtTime(timeMs)}</b><span>tiempo total</span></div>
         <div><b id="pos">…</b><span>posición</span></div>
       </div>
-      ${saved ? '' : '<p class="error-text">No se pudo guardar la puntuación (sin conexión).</p>'}
+      ${saved ? '' : '<p class="error-text">No se pudo guardar el resultado (sin conexión).</p>'}
       <div class="row center">
-        <button class="btn" id="again">${g.mode === 'sala' ? 'Volver a la sala' : 'Jugar otra vez'}</button>
+        ${weekly
+          ? `<a class="btn" href="#/ranking/semanal/${g.weekId}">Ver rankings</a>`
+          : `<button class="btn" id="again">${g.mode === 'sala' ? 'Volver a la sala' : 'Jugar otra vez'}</button>`}
         <a class="btn ghost" href="#/">Inicio</a>
       </div>
+      ${weekly ? '<p class="muted small">El próximo reto semanal empieza el sábado a las 8pm (hora de Venezuela).</p>' : ''}
     </section>
     <section class="card">
-      <h3>Ranking · ${esc(g.label)}</h3>
+      <h3>Ranking · ${weekly ? 'esta semana' : esc(g.label)}</h3>
       <div id="rank"><p class="loading">Cargando…</p></div>
     </section>`;
-  document.getElementById('again').onclick = again;
-  const rows = await fillRanking(document.getElementById('rank'), g.board, key);
+  document.getElementById('again')?.addEventListener('click', () => {
+    if (g.mode === 'sala') return go(`#/sala/${g.lobbyCode}`);
+    startGame({ mode: g.mode, board: g.board, label: g.label, questions: buildRandom() });
+  });
+  const rows = weekly
+    ? await fillWeeklyRanking(document.getElementById('rank'), g.weekId, key)
+    : await fillRanking(document.getElementById('rank'), g.board, key);
   const pos = rows.findIndex((r) => nameKey(r.name) === key);
   const posEl = document.getElementById('pos');
   if (posEl) posEl.textContent = pos >= 0 ? `#${pos + 1}` : '—';
 }
 
+// ---------------- cuenta ----------------
+function renderAccount() {
+  if (!store.online()) {
+    app.innerHTML = `<a class="back" href="#/">← Volver</a><section class="card narrow"><h2>Cuenta</h2><p class="muted">Las cuentas necesitan conexión con el servidor.</p></section>`;
+    return;
+  }
+  const p = profileOf();
+  if (p) {
+    app.innerHTML = `
+      <a class="back" href="#/">← Volver</a>
+      <section class="card narrow">
+        <p class="eyebrow">Mi cuenta</p>
+        <h2>${esc(p.displayName)}</h2>
+        <p>Estado: <span class="chip ${p.status === 'approved' ? 'ok' : 'warn'}">${STATUS_TEXT[p.status] || esc(p.status)}</span></p>
+        ${p.status === 'pending' ? '<p class="muted small">El administrador tiene que aprobar tu cuenta para que puedas jugar el reto semanal. Mientras tanto puedes jugar al Aleatorio y en salas.</p>' : ''}
+        ${p.status === 'rejected' || p.status === 'blocked' ? '<p class="muted small">Tu cuenta no puede jugar el reto semanal. Si crees que es un error, habla con el administrador.</p>' : ''}
+        ${isAdmin() ? '<a class="btn big" href="#/admin">Panel de administrador</a>' : ''}
+        <form id="pwForm" class="stack">
+          <label class="field"><span>Cambiar contraseña</span>
+            <input id="pw1" type="password" autocomplete="new-password" placeholder="Nueva contraseña (mínimo 6)" minlength="6" maxlength="72">
+          </label>
+          <button class="btn ghost">Guardar contraseña</button>
+        </form>
+        <button class="btn ghost danger" id="logout">Cerrar sesión</button>
+      </section>`;
+    document.getElementById('pwForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const pw = document.getElementById('pw1').value;
+      if (pw.length < 6) return toast('La contraseña debe tener al menos 6 caracteres.', 'error');
+      try {
+        await store.changePassword(pw);
+        document.getElementById('pw1').value = '';
+        toast('Contraseña cambiada.');
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    };
+    document.getElementById('logout').onclick = async () => {
+      await store.signOut();
+      await refreshAccount();
+      go('#/');
+    };
+    return;
+  }
+
+  app.innerHTML = `
+    <a class="back" href="#/">← Volver</a>
+    <section class="card narrow">
+      <div class="tabs">
+        <button class="tab active" data-tab="login">Entrar</button>
+        <button class="tab" data-tab="register">Crear cuenta</button>
+      </div>
+      <form id="loginForm" class="stack">
+        <label class="field"><span>Usuario</span><input id="lUser" autocomplete="username" maxlength="20" autocapitalize="none"></label>
+        <label class="field"><span>Contraseña</span><input id="lPass" type="password" autocomplete="current-password" maxlength="72"></label>
+        <button class="btn big">Entrar</button>
+        <p class="muted small">Si olvidaste tu contraseña, pídele al administrador que te ponga una nueva.</p>
+      </form>
+      <form id="registerForm" class="stack" hidden>
+        <label class="field"><span>Usuario (3 a 20 letras, números, punto, guion o guion bajo)</span>
+          <input id="rUser" autocomplete="username" maxlength="20" autocapitalize="none" placeholder="Ej. jose_q"></label>
+        <label class="field"><span>Contraseña (mínimo 6)</span><input id="rPass" type="password" autocomplete="new-password" maxlength="72"></label>
+        <label class="field"><span>Repite la contraseña</span><input id="rPass2" type="password" autocomplete="new-password" maxlength="72"></label>
+        <label class="field"><span>¿Quién eres? (solo lo ve el administrador)</span>
+          <input id="rWho" maxlength="120" placeholder="Tu nombre real o cómo te conoce"></label>
+        <button class="btn big">Crear cuenta</button>
+        <p class="muted small">No se pide correo ni teléfono. Tu cuenta quedará pendiente hasta que el administrador la apruebe.</p>
+      </form>
+    </section>`;
+
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  app.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => {
+    app.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('active', x === b));
+    loginForm.hidden = b.dataset.tab !== 'login';
+    registerForm.hidden = b.dataset.tab !== 'register';
+  }));
+  const busy = (form, on) => form.querySelectorAll('button').forEach((b) => (b.disabled = on));
+
+  loginForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const user = document.getElementById('lUser').value.trim();
+    const pass = document.getElementById('lPass').value;
+    if (!validUsername(user) || !pass) return toast('Escribe tu usuario y tu contraseña.', 'error');
+    busy(loginForm, true);
+    try {
+      await store.signIn(user, pass);
+      await refreshAccount();
+      toast(`Hola, ${profileOf()?.displayName || user}.`);
+      go('#/');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    busy(loginForm, false);
+  };
+
+  registerForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const user = document.getElementById('rUser').value.trim();
+    const pass = document.getElementById('rPass').value;
+    const pass2 = document.getElementById('rPass2').value;
+    const who = document.getElementById('rWho').value.trim();
+    if (!validUsername(user)) return toast('El usuario debe tener de 3 a 20 letras, números, punto, guion o guion bajo.', 'error');
+    if (pass.length < 6) return toast('La contraseña debe tener al menos 6 caracteres.', 'error');
+    if (pass !== pass2) return toast('Las contraseñas no coinciden.', 'error');
+    if (who.length < 2) return toast('Cuéntale al administrador quién eres.', 'error');
+    busy(registerForm, true);
+    try {
+      await store.signUp(user, pass, who);
+      await refreshAccount();
+      toast('Cuenta creada. Avisa al administrador para que la apruebe.');
+      go('#/cuenta');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    busy(registerForm, false);
+  };
+}
+
+// ---------------- panel del administrador ----------------
+async function renderAdmin() {
+  if (!isAdmin()) {
+    app.innerHTML = `<a class="back" href="#/">← Volver</a><section class="card narrow"><h2>Administrador</h2><p class="muted">Solo la cuenta de administrador puede entrar aquí.</p><a class="btn" href="#/cuenta">Entrar</a></section>`;
+    return;
+  }
+  app.innerHTML = `<p class="loading">Cargando panel…</p>`;
+  let users, week, current, next;
+  try {
+    week = await store.getWeek();
+    [users, current, next] = await Promise.all([store.adminUsers(), store.adminWeek(week.id), store.adminWeek(week.id + 1)]);
+  } catch (e) {
+    console.error(e);
+    app.innerHTML = `<a class="back" href="#/">← Volver</a><section class="card"><p class="error-text">No se pudo cargar el panel: ${esc(e.message)}</p></section>`;
+    return;
+  }
+  const pending = users.filter((u) => u.status === 'pending');
+  const me = profileOf()?.username;
+
+  const userRow = (u) => {
+    const actions = u.username === me ? '<span class="muted small">(tú)</span>' : [
+      u.status !== 'approved' ? `<button class="btn sm" data-act="approved" data-id="${u.id}">Aprobar</button>` : '',
+      u.status === 'pending' ? `<button class="btn ghost sm danger" data-act="rejected" data-id="${u.id}">Rechazar</button>` : '',
+      u.status === 'approved' ? `<button class="btn ghost sm danger" data-act="blocked" data-id="${u.id}">Bloquear</button>` : '',
+      `<button class="btn ghost sm" data-pass="${u.id}" data-name="${esc(u.displayName)}">Contraseña</button>`,
+    ].join(' ');
+    return `
+      <tr>
+        <td><b>${esc(u.displayName)}</b>${u.isAdmin ? ' <span class="chip">admin</span>' : ''}</td>
+        <td class="wrap">${esc(u.who) || '<span class="muted">—</span>'}</td>
+        <td><span class="chip ${u.status === 'approved' ? 'ok' : 'warn'}">${STATUS_TEXT[u.status] || esc(u.status)}</span></td>
+        <td>${fmtDate(u.createdAt)}</td>
+        <td>${u.plays}</td>
+        <td class="actions">${actions}</td>
+      </tr>`;
+  };
+
+  const themeOptions = (value) => `<option value="">Todas las categorías</option>` +
+    CATEGORIES.map((c) => `<option value="${c.id}" ${value === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+
+  const weekForm = (w, title) => {
+    const locked = w.plays.length > 0;
+    const ex = w.extra || { text: '', options: ['', '', '', ''] };
+    return `
+      <section class="card">
+        <h3>${title} <span class="muted small">del sábado ${fmtDay(w.startsAt)} a las 8pm</span></h3>
+        <form class="stack week-form" data-week="${w.id}">
+          <label class="field"><span>Tema de la semana</span>
+            <select name="theme" ${locked ? 'disabled' : ''}>${themeOptions(w.theme)}</select>
+          </label>
+          <fieldset class="extra-box" ${locked ? 'disabled' : ''}>
+            <legend>Pregunta extra o trampa (opcional, sale por sorpresa al final y suma 1 acierto)</legend>
+            <input name="text" maxlength="200" placeholder="Ej. ¿Cuál es el mejor espadachín de la historia?" value="${esc(ex.text)}">
+            <input name="o0" maxlength="80" placeholder="Respuesta correcta (ej. Zenitsu Agatsuma)" value="${esc(ex.options[0])}">
+            <input name="o1" maxlength="80" placeholder="Respuesta incorrecta 1" value="${esc(ex.options[1])}">
+            <input name="o2" maxlength="80" placeholder="Respuesta incorrecta 2" value="${esc(ex.options[2])}">
+            <input name="o3" maxlength="80" placeholder="Respuesta incorrecta 3" value="${esc(ex.options[3])}">
+          </fieldset>
+          ${locked
+            ? '<p class="muted small">Ya hay partidas jugadas esta semana: el tema y la pregunta extra no se pueden cambiar.</p>'
+            : `<div class="row small-gap"><button class="btn">Guardar</button>${w.extra ? '<button type="button" class="btn ghost sm danger" data-clear-extra>Quitar pregunta extra</button>' : ''}</div>`}
+        </form>
+        ${w === current ? `
+          <h4>Partidas de esta semana (${w.plays.length})</h4>
+          ${w.plays.length ? `<div class="table-wrap"><table class="table">
+            <thead><tr><th>Jugador</th><th>Aciertos</th><th>Tiempo</th><th>Estado</th><th>Empezó</th><th>Dispositivo</th><th></th></tr></thead>
+            <tbody>${w.plays.map((p) => `
+              <tr>
+                <td><b>${esc(p.name)}</b></td>
+                <td>${p.correct}/${p.total}</td>
+                <td>${fmtTime(p.timeMs)}</td>
+                <td>${p.finished ? 'Completa' : `<span class="warn-text">Sin terminar (${p.answered}/${p.total})</span>`}</td>
+                <td>${fmtDate(p.startedAt)}</td>
+                <td class="mono small">${esc(p.deviceId.slice(0, 8))} · ${esc(p.ua)}</td>
+                <td><button class="btn ghost sm danger" data-del-play="${p.userId}" data-name="${esc(p.name)}">Borrar partida</button></td>
+              </tr>`).join('')}</tbody></table></div>` : '<p class="muted small">Nadie ha jugado todavía.</p>'}
+          <p class="muted small">Al borrar la partida de alguien, esa persona puede volver a jugar el reto de esta semana.</p>` : ''}
+      </section>`;
+  };
+
+  app.innerHTML = `
+    <a class="back" href="#/">← Volver</a>
+    <section class="card">
+      <h2>Panel de administrador</h2>
+      <div class="stats">
+        <div><b>${users.length}</b><span>cuentas</span></div>
+        <div><b>${pending.length}</b><span>pendientes</span></div>
+        <div><b>${current.plays.length}</b><span>jugaron esta semana</span></div>
+      </div>
+      <a class="btn ghost sm" href="#/registro">Ver registro de partidas</a>
+    </section>
+    <section class="card">
+      <h3>Cuentas</h3>
+      <p class="muted small">Comprueba por fuera (por ejemplo, por WhatsApp) que cada persona es quien dice ser antes de aprobarla.</p>
+      <div class="table-wrap"><table class="table users">
+        <thead><tr><th>Usuario</th><th>¿Quién es?</th><th>Estado</th><th>Creada</th><th>Semanas</th><th></th></tr></thead>
+        <tbody>${users.map(userRow).join('') || '<tr><td colspan="6" class="muted">No hay cuentas.</td></tr>'}</tbody>
+      </table></div>
+    </section>
+    ${weekForm(current, 'Semana en curso')}
+    ${weekForm(next, 'Próxima semana')}`;
+
+  const reload = () => renderAdmin();
+  app.onclick = async (e) => {
+    const act = e.target.closest('[data-act]');
+    const pass = e.target.closest('[data-pass]');
+    const del = e.target.closest('[data-del-play]');
+    const clearExtra = e.target.closest('[data-clear-extra]');
+    try {
+      if (act) {
+        await store.adminSetStatus(act.dataset.id, act.dataset.act);
+        toast('Cuenta actualizada.');
+        return reload();
+      }
+      if (pass) {
+        const pw = prompt(`Nueva contraseña para ${pass.dataset.name} (mínimo 6 caracteres):`);
+        if (pw == null) return;
+        if (pw.length < 6) return toast('La contraseña debe tener al menos 6 caracteres.', 'error');
+        await store.adminSetPassword(pass.dataset.pass, pw);
+        return toast(`Contraseña de ${pass.dataset.name} cambiada. Díselo por privado.`);
+      }
+      if (del) {
+        if (!confirm(`¿Borrar la partida semanal de ${del.dataset.name}? Podrá volver a jugar el reto de esta semana.`)) return;
+        await store.adminDeletePlay(current.id, del.dataset.delPlay);
+        toast('Partida borrada.');
+        return reload();
+      }
+      if (clearExtra) {
+        const form = clearExtra.closest('form');
+        await store.adminSetWeek(+form.dataset.week, form.theme.value, null);
+        toast('Pregunta extra quitada.');
+        return reload();
+      }
+    } catch (err) {
+      console.error(err);
+      toast(err.message, 'error');
+    }
+  };
+  app.querySelectorAll('.week-form').forEach((form) => {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const text = form.text.value.trim();
+      const options = [form.o0, form.o1, form.o2, form.o3].map((i) => i.value.trim());
+      const anyExtra = text || options.some(Boolean);
+      if (anyExtra && (text.length < 5 || options.some((o) => !o))) {
+        return toast('La pregunta extra necesita el texto, la respuesta correcta y 3 incorrectas.', 'error');
+      }
+      if (anyExtra && new Set(options.map((o) => o.toLowerCase())).size < 4) {
+        return toast('Las 4 respuestas de la pregunta extra deben ser distintas.', 'error');
+      }
+      try {
+        await store.adminSetWeek(+form.dataset.week, form.theme.value, anyExtra ? { text, options } : null);
+        toast('Semana guardada.');
+        reload();
+      } catch (err) {
+        console.error(err);
+        toast(err.message, 'error');
+      }
+    };
+  });
+}
+
 // ---------------- registro (log) ----------------
-// "Abandonó en la 5/16" = salió mientras estaba en la pregunta 5 (había respondido 4).
+// "Abandonó en la 5/15" = salió mientras estaba en la pregunta 5 (había respondido 4).
 const statusText = (l) => (l.finished ? 'Completa' : `Abandonó en la ${Math.min(l.answered + 1, l.total)}/${l.total}`);
 
 function groupSuspicious(logs, field) {
@@ -758,8 +1321,8 @@ function setAdminPin(pin) {
   } catch {}
 }
 
+// Solo en modo local: el registro se protege con el PIN de config.js.
 function renderPinForm() {
-  const online = store.kind() === 'supabase';
   app.innerHTML = `
     <a class="back" href="#/">← Volver</a>
     <form class="card narrow" id="pin">
@@ -767,41 +1330,34 @@ function renderPinForm() {
       <p class="muted">Introduce el PIN de administrador.</p>
       <input id="pinInput" type="password" autocomplete="current-password">
       <button class="btn big" id="pinBtn">Entrar</button>
-      ${online ? '' : '<p class="muted small">Modo local: el PIN se cambia en <code>js/config.js</code>.</p>'}
+      <p class="muted small">Modo local: el PIN se cambia en <code>js/config.js</code>.</p>
     </form>`;
   const input = document.getElementById('pinInput');
-  const btn = document.getElementById('pinBtn');
   input.focus();
   document.getElementById('pin').onsubmit = async (e) => {
     e.preventDefault();
-    btn.disabled = true;
-    btn.textContent = 'Comprobando…';
-    let res;
-    try {
-      res = await store.checkPin(input.value);
-    } catch (err) {
-      console.error(err);
-      res = 'error';
-    }
-    btn.disabled = false;
-    btn.textContent = 'Entrar';
-    if (res === 'ok') {
+    if ((await store.checkPin(input.value)) === 'ok') {
       setAdminPin(input.value);
       renderLog();
-    } else if (res === 'unset') {
-      toast('Primero pon tu PIN en Supabase (mira el README).', 'error');
-    } else if (res === 'bad') {
+    } else {
       toast('PIN incorrecto.', 'error');
       input.select();
-    } else {
-      toast('No se pudo conectar con el servidor.', 'error');
     }
   };
 }
 
 async function renderLog() {
-  const pin = getAdminPin();
-  if (!pin) return renderPinForm();
+  const online = store.kind() === 'supabase';
+  let pin = null;
+  if (online) {
+    if (!isAdmin()) {
+      app.innerHTML = `<a class="back" href="#/">← Volver</a><section class="card narrow"><h2>Registro</h2><p class="muted">Solo la cuenta de administrador puede ver el registro.</p><a class="btn" href="#/cuenta">Entrar</a></section>`;
+      return;
+    }
+  } else {
+    pin = getAdminPin();
+    if (!pin) return renderPinForm();
+  }
 
   app.innerHTML = `<p class="loading">Cargando registro…</p>`;
   let logs = [];
@@ -809,7 +1365,7 @@ async function renderLog() {
     logs = await store.getLogs(pin, 1000);
   } catch (e) {
     console.error(e);
-    if (/PIN/i.test(e.message)) {
+    if (!online && /PIN/i.test(e.message)) {
       setAdminPin(null);
       return renderPinForm();
     }
@@ -822,7 +1378,7 @@ async function renderLog() {
   const suspectDevices = new Set([...byDevice, ...byFp].map((g) => g.key));
   const uniq = (f) => new Set(logs.map((l) => l[f]).filter(Boolean)).size;
 
-  const groupHtml = (title, list, field, hint) => `
+  const groupHtml = (title, list, hint) => `
     <div class="sus-block">
       <h4>${title} <span class="muted small">${hint}</span></h4>
       ${list.length ? list.map((g) => `
@@ -837,7 +1393,7 @@ async function renderLog() {
     </div>`;
 
   app.innerHTML = `
-    <a class="back" href="#/">← Volver</a>
+    <a class="back" href="${online ? '#/admin' : '#/'}">← Volver</a>
     <section class="card">
       <h2>Registro de partidas</h2>
       <div class="stats">
@@ -846,14 +1402,14 @@ async function renderLog() {
         <div><b>${uniq('deviceId')}</b><span>dispositivos</span></div>
         <div><b>${logs.filter((l) => !l.finished).length}</b><span>abandonadas</span></div>
       </div>
-      <p class="muted small">Modo de almacenamiento: <b>${store.kind() === 'supabase' ? 'en línea (Supabase)' : 'local (solo este navegador)'}</b></p>
+      <p class="muted small">Modo de almacenamiento: <b>${online ? 'en línea (Supabase)' : 'local (solo este navegador)'}</b></p>
     </section>
 
     <section class="card">
       <h3>Posibles cuentas múltiples</h3>
       <p class="muted small">Se marcan los dispositivos y navegadores desde los que se jugó con ${CONFIG.SUSPICIOUS_NAMES} o más nombres distintos.</p>
-      ${groupHtml('Por dispositivo', byDevice, 'deviceId', '(identificador guardado en el navegador)')}
-      ${groupHtml('Por huella del navegador', byFp, 'fp', '(detecta incógnito o datos borrados)')}
+      ${groupHtml('Por dispositivo', byDevice, '(identificador guardado en el navegador)')}
+      ${groupHtml('Por huella del navegador', byFp, '(detecta incógnito o datos borrados)')}
     </section>
 
     <section class="card">
@@ -862,13 +1418,13 @@ async function renderLog() {
         <div class="row small-gap">
           <button class="btn ghost sm" id="csv">Descargar CSV</button>
           <button class="btn ghost sm danger" id="clear">Borrar todo</button>
-          <button class="btn ghost sm" id="logout">Salir</button>
+          ${online ? '' : '<button class="btn ghost sm" id="logout">Salir</button>'}
         </div>
       </div>
       <input id="filter" placeholder="Filtrar por nombre, modo, dispositivo o estado…">
       <div class="table-wrap">
         <table class="table log">
-          <thead><tr><th>Fecha</th><th>Nombre</th><th>Modo</th><th>Puntos</th><th>Aciertos</th><th>Estado</th><th>Tiempo</th><th title="Veces que salió de la pestaña durante la partida">Pestaña</th><th>Dispositivo</th><th>Huella</th><th>Navegador</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Nombre</th><th>Modo</th><th>Aciertos</th><th>Estado</th><th>Tiempo</th><th title="Veces que salió de la pestaña durante la partida">Pestaña</th><th>Dispositivo</th><th>Huella</th><th>Navegador</th></tr></thead>
           <tbody id="logBody"></tbody>
         </table>
       </div>
@@ -886,7 +1442,6 @@ async function renderLog() {
         <td>${fmtDate(l.ts)}</td>
         <td><b>${esc(l.name)}</b></td>
         <td>${esc(l.boardLabel || l.mode)}</td>
-        <td>${l.score}</td>
         <td>${l.correct}/${l.total || QUESTION_COUNT}</td>
         <td class="${l.finished ? '' : 'warn-text'}">${esc(statusText(l))}</td>
         <td>${fmtTime(l.timeMs)}</td>
@@ -894,7 +1449,7 @@ async function renderLog() {
         <td><button class="link mono" data-filter="${esc(l.deviceId)}">${esc(String(l.deviceId).slice(0, 8))}</button></td>
         <td><button class="link mono" data-filter="${esc(l.fp)}">${esc(String(l.fp).slice(0, 8))}</button></td>
         <td class="small">${esc(l.ua || '')}</td>
-      </tr>`).join('') || `<tr><td colspan="11" class="muted">Sin partidas.</td></tr>`;
+      </tr>`).join('') || `<tr><td colspan="10" class="muted">Sin partidas.</td></tr>`;
   };
   filter.oninput = draw;
   app.onclick = (e) => {
@@ -907,13 +1462,15 @@ async function renderLog() {
   };
   draw();
 
-  document.getElementById('logout').onclick = () => {
+  document.getElementById('logout')?.addEventListener('click', () => {
     setAdminPin(null);
     go('#/');
-  };
+  });
   document.getElementById('clear').onclick = async () => {
-    const where = store.kind() === 'supabase' ? 'de TODOS los jugadores' : 'de este navegador';
-    if (!confirm(`¿Borrar todo el registro y todos los rankings ${where}? No se puede deshacer.`)) return;
+    const what = online
+      ? '¿Borrar todo el registro y los rankings de Aleatorio y salas de TODOS los jugadores? El reto semanal no se toca. No se puede deshacer.'
+      : '¿Borrar todo el registro y los rankings de este navegador? No se puede deshacer.';
+    if (!confirm(what)) return;
     try {
       await store.clearLogs(pin);
       toast('Registro y rankings borrados.');
@@ -924,7 +1481,7 @@ async function renderLog() {
     renderLog();
   };
   document.getElementById('csv').onclick = () => {
-    const cols = ['ts', 'name', 'boardLabel', 'score', 'correct', 'total', 'status', 'timeMs', 'tabSwitches', 'deviceId', 'fp', 'ua'];
+    const cols = ['ts', 'name', 'boardLabel', 'correct', 'total', 'status', 'timeMs', 'tabSwitches', 'deviceId', 'fp', 'ua'];
     const value = (l, c) => (c === 'ts' ? new Date(l.ts).toISOString() : c === 'status' ? statusText(l) : l[c] ?? '');
     const csv = [cols.join(',')]
       .concat(logs.map((l) => cols.map((c) => `"${String(value(l, c)).replace(/"/g, '""')}"`).join(',')))
@@ -936,7 +1493,7 @@ async function renderLog() {
   };
 }
 
-// ---------------- inicio ----------------
+// ---------------- arranque ----------------
 async function boot() {
   app.innerHTML = `<p class="loading">Cargando…</p>`;
   const kind = await store.init();
@@ -958,6 +1515,7 @@ async function boot() {
       badge.title = 'Configura Supabase en js/config.js para compartir el ranking.';
     }
   }
+  await refreshAccount();
   // Compatibilidad con enlaces tipo ?sala=CODIGO
   const params = new URLSearchParams(location.search);
   const code = params.get('sala') || params.get('lobby');
