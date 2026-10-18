@@ -269,7 +269,11 @@ function stopGame() {
 
 const ABANDON_MSG = '¿Salir de la partida? Se guardará como abandonada con los aciertos que llevas.';
 
+// Con cuenta se juega siempre con el nombre de usuario; sin cuenta, con el nombre escrito.
+const playerName = () => profileOf()?.displayName || getName();
+
 function requireName() {
+  if (profileOf()) return profileOf().displayName;
   const n = getName();
   if (!validName(n)) {
     toast('Escribe un nombre válido: de 2 a 20 letras o números.', 'error');
@@ -354,6 +358,8 @@ function renderDonate() {
 
 // ---------------- inicio ----------------
 function nameField() {
+  const p = profileOf();
+  if (p) return `<p class="muted small">Juegas como <b>${nameWithBadge(p.displayName, p.verified)}</b>, tu usuario.</p>`;
   return `
     <label class="field">
       <span>Tu nombre (para Aleatorio y salas)</span>
@@ -399,7 +405,7 @@ function renderHome() {
       </a>
     </section>
 
-    <section class="card">${nameField()}</section>
+    ${profileOf() ? '' : `<section class="card">${nameField()}</section>`}
 
     <form class="card join" id="join">
       <label class="field">
@@ -551,7 +557,7 @@ function renderCreateLobby() {
     const code = makeLobbyCode(cats);
     const name = document.getElementById('lobbyName').value.trim().slice(0, 30) || `Sala ${code}`;
     try {
-      await store.saveLobby({ code, name, cats, createdAt: Date.now(), createdBy: getName() || '' });
+      await store.saveLobby({ code, name, cats, createdAt: Date.now(), createdBy: playerName() || '' });
     } catch (e) {
       console.error(e);
       toast('No se pudo guardar la sala en el servidor, pero el código funciona igual.', 'error');
@@ -736,7 +742,7 @@ async function renderRanking(board, sub) {
 
   const rank = document.getElementById('rank');
   const box = document.getElementById('periodBox');
-  const me = nameKey(profileOf()?.displayName || getName());
+  const me = nameKey(playerName());
   const periodSelect = (options, value, onChange) => {
     box.innerHTML = `<select id="periodSel" class="period-select">${options.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(value) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
     document.getElementById('periodSel').onchange = (e) => onChange(e.target.value);
@@ -795,7 +801,7 @@ async function renderRanking(board, sub) {
       verifiedFilter(() => fillPeriodRanking(rank, value, null, me, onlyVerified));
     }
   } else {
-    fillRanking(rank, board, nameKey(getName()));
+    fillRanking(rank, board, nameKey(playerName()));
   }
 }
 
