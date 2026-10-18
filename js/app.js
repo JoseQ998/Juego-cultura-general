@@ -636,12 +636,28 @@ function playState(p, weekOver) {
   return live ? '<span class="chip">jugando</span>' : '<span class="chip warn">abandonó</span>';
 }
 
-async function fillWeeklyRanking(el, weekId, highlight = '', weekOver = false) {
+// Filtro "Solo verificados" de los rankings con cuenta (se recuerda en el navegador).
+const NO_VERIFIED_MSG = '<p class="muted">Todavía no hay jugadores verificados en este ranking.</p>';
+function onlyVerifiedPref() {
+  try { return localStorage.getItem('cg_only_verified') === '1'; } catch { return false; }
+}
+function setOnlyVerifiedPref(on) {
+  try { localStorage.setItem('cg_only_verified', on ? '1' : '0'); } catch {}
+}
+
+async function fillWeeklyRanking(el, weekId, highlight = '', weekOver = false, onlyVerified = false) {
   try {
-    const rows = await store.weeklyRanking(weekId);
+    let rows = await store.weeklyRanking(weekId);
     if (!rows.length) {
       el.innerHTML = `<p class="muted">Todavía nadie ha jugado esta semana.</p>`;
       return rows;
+    }
+    if (onlyVerified) {
+      rows = rows.filter((r) => r.verified);
+      if (!rows.length) {
+        el.innerHTML = NO_VERIFIED_MSG;
+        return rows;
+      }
     }
     el.innerHTML = rankTable(['Nombre', 'Aciertos', 'Tiempo'], rows.map((r, i) => `
       <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
@@ -658,12 +674,19 @@ async function fillWeeklyRanking(el, weekId, highlight = '', weekOver = false) {
   }
 }
 
-async function fillPeriodRanking(el, year, month, highlight = '') {
+async function fillPeriodRanking(el, year, month, highlight = '', onlyVerified = false) {
   try {
-    const rows = await store.periodRanking(year, month);
+    let rows = await store.periodRanking(year, month);
     if (!rows.length) {
       el.innerHTML = `<p class="muted">Todavía no hay partidas en este periodo.</p>`;
       return;
+    }
+    if (onlyVerified) {
+      rows = rows.filter((r) => r.verified);
+      if (!rows.length) {
+        el.innerHTML = NO_VERIFIED_MSG;
+        return;
+      }
     }
     el.innerHTML = rankTable(['Nombre', 'Aciertos', 'Tiempo', 'Semanas'], rows.map((r, i) => `
       <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
@@ -698,6 +721,7 @@ async function renderRanking(board, sub) {
         </select>
       </div>
       <div id="periodBox"></div>
+      <div id="filterBox"></div>
       <div id="rank"><p class="loading">Cargando…</p></div>
     </section>`;
 
@@ -717,6 +741,26 @@ async function renderRanking(board, sub) {
     box.innerHTML = `<select id="periodSel" class="period-select">${options.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(value) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
     document.getElementById('periodSel').onchange = (e) => onChange(e.target.value);
   };
+  // "Todos" o "Solo verificados": cambia la tabla sin recargar la página.
+  let onlyVerified = onlyVerifiedPref();
+  const verifiedFilter = (fill) => {
+    const fbox = document.getElementById('filterBox');
+    const draw = () => {
+      fbox.innerHTML = `
+        <div class="seg rank-filter" role="tablist" aria-label="Qué jugadores mostrar">
+          <button type="button" role="tab" data-only="0" class="${onlyVerified ? '' : 'active'}" aria-selected="${!onlyVerified}">Todos</button>
+          <button type="button" role="tab" data-only="1" class="${onlyVerified ? 'active' : ''}" aria-selected="${onlyVerified}">Solo verificados ${VERIFIED_BADGE}</button>
+        </div>`;
+      fbox.querySelectorAll('[data-only]').forEach((b) => (b.onclick = () => {
+        onlyVerified = b.dataset.only === '1';
+        setOnlyVerifiedPref(onlyVerified);
+        draw();
+        fill();
+      }));
+    };
+    draw();
+    fill();
+  };
 
   if (board === 'semanal') {
     let weeks = [];
@@ -728,7 +772,7 @@ async function renderRanking(board, sub) {
     const id = +sub || weeks[0].id;
     periodSelect(weeks.map((w, i) => [w.id, `${i === 0 ? 'Esta semana' : `Semana del ${fmtDay(w.startsAt)}`} · ${catName(w.theme)} (${w.plays})`]), id,
       (v) => go(`#/ranking/semanal/${v}`));
-    fillWeeklyRanking(rank, id, me, id !== weeks[0].id);
+    verifiedFilter(() => fillWeeklyRanking(rank, id, me, id !== weeks[0].id, onlyVerified));
   } else if (board === 'mensual' || board === 'anual') {
     let weeks = [];
     try { weeks = await store.listWeeks(); } catch (e) { console.error(e); }
@@ -742,13 +786,13 @@ async function renderRanking(board, sub) {
       const value = sub || `${now.year}-${now.month}`;
       periodSelect(months, value, (v) => go(`#/ranking/mensual/${v}`));
       const [y, m] = value.split('-').map(Number);
-      fillPeriodRanking(rank, y, m, me);
+      verifiedFilter(() => fillPeriodRanking(rank, y, m, me, onlyVerified));
     } else {
       const years = [];
       for (let y = now.year; y >= first.year; y--) years.push([y, String(y)]);
       const value = +sub || now.year;
       periodSelect(years, value, (v) => go(`#/ranking/anual/${v}`));
-      fillPeriodRanking(rank, value, null, me);
+      verifiedFilter(() => fillPeriodRanking(rank, value, null, me, onlyVerified));
     }
   } else {
     fillRanking(rank, board, nameKey(getName()));
@@ -1080,12 +1124,10 @@ function renderAccount(tab) {
         <h2>Crear cuenta</h2>
         <p class="muted small">No se pide correo ni teléfono. Podrás jugar el reto semanal en cuanto crees la cuenta.</p>
         <label class="field"><span>Usuario</span>
-          <input id="rUser" autocomplete="username" maxlength="20" autocapitalize="none" placeholder="Ej. jose_q">
+          <input id="rUser" autocomplete="username" maxlength="20" autocapitalize="none">
           <small class="muted">De 3 a 20 letras, números, punto, guion o guion bajo. Sin espacios.</small></label>
         <label class="field"><span>Contraseña (mínimo 6)</span><input id="rPass" type="password" autocomplete="new-password" maxlength="72"></label>
         <label class="field"><span>Repite la contraseña</span><input id="rPass2" type="password" autocomplete="new-password" maxlength="72"></label>
-        <label class="field"><span>¿Quién eres? (solo lo ve el administrador)</span>
-          <input id="rWho" maxlength="120" placeholder="Tu nombre real o cómo te conoce"></label>
         <button class="btn big">Crear cuenta</button>
         <p class="auth-alt">¿Ya tienes cuenta? <button type="button" class="link" data-tab="login">Entra aquí</button></p>
       </form>
@@ -1129,14 +1171,12 @@ function renderAccount(tab) {
     const user = document.getElementById('rUser').value.trim();
     const pass = document.getElementById('rPass').value;
     const pass2 = document.getElementById('rPass2').value;
-    const who = document.getElementById('rWho').value.trim();
     if (!validUsername(user)) return toast('El usuario debe tener de 3 a 20 letras, números, punto, guion o guion bajo.', 'error');
     if (pass.length < 6) return toast('La contraseña debe tener al menos 6 caracteres.', 'error');
     if (pass !== pass2) return toast('Las contraseñas no coinciden.', 'error');
-    if (who.length < 2) return toast('Cuéntale al administrador quién eres.', 'error');
     busy(registerForm, true);
     try {
-      await store.signUp(user, pass, who);
+      await store.signUp(user, pass);
       await refreshAccount();
       toast('Cuenta creada. ¡Ya puedes jugar el reto semanal!');
       go('#/cuenta');
@@ -1180,7 +1220,6 @@ async function renderAdmin() {
     return `
       <tr>
         <td><b>${nameWithBadge(u.displayName, u.verified)}</b>${u.isAdmin ? ' <span class="chip">admin</span>' : ''}${self ? ' <span class="muted small">(tú)</span>' : ''}</td>
-        <td class="wrap">${esc(u.who) || '<span class="muted">—</span>'}</td>
         <td><span class="chip ${u.status === 'approved' ? 'ok' : 'warn'}">${STATUS_TEXT[u.status] || esc(u.status)}</span></td>
         <td>${fmtDate(u.createdAt)}</td>
         <td>${u.plays}</td>
@@ -1246,8 +1285,8 @@ async function renderAdmin() {
       <h3>Cuentas</h3>
       <p class="muted small">Las cuentas se pueden usar nada más crearlas. Pon la insignia de <b>verificado</b> a quien hayas comprobado por fuera (por ejemplo, por WhatsApp) que es quien dice ser. Bloquea a quien haga trampas: no podrá jugar el reto semanal y desaparece de los rankings.</p>
       <div class="table-wrap"><table class="table users">
-        <thead><tr><th>Usuario</th><th>¿Quién es?</th><th>Estado</th><th>Creada</th><th>Semanas</th><th></th></tr></thead>
-        <tbody>${users.map(userRow).join('') || '<tr><td colspan="6" class="muted">No hay cuentas.</td></tr>'}</tbody>
+        <thead><tr><th>Usuario</th><th>Estado</th><th>Creada</th><th>Semanas</th><th></th></tr></thead>
+        <tbody>${users.map(userRow).join('') || '<tr><td colspan="5" class="muted">No hay cuentas.</td></tr>'}</tbody>
       </table></div>
     </section>
     ${weekForm(current, 'Semana en curso')}

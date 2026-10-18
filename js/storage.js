@@ -254,11 +254,11 @@ async function supabaseImpl({ url, key }) {
       if (!data?.session) return null;
       return { profile: await profile() };
     },
-    async signUp(username, password, who) {
+    async signUp(username, password) {
       const { data, error } = await sb.auth.signUp({
         email: emailOf(username),
         password,
-        options: { data: { display: username.trim(), who: String(who || '').trim().slice(0, 120) } },
+        options: { data: { display: username.trim() } },
       });
       if (error) throw new Error(authMessage(error));
       if (!data.session) {
@@ -324,7 +324,7 @@ async function supabaseImpl({ url, key }) {
     async adminUsers() {
       const rows = await run(sb.rpc('admin_users'));
       return rows.map((r) => ({
-        id: str(r.id), username: str(r.username), displayName: str(r.display_name), who: str(r.who),
+        id: str(r.id), username: str(r.username), displayName: str(r.display_name),
         status: str(r.status), isAdmin: r.is_admin === true, verified: r.verified === true, createdAt: time(r.created_at), plays: num(r.plays),
       }));
     },

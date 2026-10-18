@@ -9,7 +9,7 @@ Página web de preguntas de cultura general. Funciona sin servidor propio: se pu
 | **Reto semanal** | 15 preguntas iguales para todos, una sola partida por semana y por cuenta. Se renueva cada **sábado a las 8pm (hora de Venezuela)**. Las preguntas de una semana nunca se repiten en otra. Necesita cuenta (se crea al momento, sin esperar aprobación). |
 | **Modo Aleatorio** | 15 preguntas distintas en cada partida, repartidas entre todas las categorías (evita repetir las que ya viste). Libre, sin cuenta. |
 | **Salas** | Eliges las categorías (videojuegos, música, deportes, arte, historia, geografía, ciencia, cine y TV, literatura, tecnología, League of Legends y fútbol) y se genera un código de 6 o 7 caracteres. Todos los que entran con ese código reciben las mismas preguntas. Libre, sin cuenta. |
-| **Rankings** | Semanal (en directo), mensual y anual del reto semanal; uno del Aleatorio y uno por cada sala. |
+| **Rankings** | Semanal (en directo), mensual y anual del reto semanal, con el filtro **Todos / Solo verificados**; uno del Aleatorio y uno por cada sala. |
 | **10 segundos** | Límite por pregunta. Si se acaba el tiempo, cuenta como fallo. |
 | **Panel de administrador** | Dar la insignia de **verificado** (como la de Twitter) a las cuentas que hayas comprobado, bloquear cuentas, cambiar contraseñas, borrar la partida semanal de alguien, elegir el tema de la semana y añadir la pregunta extra. |
 | **Registro** | Solo para el administrador: todas las partidas, con aviso de los dispositivos y navegadores desde los que se jugó con varios nombres. |
@@ -60,8 +60,9 @@ Sin este paso el juego funciona en **modo local**: cada dispositivo ve solo sus 
 
 ## 4. Cuentas y reto semanal
 
-- **Crear cuenta:** usuario, contraseña y "¿Quién eres?" (solo lo ve el administrador). No se pide correo ni teléfono. La cuenta se puede usar **al momento**, sin esperar aprobación. La sesión se queda abierta en ese dispositivo hasta que se cierre.
+- **Crear cuenta:** solo usuario y contraseña. No se pide correo ni teléfono. La cuenta se puede usar **al momento**, sin esperar aprobación. La sesión se queda abierta en ese dispositivo hasta que se cierre.
 - **Verificado:** en el panel, botón **Verificar** de cada cuenta. Pónselo a quien hayas comprobado por fuera (por ejemplo, por WhatsApp) que es quien dice ser: sale una insignia azul junto a su nombre en los rankings del reto semanal y en su cuenta. Se quita con **Quitar verificado**.
+- **Solo verificados:** en los rankings semanal, mensual y anual hay un selector **Todos / Solo verificados**. Con "Solo verificados" se ocultan las cuentas sin insignia (por ejemplo, alguien que no es del grupo) y las posiciones se recalculan; no se borra a nadie. El navegador recuerda la opción elegida.
 - **Bloquear:** una cuenta bloqueada no puede jugar el reto semanal y desaparece de los rankings. Se deshace con **Desbloquear**.
 - **Contraseña olvidada:** en el panel, botón **Contraseña** de esa cuenta; pon una nueva y díselo por privado. Cada jugador puede cambiar la suya en **Mi cuenta**.
 - **Una partida por semana:** cuenta como jugada en cuanto empieza. Si alguien sale a mitad, queda guardada como abandonada con lo que llevaba. Si tuvo un problema de verdad, en el panel puedes **Borrar partida** y podrá repetirla.
