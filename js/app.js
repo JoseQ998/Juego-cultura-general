@@ -1178,8 +1178,8 @@ function renderAccount(tab) {
     try {
       await store.signUp(user, pass);
       await refreshAccount();
-      toast('Cuenta creada. ¡Ya puedes jugar el reto semanal!');
-      go('#/cuenta');
+      toast(`Cuenta creada. Ya entraste como ${profileOf()?.displayName || user}.`);
+      go('#/');
     } catch (err) {
       toast(err.message, 'error');
     }
