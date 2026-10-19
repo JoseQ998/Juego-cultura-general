@@ -2,6 +2,7 @@ import { CONFIG } from './config.js';
 import { CATEGORIES, QUESTIONS, EXTRA_CATEGORY } from './questions.js';
 import * as store from './storage.js';
 import { getIdentity, rememberName } from './identity.js';
+import { createDraft } from './draft.js';
 
 const QUESTION_COUNT = 15;
 const TIME_LIMIT = 10_000; // 10 segundos por pregunta
@@ -93,6 +94,15 @@ function validName(n) {
 const validUsername = (u) => /^[A-Za-z0-9_.-]{3,20}$/.test(u.trim());
 const profileOf = () => account?.profile || null;
 const isAdmin = () => profileOf()?.isAdmin === true && profileOf()?.status === 'approved';
+
+// Modo Draft Worlds (js/draft.js)
+const draft = createDraft({
+  app, esc, toast, go: (h) => go(h), store,
+  online: () => store.online(),
+  playerName: () => profileOf()?.displayName || getName(),
+  profile: () => profileOf(),
+  isAdmin: () => isAdmin(),
+});
 
 // ---------------- salas (lobbies) ----------------
 // Código de sala = categorías (bits, 2 caracteres; 3 si no caben) + 4 caracteres de semilla.
@@ -240,6 +250,7 @@ function go(hash) {
 
 async function route() {
   stopGame();
+  draft.stop();
   clearInterval(ticker);
   app.onclick = null;
   const h = location.hash || '#/';
@@ -253,6 +264,7 @@ async function route() {
   if (page === 'donar') return renderDonate();
   if (page === 'cuenta') return renderAccount(arg);
   if (page === 'admin') return renderAdmin();
+  if (page === 'draft') return draft.route(arg, arg2);
   return renderHome();
 }
 
