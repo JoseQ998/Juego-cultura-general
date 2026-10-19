@@ -1,0 +1,121 @@
+2011|Counter Logic Gaming|
+2011|Epik Gamer|
+2011|Fnatic|
+2011|TSM|
+2011|Team Pacific|
+2011|Team gamed!de|
+2011|Xan|
+2011|against All authority|
+2012|Azubu Frost|OGN Champions Summer 2012
+2012|Counter Logic Gaming Europe|
+2012|Invictus Gaming|
+2012|Moscow Five|
+2012|NaJin Sword|
+2012|TSM|
+2012|Taipei Assassins|
+2012|Team WE|
+2013|Cloud9|NA LCS Summer
+2013|Fnatic|EU LCS Spring,EU LCS Summer
+2013|Gambit Gaming|
+2013|NaJin Black Sword|OGN Champions Winter 2012-13
+2013|OMG|LPL Spring
+2013|Royal Club|
+2013|SK Telecom T1|OGN Champions Summer 2013
+2013|Samsung Ozone|OGN Champions Spring 2013
+2014|Cloud9|NA LCS Spring
+2014|EDward Gaming|LPL Spring,LPL Summer
+2014|NaJin White Shield|
+2014|OMG|
+2014|Samsung Blue|OGN Champions Spring 2014
+2014|Samsung White|
+2014|Star Horn Royal Club|
+2014|TSM|NA LCS Summer
+2015|EDward Gaming|LPL Spring,MSI
+2015|Flash Wolves|
+2015|Fnatic|EU LCS Spring,EU LCS Summer
+2015|KOO Tigers|
+2015|KT Rolster|
+2015|Origen|
+2015|SK Telecom T1|LCK Spring,LCK Summer
+2015|ahq e-Sports Club|LMS Spring,LMS Summer
+2016|Albus NoX Luna|LCL Summer
+2016|Cloud9|
+2016|EDward Gaming|LPL Summer
+2016|H2k-Gaming|
+2016|ROX Tigers|LCK Summer
+2016|Royal Never Give Up|LPL Spring
+2016|SK Telecom T1|LCK Spring,MSI
+2016|Samsung Galaxy|
+2017|Cloud9|
+2017|Fnatic|
+2017|Longzhu Gaming|LCK Summer
+2017|Misfits Gaming|
+2017|Royal Never Give Up|
+2017|SK Telecom T1|LCK Spring,MSI
+2017|Samsung Galaxy|
+2017|Team WE|LPL Spring
+2018|Afreeca Freecs|
+2018|Cloud9|
+2018|EDward Gaming|
+2018|Fnatic|EU LCS Spring,EU LCS Summer
+2018|G2 Esports|
+2018|Invictus Gaming|
+2018|KT Rolster|LCK Summer
+2018|Royal Never Give Up|LPL Spring,LPL Summer,MSI
+2019|DAMWON Gaming|
+2019|Fnatic|
+2019|FunPlus Phoenix|LPL Summer
+2019|G2 Esports|LEC Spring,LEC Summer,MSI
+2019|Griffin|
+2019|Invictus Gaming|LPL Spring
+2019|SK Telecom T1|LCK Spring,LCK Summer
+2019|Splyce|
+2020|DAMWON Gaming|LCK Summer
+2020|DRX|
+2020|Fnatic|
+2020|G2 Esports|LEC Spring,LEC Summer
+2020|Gen.G|
+2020|JD Gaming|LPL Spring
+2020|Suning|
+2020|Top Esports|LPL Summer
+2021|Cloud9|LCS Spring
+2021|DWG KIA|LCK Spring,LCK Summer
+2021|EDward Gaming|LPL Summer
+2021|Gen.G|
+2021|Hanwha Life Esports|
+2021|MAD Lions|LEC Spring,LEC Summer
+2021|Royal Never Give Up|LPL Spring,MSI
+2021|T1|
+2022|DRX|
+2022|T1|LCK Spring
+2022|Gen.G|LCK Summer
+2022|JD Gaming|LPL Summer
+2022|EDward Gaming|
+2022|Royal Never Give Up|LPL Spring,MSI
+2022|DWG KIA|
+2023|T1|
+2023|Weibo Gaming|
+2023|JD Gaming|LPL Spring,LPL Summer,MSI
+2023|Bilibili Gaming|
+2023|Gen.G|LCK Spring,LCK Summer
+2023|LNG Esports|
+2023|KT Rolster|
+2023|NRG|LCS Summer
+2024|T1|
+2024|Bilibili Gaming|LPL Spring,LPL Summer
+2024|Gen.G|LCK Spring,MSI
+2024|Weibo Gaming|
+2024|Hanwha Life Esports|LCK Summer
+2024|LNG Esports|
+2024|Top Esports|
+2024|FlyQuest|LCS Summer
+2025|T1|
+2025|KT Rolster|
+2025|Gen.G|LCK 2025 Season,MSI
+2025|Hanwha Life Esports|LCK Cup
+2025|Top Esports|LPL Split 1
+2025|Anyone's Legend|LPL Split 2
+2025|Bilibili Gaming|LPL Split 3
+2025|CTBC Flying Oyster|LCP Season Kickoff,LCP Mid-Season,LCP Season Finals
+2025|G2 Esports|LEC Summer
+2022|Rogue|LEC Summer

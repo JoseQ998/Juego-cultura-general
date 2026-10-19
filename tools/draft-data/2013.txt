@@ -1,0 +1,40 @@
+2013|SK Telecom T1|1|top|Impact|18|2.94|2.17|6.94|4.56|7.04|357||||
+2013|SK Telecom T1|1|jungle|Bengi|18|2.5|1.89|9.28|6.24|3.1|284||||
+2013|SK Telecom T1|1|mid|Faker|18|4.44|2.17|6|4.82|8.77|400||||
+2013|SK Telecom T1|1|bot|Piglet|18|6.39|1.22|5.5|9.73|8.02|408||||
+2013|SK Telecom T1|1|support|PoohManDu|18|1.11|2.67|9.5|3.98|0.98|232||||
+2013|Royal Club|2|top|GoDlike|9|1.78|3.78|7.44|2.44|5.02|281||||
+2013|Royal Club|2|jungle|Lucky|9|1.56|3.44|8.67|2.97|2.4|236||||
+2013|Royal Club|2|mid|Wh1t3zZ|9|4.56|3.44|6.89|3.32|7.78|368||||
+2013|Royal Club|2|bot|Uzi|9|5.44|3.44|4.89|3|8.17|386||||
+2013|Royal Club|2|support|Tabe|9|1.11|5.33|8.56|1.81|0.59|195||||
+2013|Fnatic|3|top|sOAZ|15|3.47|1.93|9.53|6.72|6.26|322||||
+2013|Fnatic|3|jungle|Cyanide|15|3.2|2.53|11.07|5.63|2.81|269||||
+2013|Fnatic|3|mid|xPeke|15|6.87|2.4|8.07|6.22|7.9|396||||
+2013|Fnatic|3|bot|Puszu|15|6.4|1.8|9.67|8.93|7.03|380||||
+2013|Fnatic|3|support|YellOwStaR|15|2|1.93|10.87|6.66|1.51|239||||
+2013|NaJin Black Sword|3|top|Expession|8|3.25|2.13|4.5|3.65|7.12|340||||
+2013|NaJin Black Sword|3|jungle|Watch|8|1.75|2.25|7.5|4.11|2.76|253||||
+2013|NaJin Black Sword|3|mid|Nagne|8|3.88|1.63|4.13|4.92|7.74|353||||
+2013|NaJin Black Sword|3|bot|PraY|8|3.75|3|5.38|3.04|7.57|358||||
+2013|NaJin Black Sword|3|support|Cain|8|1.13|3.75|7.38|2.27|0.54|205||||
+2013|Gambit Gaming|5|top|Darien|12|1.83|2.17|6.17|3.69|6.74|317||||
+2013|Gambit Gaming|5|jungle|Diamondprox|12|2|2.83|7.25|3.26|3.9|266||||
+2013|Gambit Gaming|5|mid|Alex Ich|12|5.08|2.67|4.58|3.63|8.82|389||||
+2013|Gambit Gaming|5|bot|Genja|12|3.67|2|5.42|4.54|7.14|339||||
+2013|Gambit Gaming|5|support|Voidle|12|0.67|3.33|7.75|2.53|0.86|213||||
+2013|OMG|5|top|Gogoing|10|3|2.3|8.8|5.13|6.82|351||||
+2013|OMG|5|jungle|LoveLin|10|2.6|2|9.3|5.95|2.97|270||||
+2013|OMG|5|mid|Cool|10|6.6|1.8|6|7|8.58|409||||
+2013|OMG|5|bot|San|10|5.5|1.6|6.2|7.31|7.88|392||||
+2013|OMG|5|support|Bigpomelo|9|1.11|2.89|8.78|3.42|0.92|233||||
+2013|Samsung Ozone|5|top|Looper|9|2.22|2.33|6.78|3.86|6.36|318||||
+2013|Samsung Ozone|5|jungle|DanDy|9|4.33|3|8.33|4.22|2.65|272||||
+2013|Samsung Ozone|5|mid|dade|9|2.89|3.22|7.44|3.21|8.06|366||||
+2013|Samsung Ozone|5|bot|Imp|9|5.67|2.56|6|4.57|7.44|380||||
+2013|Samsung Ozone|5|support|Mata|9|1|4.22|11|2.84|0.8|224||||
+2013|Cloud9|5|top|Balls|3|3.67|3|5.33|3|6.35|326||||
+2013|Cloud9|5|jungle|Meteos|3|2.67|3|4.67|2.44|5.43|306||||
+2013|Cloud9|5|mid|Hai|3|1.67|5.67|5.33|1.24|6.45|311||||
+2013|Cloud9|5|bot|Sneaky|3|2.67|3|6|2.89|6.86|334||||
+2013|Cloud9|5|support|LemonNation|3|0.67|5.33|8.33|1.69|0.77|206||||

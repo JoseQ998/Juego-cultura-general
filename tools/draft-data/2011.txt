@@ -1,0 +1,40 @@
+2011|Fnatic|1|top|xPeke|8|4.63|3.63|8.88|3.72|6.08|330||||
+2011|Fnatic|1|jungle|Cyanide|11|2.45|2.45|10.36|5.22|2.86|269||||
+2011|Fnatic|1|mid|Shushei|11|6.27|2.27|8.09|6.32|6.22|339||||
+2011|Fnatic|1|bot|LaMiaZlt|11|5.18|1.82|6.73|6.55|6.37|343||||
+2011|Fnatic|1|support|Mellisan|11|0.64|2.09|11.82|5.96|0.49|220||||
+2011|against All authority|2|top|sOAZ|12|4|2.92|7.08|3.8|5.43|293||||
+2011|against All authority|2|jungle|Linak|12|1.75|3.58|7.67|2.63|2.86|259||||
+2011|against All authority|2|mid|MoMa|12|4.17|2.75|5.58|3.55|6.13|307||||
+2011|against All authority|2|bot|Yellowstar|12|3.75|3.25|5.17|2.74|6.99|333||||
+2011|against All authority|2|support|kujaa|12|0.25|2.58|8.33|3.32|0.34|198||||
+2011|TSM|3|top|TheRainMan|9|4|1.78|7.44|6.44|4.91|329||||
+2011|TSM|3|jungle|TheOddOne|9|1.67|1.78|8.22|5.56|3.12|252||||
+2011|TSM|3|mid|Reginald|9|4|3.89|6.11|2.6|5.31|298||||
+2011|TSM|3|bot|Chaox|9|5.67|2.89|4.22|3.42|6.67|343||||
+2011|TSM|3|support|Xpecial|9|0.78|2.56|8|3.43|0.64|206||||
+2011|Epik Gamer|3|top|Westrice|7|6|4.71|5.86|2.52|6|317||||
+2011|Epik Gamer|3|jungle|Dan Dinh|7|1.71|3.86|11|3.3|2.62|255||||
+2011|Epik Gamer|3|mid|Salce|7|5.86|3.71|6.57|3.35|5.69|311||||
+2011|Epik Gamer|3|bot|Dyrus|7|1.71|2.71|10.29|4.42|4.21|267||||
+2011|Epik Gamer|3|support|Doublelift|7|2.29|3.43|8.43|3.13|2.56|220||||
+2011|Counter Logic Gaming|5|top|HotshotGG|6|1.83|2.67|3.83|2.13|5.31|273||||
+2011|Counter Logic Gaming|5|jungle|SaintVicious|6|2.5|2.67|5|2.81|3.15|258||||
+2011|Counter Logic Gaming|5|mid|bigfatlp|6|2.5|2.5|5.33|3.13|5.37|275||||
+2011|Counter Logic Gaming|5|bot|Chauster|6|3.17|1.67|2.5|3.4|6.21|293||||
+2011|Counter Logic Gaming|5|support|Elementz|6|1|2.33|6.33|3.14|1.42|200||||
+2011|Team gamed!de|5|top|Kevin|5|1.4|2.6|2|1.31|5.91|262||||
+2011|Team gamed!de|5|jungle|Zylor|5|1|4.6|4.2|1.13|3.15|206||||
+2011|Team gamed!de|5|mid|Reyk|5|0.8|3|3.4|1.4|4.43|222||||
+2011|Team gamed!de|5|bot|CndyPnda|5|4.8|4.2|1.8|1.57|6.85|322||||
+2011|Team gamed!de|5|support|Nyph|5|0.2|2.8|6|2.21|0.46|208||||
+2011|Xan|5|top|Vech|3|1.67|2.33|4.33|2.57|7.25|334||||
+2011|Xan|5|jungle|Radeon6870|3|1|3|3.67|1.56|2.39|223||||
+2011|Xan|5|mid|Axion|3|4.67|2.33|2.67|3.14|5.47|286||||
+2011|Xan|5|bot|d4rkness|3|3|3|2.67|1.89|7.63|326||||
+2011|Xan|5|support|iNtrigueD|3|0.67|2|4.67|2.67|0.59|211||||
+2011|Team Pacific|5|top|wormy|3|2.33|4|2|1.08|5.2|249||||
+2011|Team Pacific|5|jungle|dabe|3|0.67|4|2.67|0.83|2.82|198||||
+2011|Team Pacific|5|mid|iddo|3|1|2|2|1.5|4.92|225||||
+2011|Team Pacific|5|bot|vy|3|2.33|2.67|3|2|3.81|230||||
+2011|Team Pacific|5|support|gibo|3|0.67|2.67|3.67|1.63|0.17|175||||
