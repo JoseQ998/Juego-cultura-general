@@ -483,7 +483,6 @@ h2 .verified { width: .95em; height: .95em; }
 .dw-player-info strong { font-family: 'Press Start 2P', monospace; font-size: .7rem; line-height: 1.5; }
 .dw-player-info small { display: flex; gap: 5px; align-items: center; color: var(--muted); font-size: .8rem; }
 .dw-player-info em { color: var(--bad); font-size: .78rem; font-style: normal; }
-.dw-rating { font-family: 'Press Start 2P', monospace; font-size: 1.1rem; color: var(--yellow); text-shadow: 0 0 10px rgba(255,243,92,.6); }
 .dw-trait { justify-self: start; font-family: 'Press Start 2P', monospace; font-size: .5rem; padding: 3px 6px; border-radius: 2px; letter-spacing: .05em; }
 .dw-trait.clutch { color: #000; background: var(--yellow); box-shadow: 0 0 10px rgba(255,243,92,.7); }
 .dw-trait.choke { color: #001a22; background: #9ee7ff; box-shadow: 0 0 10px rgba(158,231,255,.7); }
@@ -522,6 +521,8 @@ h2 .verified { width: .95em; height: .95em; }
 .dw-value span { font-size: .75rem; color: var(--muted); }
 .dw-value b { font-family: 'Press Start 2P', monospace; font-size: .8rem; color: var(--cyan); }
 .dw-value b.big { color: var(--yellow); font-size: 1rem; }
+.dw-value.one { grid-template-columns: 1fr; }
+.dw-value.one b.big.pos { color: var(--ok); } .dw-value.one b.big.neg { color: var(--bad); }
 .dw-value b.pos, .dw-chem .pos b { color: var(--ok); }
 .dw-value b.neg, .dw-chem .neg b { color: var(--bad); }
 .dw-chem { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 4px; font-size: .85rem; }
@@ -599,10 +600,9 @@ h2 .verified { width: .95em; height: .95em; }
 .dw-step small { font-size: .7rem; color: var(--muted); }
 .dw-final-list { display: grid; gap: 6px; text-align: left; margin: 10px 0; }
 .dw-final-row { display: flex; gap: 10px; align-items: center; padding: 6px 10px; background: rgba(0,0,0,.4); border: 1px solid rgba(25,240,255,.25); }
-.dw-final-row > span:not(.dw-av) { flex: 1; min-width: 0; }
+.dw-final-row > span:not(.dw-av):not(.dw-trait) { flex: 1; min-width: 0; }
 .dw-final-row strong { display: block; font-family: 'Press Start 2P', monospace; font-size: .65rem; line-height: 1.6; }
 .dw-final-row small { color: var(--muted); font-size: .78rem; }
-.dw-final-row > b { font-family: 'Press Start 2P', monospace; color: var(--yellow); }
 .dw-intro p { margin-bottom: 0; }
 
 /* Draft Worlds online: salas */

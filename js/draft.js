@@ -69,14 +69,12 @@ export function createDraft(ctx) {
   }
 
   function chemistryBox(players) {
-    const ps = players.filter(Boolean);
-    const v = E.teamValue(ps);
-    const ch = E.chemistry(ps);
+    // Las notas de los jugadores no se muestran (ni la media o el valor, que las delatarían):
+    // así gana quien más sabe de LoL. Solo se ve la química, que depende de reglas conocidas.
+    const ch = E.chemistry(players.filter(Boolean));
     return `
-      <div class="dw-value">
-        <div><span>Media</span><b>${fmt1(v.avg)}</b></div>
-        <div><span>Química</span><b class="${ch.total >= 0 ? 'pos' : 'neg'}">${signed(ch.total)}</b></div>
-        <div><span>Valor</span><b class="big">${fmt1(v.value)}</b></div>
+      <div class="dw-value one">
+        <div><span>Química</span><b class="big ${ch.total >= 0 ? 'pos' : 'neg'}">${signed(ch.total)}</b></div>
       </div>
       ${ch.items.length ? `<ul class="dw-chem">${ch.items.map((i) => `<li class="${i.pts >= 0 ? 'pos' : 'neg'}"><b>${signed(i.pts)}</b> ${esc(i.text)}</li>`).join('')}</ul>` : '<p class="muted small">Sin química todavía.</p>'}`;
   }
@@ -100,7 +98,6 @@ export function createDraft(ctx) {
       <button class="dw-player" data-key="${p.key}" ${ok ? '' : 'disabled'}>
         ${avatar(p, 'lg')}
         <span class="dw-player-info"><strong>${esc(p.name)}</strong><small>${roleIcon(p.role)} ${E.ROLE_NAMES[p.role]}${p.mvp ? ' · MVP de la final' : ''}</small>${traitTag(p)}${why ? `<em>${why}</em>` : ''}</span>
-        <span class="dw-rating">${p.rating}</span>
       </button>`;
   }
 
@@ -205,8 +202,8 @@ export function createDraft(ctx) {
     const card = (p) => `
       <div class="dw-vsteam ${p.id === me ? 'me' : ''}">
         <h4>${esc(label(p, me))}</h4>
-        <div class="dw-vsplayers">${p.players.map((x) => `<div class="dw-vsp">${avatar(x)}<b>${esc(x.name)}</b><small>${x.year} · ${esc(x.tag)}</small><span>${x.rating}</span>${traitTag(x)}</div>`).join('')}</div>
-        <p class="dw-vsval">Valor <b>${fmt1(p.value)}</b> <small>(media ${fmt1(p.avg)}, química ${signed(p.chem)})</small></p>
+        <div class="dw-vsplayers">${p.players.map((x) => `<div class="dw-vsp">${avatar(x)}<b>${esc(x.name)}</b><small>${x.year} · ${esc(x.tag)}</small>${traitTag(x)}</div>`).join('')}</div>
+        <p class="dw-vsval">Química <b>${signed(p.chem)}</b></p>
       </div>`;
     const [l, r] = m.b.id === me ? [m.b, m.a] : [m.a, m.b]; // tu equipo siempre a la izquierda
     return `${card(l)}<div class="dw-vs">VS</div>${card(r)}`;
@@ -262,8 +259,8 @@ export function createDraft(ctx) {
           ${j.steps.map((s) => `<span class="dw-step ${s.won ? 'w' : 'l'}"><b>${s.won ? '✓' : '✗'}</b><small>${s.round} ${s.score}</small></span>`).join('')}
         </div>
         <div class="dw-final-list">${p.players.map((x) => `
-          <div class="dw-final-row">${roleIcon(x.role)}${avatar(x)}<span><strong>${esc(x.name)}</strong><small>${x.year} · ${esc(x.team)}</small></span><b>${x.rating}</b></div>`).join('')}</div>
-        <p class="dw-vsval">Valor del equipo <b>${fmt1(p.value)}</b> <small>(media ${fmt1(p.avg)}, química ${signed(p.chem)})</small></p>
+          <div class="dw-final-row">${roleIcon(x.role)}${avatar(x)}<span><strong>${esc(x.name)}</strong><small>${x.year} · ${esc(x.team)}</small></span>${traitTag(x)}</div>`).join('')}</div>
+        <p class="dw-vsval">Química del equipo <b>${signed(p.chem)}</b></p>
         <p class="muted">Campeón del Worlds: <b>${esc(label(result.champion, me))}</b></p>
         ${extra.actions || ''}
       </section>

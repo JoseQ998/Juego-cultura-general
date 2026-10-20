@@ -11,7 +11,7 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
 - **No se puede repetir jugador** dentro de tu equipo (ninguna versión de otro año del mismo jugador).
   Entre participantes sí se puede repetir (dos pueden tener a Faker 2016).
 - **2 rerolls** por draft (cambian las 3 opciones de esa ronda).
-- Las tarjetas muestran foto, nombre, año, equipo (logo), posición y nota, y las etiquetas **CLUTCH**
+- Las tarjetas muestran foto, nombre, año, equipo (logo) y posición, y las etiquetas **CLUTCH**
   (amarillo) y **PECHO FRÍO** (azul hielo) cuando correspondan.
 - Diseño inspirado en LoLdle "Worlds Mayhem": minimapa de la Grieta del Invocador con la foto de cada
   jugador en su posición; tarjetas de equipo con logo, año y los 5 jugadores; tarjeta final con hasta
@@ -19,6 +19,9 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
   "Arcade neón" del juego.
 
 ## 2. Valor del equipo
+
+- **Las notas no se muestran en ningún sitio** (ni la media ni el valor del equipo, que las delatarían): así gana
+  quien más sabe de LoL. Solo se ve la química.
 
 - Nota de cada jugador: ya calculada en los datos (40-99).
 - **Valor = media de los 5 + química.**

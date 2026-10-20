@@ -74,7 +74,7 @@ Sin este paso el juego funciona en **modo local**: cada dispositivo ve solo sus 
 ## 5. Draft Worlds
 
 - **Draft:** 5 rondas. En cada una salen 3 equipos-año al azar; eliges uno y uno de sus jugadores para una posición libre. No puedes repetir jugador (ninguna versión de otro año). Tienes **2 rerolls**.
-- **Valor del equipo:** media de las notas + química (excompañeros, misma organización, misma región; tirador + apoyo y mid + jungla sin ningún vínculo restan). Entre -6 y +12.
+- **Valor del equipo:** media de las notas + química. **Las notas no se muestran** (ni la media ni el valor), para que gane quien más sabe de LoL; solo se ve la química. La química suma por excompañeros, misma organización y misma región, y resta si tirador + apoyo o mid + jungla no tienen ningún vínculo; va de -6 a +12.
 - **Simulación:** octavos y cuartos al mejor de 3; semifinal y final al mejor de 5. Los 8 jugadores **CLUTCH** y los 8 **PECHO FRÍO** pueden decidir una partida. Si te eliminan, sigues viendo el torneo hasta la final.
 - **Contra bots:** sin cuenta ni conexión. Eliges octavos (16) o cuartos (8) y la dificultad: Fácil, Media o Imposible.
 - **Salas:** en el menú del draft, **Crear sala** da un código de 6 caracteres. Todos pulsan **Listo** y quien la creó pulsa **Empezar**. Cada uno hace su draft a su ritmo; cuando solo falta uno, tiene **1 minuto** o su equipo se completa al azar. Si alguien pasa 3 minutos sin elegir (por ejemplo, porque cerró la página), también se completa al azar, para que la sala no se quede bloqueada. Las plazas libres se llenan con bots. Quien abra el enlace después puede mirar.
