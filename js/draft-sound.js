@@ -2,8 +2,8 @@
 // Los archivos van en audio/, ya recortados al trozo que debe sonar, y se apuntan aquí.
 // Un momento sin archivo no suena; si no hay ninguno, no sale el botón de sonido.
 const FILES = {
-  // clutch: 'audio/clutch.mp3',
-  // choke: 'audio/pecho-frio.mp3',
+  clutch: 'audio/clutch.mp3', // Legends Never Die (Worlds 2017): la canción explota a los 0,7 s, cuando cae el sello CLUTCH
+  choke: 'audio/pecho-frio.mp3', // efectos de caricaturas antiguas: el final, que se apaga con una nota larga
 };
 const KEY = 'dw-sound';
 const VOLUME = 0.8;
