@@ -20,13 +20,6 @@ export const CONFIG = {
   // correos: solo hace falta que el dominio exista. Es el de la página en GitHub Pages.
   ACCOUNT_EMAIL_DOMAIN: 'joseq998.github.io',
 
-  // Donaciones por Binance Pay: tu Binance ID (el número de tu perfil de Binance).
-  // Solo sirve para recibir. No pongas aquí tu correo ni tu teléfono.
-  // Si lo dejas vacío, la tarjeta de donación no se muestra.
-  DONATION: {
-    binanceId: '217244021',
-  },
-
   // PIN del Registro SOLO para el modo local (sin Supabase).
   // Con Supabase no hay PIN: el registro solo lo ve la cuenta de administrador.
   ADMIN_PIN: '1234',

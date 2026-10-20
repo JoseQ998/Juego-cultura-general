@@ -110,21 +110,17 @@ Las preguntas nuevas se añaden al **final** de su categoría (el reto semanal l
 
 ## Derechos de autor y marcas
 
-**Para qué es este juego.** Es un proyecto personal de fans, hecho solo para entretenerse y pasar el rato. Es gratis, no tiene publicidad, no vende nada y no cobra por jugar ni por ninguna función. Las donaciones (ver más abajo) son voluntarias, no dan ninguna ventaja dentro del juego y no se piden a cambio de ningún contenido de terceros.
+**Para qué es este juego.** Es un proyecto personal de fans, hecho solo para entretenerse y pasar el rato. Es gratis, no tiene publicidad, no vende nada y no cobra por jugar ni por ninguna función. Tampoco acepta donaciones.
 
 **Contenido de terceros.** Todo lo que no es propio pertenece a sus respectivos dueños, y aquí no se reclama ninguna propiedad sobre ello:
 
 - **League of Legends:** el arte de la Grieta del Invocador (de la wiki de League of Legends), los nombres de jugadores y equipos y las formas de los iconos de posición son de Riot Games y de los equipos. Las fotos y los logos se cargan desde [Leaguepedia](https://lol.fandom.com). El modo Draft Worlds se hace siguiendo la [política de contenido de fans de Riot Games](https://www.riotgames.com/en/legal) ("Legal Jibber Jabber"), que permite proyectos de fans gratuitos.
 - **Preguntas:** mencionan personas, obras, marcas y empresas solo con fines informativos y de entretenimiento.
-- **Tipografías e iconos:** tienen licencias libres (SIL OFL y CC0), indicadas en cada caso.
+- **Tipografías:** tienen licencia libre (SIL OFL); las licencias están en la carpeta `fonts/`.
 
 **Si algo es tuyo y quieres que se quite**, abre un *issue* en este repositorio y se retirará lo antes posible.
 
 *Cultura General no está respaldado por Riot Games y no refleja las opiniones de Riot Games ni de nadie involucrado oficialmente en la producción o gestión de las propiedades de Riot Games. Riot Games y todas las propiedades asociadas son marcas comerciales o marcas registradas de Riot Games, Inc.*
-
-## Donaciones
-
-La tarjeta "Apoya el juego" (con el logo de Binance, de [Simple Icons](https://simpleicons.org), licencia CC0) se abre con el botón **Donar** de la barra de arriba. El Binance ID se cambia en `js/config.js` → `DONATION.binanceId`. Solo sirve para recibir; no pongas ahí tu correo ni tu teléfono.
 
 ## Diseño
 

@@ -267,7 +267,6 @@ async function route() {
   if (page === 'crear') return renderCreateLobby();
   if (page === 'ranking') return renderRanking(arg ? decodeURIComponent(arg) : 'semanal', arg2 ? decodeURIComponent(arg2) : '');
   if (page === 'registro') return renderLog();
-  if (page === 'donar') return renderDonate();
   if (page === 'cuenta') return renderAccount(arg);
   if (page === 'admin') return renderAdmin();
   if (page === 'draft') return draft.route(arg, arg2);
@@ -304,74 +303,6 @@ function requireName() {
     return null;
   }
   return n.trim();
-}
-
-// ---------------- donaciones ----------------
-// Logo de Binance: Simple Icons (CC0), https://simpleicons.org
-const BINANCE_LOGO = `<svg class="binance-logo" viewBox="0 0 24 24" role="img" aria-label="Binance"><path d="M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z"/></svg>`;
-
-function donationCard() {
-  const d = CONFIG.DONATION || {};
-  if (!d.binanceId) return '';
-  const row = (label, value) => `
-    <div class="donate-row">
-      <span class="muted small">${label}</span>
-      <b class="mono">${esc(value)}</b>
-      <button type="button" class="btn ghost sm" data-copy="${esc(value)}">Copiar</button>
-    </div>`;
-  return `
-    <section class="card donate">
-      <div class="donate-head">
-        ${BINANCE_LOGO}
-        <div>
-          <h3>Apoya el juego</h3>
-          <p class="muted small">Si te gusta, puedes invitarme a algo por Binance Pay: en la app de Binance ve a Pay → Enviar y pega este Binance ID.</p>
-        </div>
-      </div>
-      ${row('Binance ID', d.binanceId)}
-    </section>`;
-}
-
-function bindCopyButtons(root = app) {
-  root.querySelectorAll('[data-copy]').forEach((btn) => {
-    btn.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(btn.dataset.copy);
-        toast('Copiado');
-      } catch {
-        prompt('Copia este dato:', btn.dataset.copy);
-      }
-    };
-  });
-}
-
-// Ventana emergente de donación (botón "Donar" de la barra de arriba).
-function openDonate() {
-  if (document.querySelector('.modal')) return;
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.innerHTML = `
-    <div class="modal-box" role="dialog" aria-modal="true" aria-label="Donar">
-      ${donationCard()}
-      <button type="button" class="btn ghost sm modal-close">Cerrar</button>
-    </div>`;
-  const close = () => {
-    modal.remove();
-    document.removeEventListener('keydown', onKey);
-  };
-  const onKey = (e) => { if (e.key === 'Escape') close(); };
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal || e.target.closest('.modal-close')) close();
-  });
-  document.addEventListener('keydown', onKey);
-  document.body.appendChild(modal);
-  bindCopyButtons(modal);
-  modal.querySelector('.modal-close').focus();
-}
-
-function renderDonate() {
-  app.innerHTML = `<a class="back" href="#/">← Volver</a>${donationCard()}`;
-  bindCopyButtons();
 }
 
 // ---------------- inicio ----------------
@@ -1685,11 +1616,6 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   const code = params.get('sala') || params.get('lobby');
   if (code && !location.hash) location.hash = `#/sala/${code.toUpperCase()}`;
-  const donateBtn = document.getElementById('donateBtn');
-  if (donateBtn && CONFIG.DONATION?.binanceId) {
-    donateBtn.hidden = false;
-    donateBtn.onclick = openDonate;
-  }
   window.addEventListener('hashchange', route);
   // Las partidas no cambian la URL: si se pulsa un enlace a la página actual, se vuelve a pintar igualmente.
   document.addEventListener('click', (e) => {
