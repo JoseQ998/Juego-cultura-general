@@ -14,10 +14,27 @@ export const MOVE = 1400; // se mueven hacia la jugada antes de que salga el men
 const WANDER = 900; // pequeños movimientos mientras tanto
 const VERDICT = 1600; // tras el último mensaje, sale Victoria o Derrota
 const OUTRO = 4200; // y se queda a la vista antes de pasar a lo siguiente
-export const gameDuration = (n) => INTRO + (n - 1) * STEP + VERDICT + OUTRO;
-export const shownEvents = (t, n) => (t < INTRO ? 0 : Math.min(n, Math.floor((t - INTRO) / STEP) + 1));
-export const gameFinished = (t, n) => t >= INTRO + (n - 1) * STEP + VERDICT;
-export const gameHold = (n) => INTRO + (n - 1) * STEP + VERDICT + 1200; // donde se para si hay que pulsar Continuar
+export const CINE = 6200; // animación del jugador CLUTCH o PECHO FRÍO que decide la partida
+const AFTER_CINE = 2400; // después, la jugada se sigue viendo en el mapa
+const isSwing = (e) => e.kind === 'clutch' || e.kind === 'choke';
+// Momento (ms desde que empieza la partida) en que sale cada mensaje.
+export function eventTimes(events) {
+  let at = INTRO;
+  return events.map((e) => { const t = at; at += isSwing(e) ? CINE + AFTER_CINE : STEP; return t; });
+}
+const lastAt = (events) => eventTimes(events)[events.length - 1];
+export const gameDuration = (events) => lastAt(events) + VERDICT + OUTRO;
+export const shownEvents = (t, events) => eventTimes(events).filter((at) => t >= at).length;
+export const gameFinished = (t, events) => t >= lastAt(events) + VERDICT;
+export const gameHold = (events) => lastAt(events) + VERDICT + 1200; // donde se para si hay que pulsar Continuar
+// Jugada en curso: empieza MOVE ms antes de su mensaje, cuando los jugadores van hacia ella (-1 antes de la primera).
+export const stepAt = (t, events) => eventTimes(events).filter((at) => t >= at - MOVE).length - 1;
+// Si en el instante t se está viendo la animación de CLUTCH o PECHO FRÍO: { step, ev, el } (el = ms desde que empezó).
+export function cineAt(t, events) {
+  const times = eventTimes(events);
+  const j = events.findIndex((e, i) => isSwing(e) && t >= times[i] && t < times[i] + CINE);
+  return j < 0 ? null : { step: j, ev: events[j], el: t - times[j] };
+}
 
 const FOUNTAIN = { home: [6, 92], away: [93, 7] };
 export const fountain = (side) => FOUNTAIN[side];
@@ -184,12 +201,12 @@ function analyze(ev, teams, sideMap, seed) {
 //   focus: { keys: ['home:mid', ...], kind } | null }  (focus = quién protagoniza la jugada en curso)
 export function gameLayout(m, gi, t, me) {
   const g = m.games[gi];
-  const n = g.events.length;
   const homeLetter = m.b.id === me ? 'b' : 'a';
   const sideMap = { [homeLetter]: 'home', [homeLetter === 'a' ? 'b' : 'a']: 'away' };
   const teams = { home: homeLetter === 'a' ? m.a : m.b, away: homeLetter === 'a' ? m.b : m.a };
   const seed = `${m.a.id}|${m.b.id}|${gi}`;
-  const step = t < INTRO - MOVE ? -1 : Math.min(n - 1, Math.floor((t - INTRO + MOVE) / STEP));
+  const times = eventTimes(g.events);
+  const step = stepAt(t, g.events);
   const sub = Math.floor(t / WANDER);
   const info = g.events.map((ev, j) => analyze(ev, teams, sideMap, `${seed}|${j}`));
   const laneAt = (e) => (e.play.at === 'lane' ? ['top', 'mid', 'bot'][hashStr(e.seed + 'lane') % 3] : e.play.at);
@@ -229,7 +246,8 @@ export function gameLayout(m, gi, t, me) {
   if (step >= 0) {
     const e = info[step];
     const { S, O } = e;
-    const revealed = t >= INTRO + step * STEP; // las bajas se ven cuando sale el mensaje
+    // las bajas se ven cuando sale el mensaje (con CLUTCH o PECHO FRÍO, al final de su animación)
+    const revealed = t >= times[step] + (isSwing(g.events[step]) ? CINE - 1600 : 0);
     const where = (at, k) => {
       const lane = at === 'lane' ? laneAt(e) : at;
       if (front[lane] != null) {

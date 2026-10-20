@@ -300,7 +300,7 @@ export function createDraft(ctx) {
       const watch = alive && mine ? mine : (!alive && round.size === 2 ? round.matches[0] : null);
       if (watch) {
         add('preview', 7000, { ri, m: watch });
-        watch.games.forEach((g, gi) => add('game', MAP.gameDuration(g.events.length), { ri, m: watch, gi }));
+        watch.games.forEach((g, gi) => add('game', MAP.gameDuration(g.events), { ri, m: watch, gi }));
       }
       // resultado de la serie, si te eliminan y cómo sigue el cuadro, en una sola pantalla
       const out = alive && mine && (mine.winner === 'a' ? mine.a.id : mine.b.id) !== me;
@@ -356,7 +356,7 @@ export function createDraft(ctx) {
   function scoreHtml(round, m, gi, t, me) {
     const side = sideOf(m, me) || 'a';
     const g = m.games[gi];
-    const finished = MAP.gameFinished(t, g.events.length);
+    const finished = MAP.gameFinished(t, g.events);
     const done = m.games.slice(0, finished ? gi + 1 : gi);
     const w = done.filter((x) => x.winner === side).length;
     const boxes = Array.from({ length: m.bestOf }, (_, i) => {
@@ -373,9 +373,9 @@ export function createDraft(ctx) {
     const mine = sideOf(m, me);
     const side = mine || 'a';
     const g = m.games[gi];
-    const n = g.events.length;
-    const dur = MAP.gameDuration(n);
-    const k = MAP.shownEvents(t, n);
+    const dur = MAP.gameDuration(g.events);
+    const k = MAP.shownEvents(t, g.events);
+    const times = MAP.eventTimes(g.events);
     const teamName = (s) => label(s === 'a' ? m.a : m.b, me);
     const items = g.events.slice(0, k).map((e, j) => {
       const good = e.side === side;
@@ -383,10 +383,10 @@ export function createDraft(ctx) {
       const tag = e.kind === 'clutch' ? '<span class="trait clutch sm">Clutch</span>' : e.kind === 'choke' ? '<span class="trait choke sm">Pecho frío</span>' : '';
       const cls = mine ? (good ? 'good' : 'bad') : (e.side === 'a' ? 'good' : 'bad');
       const word = mine ? (good ? 'A favor' : 'En contra') : esc(teamName(e.side));
-      return `<li class="ev ${cls} ${e.kind} ${j === k - 1 ? 'new' : ''}"><time>${clockAt(MAP.INTRO + j * MAP.STEP, dur)}</time>
+      return `<li class="ev ${cls} ${e.kind} ${j === k - 1 ? 'new' : ''}"><time>${clockAt(times[j], dur)}</time>
         <div><span class="ev-meta"><span class="ev-side">${word}</span>${tag}</span><p>${esc(txt)}</p></div></li>`;
     }).join('');
-    const tail = MAP.gameFinished(t, n)
+    const tail = MAP.gameFinished(t, g.events)
       ? `<li class="ev-result ${g.winner === side ? 'win' : 'lose'}">${mine ? (g.winner === side ? 'Partida ganada' : 'Partida perdida') : `Gana ${esc(teamName(g.winner))}`}</li>`
       : `<li class="ev-wait"><span class="spin"></span>Partida ${gi + 1} en juego…</li>`;
     return items + tail;
@@ -423,7 +423,7 @@ export function createDraft(ctx) {
               ${home.players.map((p) => tok('home', p)).join('')}${away.players.map((p) => tok('away', p)).join('')}
               <div class="verdict ${won ? 'win' : 'lose'}"><span>${mine ? (won ? 'Victoria' : 'Derrota') : `Gana ${esc(short(won ? home : away, me))}`}</span></div>
             </div>
-            <div class="hud"><span>Partida ${gi + 1}</span><b class="clock">${clockAt(t, MAP.gameDuration(m.games[gi].events.length))}</b></div>
+            <div class="hud"><span>Partida ${gi + 1}</span><b class="clock">${clockAt(t, MAP.gameDuration(m.games[gi].events))}</b></div>
           </div>
           <aside class="panel feed">
             <h3 class="panel-h">Crónica de la partida <small>M${gi + 1} · ${round.name}</small></h3>
@@ -472,7 +472,55 @@ export function createDraft(ctx) {
       ping.className = 'ping';
       delete ping.dataset.step;
     }
-    mapEl.classList.toggle('finished', MAP.gameFinished(t, m.games[gi].events.length));
+    mapEl.classList.toggle('finished', MAP.gameFinished(t, m.games[gi].events));
+    cinema(mapEl, m, gi, t, me, L);
+  }
+
+  // CLUTCH o PECHO FRÍO: el jugador sale en grande sobre el mapa con su jugada y cómo decide la partida.
+  // Todo va con retrasos negativos (--el), así que quien llega a mitad la ve en el mismo punto.
+  function cinema(mapEl, m, gi, t, me, L) {
+    const c = MAP.cineAt(t, m.games[gi].events);
+    const key = c ? `${gi}:${c.step}` : '';
+    mapEl.classList.toggle('cine-on', !!c);
+    const old = mapEl.querySelector('.cine');
+    if (old && old.dataset.key === key) return;
+    old?.remove();
+    mapEl.querySelector('.cine-wave')?.remove();
+    if (!c) return;
+    const { ev } = c;
+    const p = E.PLAYER_BY_KEY[ev.key];
+    if (!p) return;
+    const clutch = ev.kind === 'clutch';
+    const pSide = clutch ? ev.side : ev.side === 'a' ? 'b' : 'a';
+    const team = label(pSide === 'a' ? m.a : m.b, me);
+    const txt = ev.text.replaceAll('{eq}', label(ev.side === 'a' ? m.a : m.b, me));
+    const decide = clutch ? 'Decide la partida' : `Le cuesta la partida a ${team === 'Tu equipo' ? 'tu equipo' : esc(team)}`;
+    const cracks = clutch ? '' : `<svg class="cine-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M52 48 L40 30 L44 18 L36 2"/><path d="M52 48 L70 38 L78 22 L96 14"/><path d="M52 48 L62 66 L58 82 L66 98"/>
+      <path d="M52 48 L32 58 L20 54 L4 66"/><path d="M40 30 L28 26"/><path d="M70 38 L84 44"/><path d="M62 66 L76 72"/></svg>`;
+    const box = document.createElement('div');
+    box.className = `cine ${ev.kind}`;
+    box.dataset.key = key;
+    box.style.setProperty('--el', `${-c.el}ms`);
+    box.innerHTML = `
+      <div class="cine-flash"></div>
+      <div class="cine-band"><span class="cine-lines"></span></div>
+      <div class="cine-photo"><span class="cine-rays"></span><span class="cine-face"><span class="cine-in">${p.photo ? img(p.photo, PHOTO_W) : ''}<b>${initials(p.name)}</b></span></span>${cracks}</div>
+      <div class="cine-txt">
+        <p class="cine-stamp">${clutch ? 'Clutch' : 'Pecho frío'}</p>
+        <p class="cine-name">${esc(p.name)}<small>${E.ROLE_NAMES[p.role]} · ${esc(p.team)} ${p.year}</small></p>
+        <p class="cine-msg">${esc(txt)}</p>
+        <p class="cine-decide"><span>${decide}</span></p>
+      </div>`;
+    mapEl.appendChild(box);
+    // onda sobre el jugador en el mapa cuando la jugada se resuelve
+    const pos = L.pos[`${pSide === (m.b.id === me ? 'b' : 'a') ? 'home' : 'away'}:${p.role}`];
+    if (pos) {
+      const wave = document.createElement('span');
+      wave.className = `cine-wave ${ev.kind}`;
+      wave.style.cssText = `left:${pos.x}%;top:${pos.y}%;--el:${-c.el}ms`;
+      mapEl.appendChild(wave);
+    }
   }
 
   // ---------- resultado final ----------
@@ -552,7 +600,7 @@ export function createDraft(ctx) {
     let passed = 0; // con pausa: las escenas anteriores a esta ya se dejaron atrás con Continuar
     let lastKey = '';
     let lastFeed = '', lastScore = '';
-    const holdOf = (s) => (s.type === 'game' ? MAP.gameHold(s.m.games[s.gi].events.length) : 0);
+    const holdOf = (s) => (s.type === 'game' ? MAP.gameHold(s.m.games[s.gi].events) : 0);
     // escena actual y tiempo dentro de ella
     const locate = () => {
       let t = Date.now() - startAt + offset;
@@ -585,7 +633,7 @@ export function createDraft(ctx) {
         if (feed !== lastFeed) { lastFeed = feed; const f = el.querySelector('.events'); f.innerHTML = feed; f.scrollTop = f.scrollHeight; }
         const score = scoreHtml(round, s.m, s.gi, t, me);
         if (score !== lastScore) { lastScore = score; el.querySelector('.sb-mid').innerHTML = score; }
-        el.querySelector('.clock').textContent = clockAt(t, MAP.gameDuration(s.m.games[s.gi].events.length));
+        el.querySelector('.clock').textContent = clockAt(t, MAP.gameDuration(s.m.games[s.gi].events));
         moveTokens(el.querySelector('.mapin'), s.m, s.gi, t, me);
         return;
       }

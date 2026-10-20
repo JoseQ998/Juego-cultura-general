@@ -357,7 +357,7 @@ function gameEvents(a, b, winner, swing, r, used = new Set()) {
     const own = OWN[`${p.name} ${p.year}`] || [];
     const pool = p.trait === 'clutch' ? [...CLUTCH_ANY, ...CLUTCH_ROLE[p.role], ...own, ...own] : [...CHOKE_ANY, ...CHOKE_ROLE[p.role], ...own, ...own];
     const tpl = choose(pool);
-    ev.push({ side: winner, kind: p.trait, tpl, text: tpl.replace('{jugador}', p.name) });
+    ev.push({ side: winner, kind: p.trait, key: p.key, tpl, text: tpl.replace('{jugador}', p.name) });
   } else {
     add(LATE, winner);
   }
