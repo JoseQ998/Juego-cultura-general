@@ -85,6 +85,13 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .chip { border: 1px solid var(--gold5); padding: 5px 12px; font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--gold2); background: rgba(1, 10, 19, .6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; border-radius: 0; }
 .hx .exit { font-family: var(--serif); font-weight: 700; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold1); padding: 7px 14px; border: 1px solid var(--gold4); background: rgba(1, 10, 19, .6); white-space: nowrap; }
 .hx .exit:hover { border-color: var(--gold2); }
+.hx .snd { flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--gold4); background: rgba(1, 10, 19, .6); color: var(--gold1); cursor: pointer; }
+.hx .snd[hidden] { display: none; }
+.hx .snd:hover { border-color: var(--gold2); }
+.hx .snd svg { width: 18px; height: 18px; }
+.hx .snd .i-off, .hx .snd.off .i-on { display: none; }
+.hx .snd.off .i-off { display: block; }
+.hx .snd.off { color: var(--grey1); }
 
 /* ---------- elementos comunes ---------- */
 .hx .ph { position: relative; display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 35%, #1b3449 0%, #091428 75%); }
@@ -693,6 +700,7 @@ body.dw #app.container { max-width: none; padding: 0; }
   .cl-top .nav, .brand small { display: none; }
   .hx .chip { padding: 4px 9px; font-size: 9.5px; max-width: 150px; }
   .hx .exit { padding: 6px 10px; font-size: 10.5px; }
+  .hx .snd { width: 30px; height: 30px; }
   .brand b { font-size: 14px; }
   .emblem { width: 26px; height: 29px; }
 

@@ -2,6 +2,8 @@
 
 Página web de preguntas de cultura general. Funciona sin servidor propio: se publica gratis con **GitHub Pages** y, para que los rankings, las cuentas y el registro sean compartidos entre todos, se conecta a **Supabase** (también gratis).
 
+> **Proyecto de fans, sin ánimo de lucro.** Cultura General es un juego hecho por diversión, para pasar el rato con amigos. Es gratis, no tiene publicidad y no cobra por jugar ni por ninguna función: no busca ganar dinero. Los nombres, marcas, imágenes y demás contenido de terceros pertenecen a sus dueños y se usan solo como homenaje. Más detalles en [Derechos de autor y marcas](#derechos-de-autor-y-marcas).
+
 ## Qué incluye
 
 | Función | Detalle |
@@ -106,9 +108,19 @@ Están en [`js/questions.js`](js/questions.js). Cada pregunta es una línea:
 
 Las preguntas nuevas se añaden al **final** de su categoría (el reto semanal las identifica por su posición, por ejemplo `futbol-3`) y las categorías nuevas al **final** de `CATEGORIES` (el código de sala depende de ese orden). La respuesta correcta siempre va en segundo lugar; el juego baraja las opciones al mostrarlas.
 
-## League of Legends y Riot Games
+## Derechos de autor y marcas
 
-El modo Draft Worlds usa el arte de la Grieta del Invocador (de la wiki de League of Legends), las fotos y logos de [Leaguepedia](https://lol.fandom.com) y las formas de los iconos de posición. *Cultura General no está respaldado por Riot Games y no refleja las opiniones de Riot Games ni de nadie involucrado oficialmente en la producción o gestión de las propiedades de Riot Games. Riot Games y todas las propiedades asociadas son marcas comerciales o marcas registradas de Riot Games, Inc.*
+**Para qué es este juego.** Es un proyecto personal de fans, hecho solo para entretenerse y pasar el rato. Es gratis, no tiene publicidad, no vende nada y no cobra por jugar ni por ninguna función. Las donaciones (ver más abajo) son voluntarias, no dan ninguna ventaja dentro del juego y no se piden a cambio de ningún contenido de terceros.
+
+**Contenido de terceros.** Todo lo que no es propio pertenece a sus respectivos dueños, y aquí no se reclama ninguna propiedad sobre ello:
+
+- **League of Legends:** el arte de la Grieta del Invocador (de la wiki de League of Legends), los nombres de jugadores y equipos y las formas de los iconos de posición son de Riot Games y de los equipos. Las fotos y los logos se cargan desde [Leaguepedia](https://lol.fandom.com). El modo Draft Worlds se hace siguiendo la [política de contenido de fans de Riot Games](https://www.riotgames.com/en/legal) ("Legal Jibber Jabber"), que permite proyectos de fans gratuitos.
+- **Preguntas:** mencionan personas, obras, marcas y empresas solo con fines informativos y de entretenimiento.
+- **Tipografías e iconos:** tienen licencias libres (SIL OFL y CC0), indicadas en cada caso.
+
+**Si algo es tuyo y quieres que se quite**, abre un *issue* en este repositorio y se retirará lo antes posible.
+
+*Cultura General no está respaldado por Riot Games y no refleja las opiniones de Riot Games ni de nadie involucrado oficialmente en la producción o gestión de las propiedades de Riot Games. Riot Games y todas las propiedades asociadas son marcas comerciales o marcas registradas de Riot Games, Inc.*
 
 ## Donaciones
 
@@ -130,6 +142,7 @@ js/draft.js         Draft Worlds: draft, partidas en vivo, cuadro y modo contra 
 js/draft-online.js  Draft Worlds: salas con código y sala oficial
 js/draft-engine.js  Draft Worlds: química, bots y simulación del torneo
 js/draft-map.js     Draft Worlds: mapa y movimiento de los jugadores en cada partida
+js/draft-sound.js   Draft Worlds: música de los momentos CLUTCH y PECHO FRÍO (archivos en audio/)
 img/grieta.webp     Mapa de la Grieta del Invocador
 js/draft-data.js    Draft Worlds: equipos y jugadores (generado)
 tools/draft-data/   Datos de origen y scripts del Draft Worlds

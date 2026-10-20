@@ -4,6 +4,7 @@
 // valor del equipo, ni MVP, ni cómo quedó su equipo): solo la química, que sale de reglas conocidas.
 import * as E from './draft-engine.js';
 import * as MAP from './draft-map.js';
+import { soundOn, setSound, hasMusic, preloadMusic, playMusic, stopMusic } from './draft-sound.js';
 
 // Imágenes de Leaguepedia (sin "referrer": su servidor rechaza las imágenes pedidas desde otras webs).
 // Las rutas que empiezan por img/ son imágenes guardadas en el propio juego.
@@ -69,6 +70,7 @@ export function createDraft(ctx) {
   function stop() {
     timers.forEach((t) => { clearTimeout(t); clearInterval(t); });
     timers = [];
+    stopMusic();
     ctx.onStop?.();
   }
 
@@ -97,12 +99,24 @@ export function createDraft(ctx) {
         <header class="cl-top">
           <a class="brand" href="#/draft">${EMBLEM}<span><b>Draft Worlds</b><small>Mundiales 2011 – 2025</small></span></a>
           ${phase === 'menu' ? '' : `<nav class="nav" aria-label="Fase">${steps.map(([k, l]) => `<span class="${k === phase ? 'on' : ''}">${l}</span>`).join('')}</nav>`}
-          <div class="top-right">${chip ? `<span class="chip">${esc(chip)}</span>` : ''}<a class="exit" href="${phase === 'menu' ? '#/' : '#/draft'}">${phase === 'menu' ? 'Inicio' : 'Salir'}</a></div>
+          <div class="top-right">${chip ? `<span class="chip">${esc(chip)}</span>` : ''}${SOUND_BTN}<a class="exit" href="${phase === 'menu' ? '#/' : '#/draft'}">${phase === 'menu' ? 'Inicio' : 'Salir'}</a></div>
         </header>
         ${inner}
       </div>`;
   }
-  const page = (inner, opts) => { app.innerHTML = shell(inner, opts); };
+  const page = (inner, opts) => { app.innerHTML = shell(inner, opts); bindSound(); };
+  // Botón de música: solo sale si hay alguna música (ver draft-sound.js).
+  const SOUND_BTN = `<button class="snd" type="button" hidden aria-label="Música" title="Música">
+    <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>`;
+  function bindSound() {
+    const b = app.querySelector('.snd');
+    if (!b) return;
+    const paint = () => { b.classList.toggle('off', !soundOn()); b.setAttribute('aria-pressed', String(soundOn())); };
+    paint();
+    b.onclick = () => { setSound(!soundOn()); paint(); if (soundOn()) preloadMusic(); };
+    b.hidden = !hasMusic();
+  }
   const head = (kicker, title, done = null) => `
     <div class="cs-head">
       <p class="kicker">${kicker}</p>
@@ -498,6 +512,7 @@ export function createDraft(ctx) {
     const cracks = clutch ? '' : `<svg class="cine-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       <path d="M52 48 L40 30 L44 18 L36 2"/><path d="M52 48 L70 38 L78 22 L96 14"/><path d="M52 48 L62 66 L58 82 L66 98"/>
       <path d="M52 48 L32 58 L20 54 L4 66"/><path d="M40 30 L28 26"/><path d="M70 38 L84 44"/><path d="M62 66 L76 72"/></svg>`;
+    playMusic(ev.kind, c.el, MAP.CINE_TOTAL);
     const box = document.createElement('div');
     box.className = `cine ${ev.kind}`;
     box.dataset.key = key;
@@ -601,6 +616,7 @@ export function createDraft(ctx) {
     let lastKey = '';
     let lastFeed = '', lastScore = '';
     const holdOf = (s) => (s.type === 'game' ? MAP.gameHold(s.m.games[s.gi].events) : 0);
+    preloadMusic();
     // escena actual y tiempo dentro de ella
     const locate = () => {
       let t = Date.now() - startAt + offset;
@@ -639,6 +655,7 @@ export function createDraft(ctx) {
       }
       if (lastKey === String(i)) return;
       lastKey = String(i);
+      stopMusic(); // la música de un momento no pasa a la escena siguiente
       lastFeed = ''; lastScore = '';
       let html = '';
       if (s.type === 'preview') html = vsView(round, s.m, me);

@@ -16,6 +16,7 @@ const VERDICT = 1600; // tras el último mensaje, sale Victoria o Derrota
 const OUTRO = 4200; // y se queda a la vista antes de pasar a lo siguiente
 export const CINE = 6200; // animación del jugador CLUTCH o PECHO FRÍO que decide la partida
 const AFTER_CINE = 2400; // después, la jugada se sigue viendo en el mapa
+export const CINE_TOTAL = CINE + AFTER_CINE; // lo que dura la música de ese momento
 const isSwing = (e) => e.kind === 'clutch' || e.kind === 'choke';
 // Momento (ms desde que empieza la partida) en que sale cada mensaje.
 export function eventTimes(events) {
