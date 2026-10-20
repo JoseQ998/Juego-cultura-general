@@ -29,6 +29,7 @@ body.dw #app.container { max-width: none; padding: 0; }
   flex-direction: column;
   isolation: isolate;
   overflow-x: hidden;
+  overflow-x: clip; /* sin crear un contenedor de scroll, para que las barras fijas (sticky) funcionen */
   color: var(--gold1);
   font-family: var(--sans);
   font-size: 14px;
@@ -486,10 +487,14 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .ev-result.lose { color: #ffa1a7; border-color: var(--bad); background: var(--bad-bg); }
 .hx .spin { width: 12px; height: 12px; transform: rotate(45deg); border: 2px solid var(--hex2); border-right-color: transparent; animation: hx-spin 1.2s linear infinite; }
 @keyframes hx-spin { to { transform: rotate(405deg); } }
-.hx .skip-row { display: flex; justify-content: center; gap: 14px; padding: 16px 28px 26px; }
+.hx .skip-row { position: sticky; bottom: 0; z-index: 10; display: flex; justify-content: center; align-items: center; gap: 14px; padding: 16px 28px 26px; background: linear-gradient(180deg, rgba(1, 10, 19, 0), rgba(1, 10, 19, .92) 30%); }
+.hx .skip-row .btn-lock { min-width: 220px; height: 48px; animation: hx-ready 1.6s ease-in-out infinite; }
+.hx .skip-row .btn-lock > span { font-size: 15px; }
+@keyframes hx-ready { 50% { filter: drop-shadow(0 0 22px rgba(240, 230, 210, .6)) drop-shadow(0 6px 10px rgba(0, 0, 0, .5)); } }
 
 /* ---------- serie terminada / eliminado ---------- */
 .hx .stage { flex: 1; display: grid; place-items: center; padding: 40px 28px; }
+.hx .stage.tight { flex: none; padding: 28px 28px 0; }
 .hx .big-score { font-family: var(--serif); font-weight: 800; font-size: 72px; line-height: 1; background: linear-gradient(180deg, #fff6df, #c8aa6e 60%, #785a28); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 18px rgba(200, 170, 110, .45)); }
 .hx .big-score.lost { background: linear-gradient(180deg, #f0e6d2, #a09b8c 60%, #5b5a56); -webkit-background-clip: text; background-clip: text; }
 
@@ -743,7 +748,9 @@ body.dw #app.container { max-width: none; padding: 0; }
   .hx .ev time { font-size: 11px; }
   .hx .ev.clutch, .hx .ev.choke { font-size: 13.5px; }
   .hx .skip-row { padding: 12px 16px 22px; }
-  .hx .skip-row .btn-ghost { flex: 1; }
+  .hx .skip-row .btn-ghost, .hx .skip-row .btn-lock { flex: 1; min-width: 0; }
+  .hx .skip-row .btn-lock > span { padding: 0 20px; font-size: 13px; letter-spacing: .16em; }
+  .hx .stage.tight { padding: 22px 16px 0; }
 
   .hx .stage { padding: 30px 16px; }
   .hx .big-score { font-size: 56px; }

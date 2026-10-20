@@ -17,6 +17,7 @@ const OUTRO = 4200; // y se queda a la vista antes de pasar a lo siguiente
 export const gameDuration = (n) => INTRO + (n - 1) * STEP + VERDICT + OUTRO;
 export const shownEvents = (t, n) => (t < INTRO ? 0 : Math.min(n, Math.floor((t - INTRO) / STEP) + 1));
 export const gameFinished = (t, n) => t >= INTRO + (n - 1) * STEP + VERDICT;
+export const gameHold = (n) => INTRO + (n - 1) * STEP + VERDICT + 1200; // donde se para si hay que pulsar Continuar
 
 const FOUNTAIN = { home: [6, 92], away: [93, 7] };
 export const fountain = (side) => FOUNTAIN[side];

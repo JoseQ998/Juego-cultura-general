@@ -301,13 +301,12 @@ export function createDraft(ctx) {
       if (watch) {
         add('preview', 7000, { ri, m: watch });
         watch.games.forEach((g, gi) => add('game', MAP.gameDuration(g.events.length), { ri, m: watch, gi }));
-        add('series', 4500, { ri, m: watch });
       }
-      if (round.size > 2) add('bracket', 7000, { ri });
-      if (alive && mine && (mine.winner === 'a' ? mine.a.id : mine.b.id) !== me) {
-        alive = false;
-        add('out', 7000, { ri });
-      }
+      // resultado de la serie, si te eliminan y cómo sigue el cuadro, en una sola pantalla
+      const out = alive && mine && (mine.winner === 'a' ? mine.a.id : mine.b.id) !== me;
+      const bracket = round.size > 2;
+      if (watch || bracket) add('series', (watch ? 4500 : 0) + (bracket ? 7000 : 0) + (out ? 2500 : 0), { ri, m: watch, out, bracket });
+      if (out) alive = false;
     });
     add('end', Infinity, {});
     return scenes;
@@ -545,23 +544,40 @@ export function createDraft(ctx) {
   }
 
   // Reproduce el torneo. startAt (ms) permite que todos vayan al mismo ritmo en salas online.
+  // opts.pause: cada escena se para al terminar hasta que se pulsa Continuar.
   function playTournament(el, result, me, opts = {}) {
     const scenes = buildScenes(result, me);
     const startAt = opts.startAt || Date.now();
-    let offset = 0; // saltos locales
+    let offset = 0; // saltos y pausas locales
+    let passed = 0; // con pausa: las escenas anteriores a esta ya se dejaron atrás con Continuar
     let lastKey = '';
     let lastFeed = '', lastScore = '';
+    const holdOf = (s) => (s.type === 'game' ? MAP.gameHold(s.m.games[s.gi].events.length) : 0);
     // escena actual y tiempo dentro de ella
     const locate = () => {
       let t = Date.now() - startAt + offset;
       let i = 0;
-      while (i < scenes.length - 1 && t >= scenes[i].dur) { t -= scenes[i].dur; i++; }
-      return { i, t };
+      for (;;) {
+        if (opts.pause && i >= passed && scenes[i].type !== 'end' && t > holdOf(scenes[i])) {
+          offset -= t - holdOf(scenes[i]); // el tiempo no avanza hasta pulsar Continuar
+          return { i, t: holdOf(scenes[i]), paused: true };
+        }
+        if (i < scenes.length - 1 && t >= scenes[i].dur) { t -= scenes[i].dur; i++; } else break;
+      }
+      return { i, t, paused: false };
     };
     const skipRow = () => (opts.allowSkip ? '<div class="skip-row"><button class="btn-ghost" type="button" id="dwSkip"><span>Continuar</span></button><button class="btn-ghost hex" type="button" id="dwEnd"><span>Ir al final</span></button></div>' : '');
+    // cuando está parado, Continuar se ve dorado
+    const markPaused = (paused) => {
+      const b = el.querySelector('#dwSkip');
+      if (!b) return;
+      b.classList.toggle('btn-lock', paused);
+      b.classList.toggle('btn-ghost', !paused);
+    };
     const tick = () => {
       if (!el.isConnected) return;
-      const { i, t } = locate();
+      const { i, t, paused } = locate();
+      markPaused(paused);
       const s = scenes[i];
       const round = result.rounds[s.ri];
       if (s.type === 'game' && lastKey === String(i)) {
@@ -580,14 +596,14 @@ export function createDraft(ctx) {
       if (s.type === 'preview') html = vsView(round, s.m, me);
       else if (s.type === 'game') html = gameView(round, s.m, s.gi, t, me);
       else if (s.type === 'series') {
-        const side = sideOf(s.m, me);
-        const won = side ? s.m.winner === side : null;
-        const sc = side === 'b' ? [...s.m.score].reverse() : s.m.score;
-        html = `<div class="stage"><div class="banner">${head(round.name, won == null ? `Gana ${esc(label(s.m.winner === 'a' ? s.m.a : s.m.b, me))}` : won ? 'Serie ganada' : 'Serie perdida')}<p class="big-score ${won === false ? 'lost' : ''}">${sc[0]} – ${sc[1]}</p></div></div>`;
-      } else if (s.type === 'bracket') {
-        html = `<div class="res"><section class="panel br-panel"><h3 class="panel-h">Resultados de ${round.name.toLowerCase()} <small>Así sigue el cuadro</small></h3>${bracketView(result, s.ri, me)}</section></div>`;
-      } else if (s.type === 'out') {
-        html = `<div class="stage"><div class="banner">${head(`Eliminado en ${round.name.toLowerCase()}`, 'Tu Mundial termina aquí')}<p class="res-sub">Sigues viendo el resto del torneo hasta la final.</p></div></div>`;
+        if (s.m) {
+          const side = sideOf(s.m, me);
+          const won = side ? s.m.winner === side : null;
+          const sc = side === 'b' ? [...s.m.score].reverse() : s.m.score;
+          const out = s.out ? `<p class="res-sub">Quedas eliminado en ${round.name.toLowerCase()}. Sigues viendo el resto del torneo hasta la final.</p>` : '';
+          html += `<div class="stage${s.bracket ? ' tight' : ''}"><div class="banner">${head(round.name, won == null ? `Gana ${esc(label(s.m.winner === 'a' ? s.m.a : s.m.b, me))}` : won ? 'Serie ganada' : 'Serie perdida')}<p class="big-score ${won === false ? 'lost' : ''}">${sc[0]} – ${sc[1]}</p>${out}</div></div>`;
+        }
+        if (s.bracket) html += `<div class="res"><section class="panel br-panel"><h3 class="panel-h">Resultados de ${round.name.toLowerCase()} <small>Así sigue el cuadro</small></h3>${bracketView(result, s.ri, me)}</section></div>`;
       } else {
         clearInterval(timer);
         el.innerHTML = finalCard(result, me, opts);
@@ -597,9 +613,10 @@ export function createDraft(ctx) {
         return;
       }
       el.innerHTML = `${html}${skipRow()}`;
+      markPaused(paused);
       if (s.type === 'game') moveTokens(el.querySelector('.mapin'), s.m, s.gi, t, me);
-      el.querySelector('#dwSkip')?.addEventListener('click', () => { const c = locate(); offset += Math.max(0, scenes[c.i].dur - c.t) + 1; lastKey = ''; tick(); });
-      el.querySelector('#dwEnd')?.addEventListener('click', () => { offset += 1e9; lastKey = ''; tick(); });
+      el.querySelector('#dwSkip')?.addEventListener('click', () => { const c = locate(); passed = c.i + 1; offset += Math.max(0, scenes[c.i].dur - c.t) + 1; lastKey = ''; tick(); });
+      el.querySelector('#dwEnd')?.addEventListener('click', () => { passed = scenes.length - 1; offset += 1e9; lastKey = ''; tick(); });
     };
     const timer = every(tick, 200);
     tick();
@@ -686,6 +703,7 @@ export function createDraft(ctx) {
         page('<div id="dwPlay"></div>', { phase: 'mundial', chip });
         playTournament(document.getElementById('dwPlay'), result, me, {
           allowSkip: true,
+          pause: true,
           rerollsUsed: used,
           actions: '<div class="res-actions"><a class="btn-ghost" href="#/draft"><span>Menú del draft</span></a><button class="btn-lock" type="button" data-act="again"><span>Otro draft</span></button></div>',
           onAction: (a) => a === 'again' && renderSoloSetup(),
