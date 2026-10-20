@@ -331,7 +331,7 @@ function gameEvents(a, b, winner, swing, r) {
   const ev = [];
   const add = (pool, side) => {
     const tpl = pick(pool, r);
-    ev.push({ side, kind: 'normal', text: fill(tpl, teams[side], teams[other(side)]) });
+    ev.push({ side, kind: 'normal', tpl, text: fill(tpl, teams[side], teams[other(side)]) });
   };
   add(EARLY, r() < 0.6 ? winner : loser);
   if (r() < 0.5) add(EARLY, r() < 0.5 ? winner : loser);
@@ -341,11 +341,12 @@ function gameEvents(a, b, winner, swing, r) {
     const { p } = swing;
     const own = OWN[`${p.name} ${p.year}`] || [];
     const pool = p.trait === 'clutch' ? [...CLUTCH_ANY, ...CLUTCH_ROLE[p.role], ...own, ...own] : [...CHOKE_ANY, ...CHOKE_ROLE[p.role], ...own, ...own];
-    ev.push({ side: winner, kind: p.trait, text: pick(pool, r).replace('{jugador}', p.name) });
+    const tpl = pick(pool, r);
+    ev.push({ side: winner, kind: p.trait, tpl, text: tpl.replace('{jugador}', p.name) });
   } else {
     add(LATE, winner);
   }
-  ev.push({ side: winner, kind: 'end', text: END });
+  ev.push({ side: winner, kind: 'end', tpl: END, text: END });
   return ev;
 }
 
