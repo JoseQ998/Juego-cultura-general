@@ -14,8 +14,8 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
 - Las tarjetas muestran foto, nombre, año, equipo (logo) y posición, y las etiquetas **CLUTCH**
   (amarillo) y **PECHO FRÍO** (azul hielo) cuando correspondan.
 - Diseño: estilo del cliente de LoL (elegido entre 4 propuestas): tus 5 posiciones a la izquierda, los 3 equipos
-  en el centro, la Grieta y la química a la derecha; se marca un equipo y se pulsa "Elegir equipo", se marca un
-  jugador y se pulsa "Bloquear". NO se muestra nada que diga si un jugador es mejor o peor: ni nota, ni media, ni
+  en el centro, la Grieta y la química a la derecha; un toque en un equipo abre sus jugadores y un toque en un
+  jugador lo ficha (sin botones de confirmar). Se adapta a móvil, tablet y escritorio. NO se muestra nada que diga si un jugador es mejor o peor: ni nota, ni media, ni
   valor del equipo, ni MVP de la final, ni hasta dónde llegó su equipo ese año.
 
 ## 2. Valor del equipo

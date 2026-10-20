@@ -202,87 +202,80 @@ export function createDraft(ctx) {
 
   // ---------- draft ----------
   // api: { title, roster, rerollsLeft, options(): Promise<ids>, reroll(): Promise<ids>, pick(key): Promise<roster>, done(roster) }
+  // Un solo toque: tocar un equipo lo abre y tocar un jugador lo ficha.
   async function draftBoard(el, api) {
     let roster = api.roster;
     let options = await api.options();
-    let selTeam = null; // equipo marcado (antes de abrirlo)
     let team = null; // equipo abierto: se eligen sus jugadores
-    let selKey = null; // jugador marcado (antes de bloquearlo)
-    let busy = false;
+    let busy = null; // 'reroll' o la clave del jugador que se está fichando
     const draw = () => {
       if (!el.isConnected) return;
       const done = E.ROLES.filter((r) => roster[r]).length;
       const players = E.rosterPlayers(roster);
       const t = team && E.TEAM_BY_ID[team];
-      const sel = selKey ? E.PLAYER_BY_KEY[selKey] : null;
       const kicker = `${esc(api.title || 'Draft Worlds')} · Ronda ${Math.min(5, done + 1)} de 5`;
       let center, foot;
       if (!t) {
         center = `
-          <div class="col-label center"><span>Equipos de esta ronda</span><em>Worlds 2011 – 2025</em></div>
-          <div class="opts">${options.map((id) => teamCard(id, roster, id === selTeam)).join('')}</div>`;
+          <div class="col-label center"><span>Equipos de esta ronda</span><em>Toca un equipo para ver sus jugadores</em></div>
+          <div class="opts">${options.map((id) => teamCard(id, roster, false)).join('')}</div>`;
         foot = `
-          <p class="foot-hint">Elige uno de los tres equipos y después a uno de sus jugadores para una posición libre. No puedes repetir jugador.</p>
+          <p class="foot-hint">Toca un equipo y después a uno de sus jugadores para una posición libre. No puedes repetir jugador.</p>
           <div class="foot-btns">
             <button class="btn-ghost" type="button" id="dwReroll" ${api.rerollsLeft > 0 && !busy ? '' : 'disabled'}>${REROLL}<span>Reroll</span><em class="rr">${Array.from({ length: E.REROLLS }, (_, i) => `<i class="${i < api.rerollsLeft ? 'on' : ''}"></i>`).join('')}</em><small>${api.rerollsLeft} ${api.rerollsLeft === 1 ? 'restante' : 'restantes'}</small></button>
-            <button class="btn-lock" type="button" id="dwOpen" ${selTeam && !busy ? '' : 'disabled'}><span>Elegir equipo</span></button>
           </div>`;
       } else {
         const free = t.players.filter((pp) => E.canPick(roster, E.PLAYER_BY_KEY[`${t.id}:${pp.role}`])).length;
+        const traits = [...new Set(t.players.map((pp) => pp.trait).filter(Boolean))];
         center = `
-          ${sel?.photo ? `<div class="splash" aria-hidden="true">${img(sel.photo, PHOTO_W)}</div>` : ''}
           <div class="team-bar">
             <button class="back" type="button" id="dwBack"><span aria-hidden="true">‹</span> Equipos</button>
             ${logo(t, 'tb-logo')}
             <div class="tb-id"><strong>${esc(t.name)}</strong><small>${t.year} · ${esc(t.region)}</small></div>
             <span class="tb-free">${free} de 5 disponibles</span>
           </div>
-          <div class="pgrid">${t.players.map((pp) => { const p = E.PLAYER_BY_KEY[`${t.id}:${pp.role}`]; return playerCard(p, roster, p.key === selKey); }).join('')}</div>
-          <div class="pdetail">${sel ? `
-            <div class="pd-main"><span class="pd-kicker">Seleccionado</span><h3>${esc(sel.name)}</h3><p>${E.ROLE_NAMES[sel.role]} · ${esc(sel.team)} · ${sel.year}</p></div>
-            <div class="pd-info">${sel.trait ? `<p class="pd-trait">${traitTag(sel)} ${TRAIT_INFO[sel.trait]}</p>` : '<p class="pd-trait muted">Sin rasgo especial.</p>'}</div>`
-            : '<p class="pd-empty">Marca a un jugador para ver su ficha y pulsa <b>Bloquear</b>.</p>'}</div>`;
+          <div class="pgrid">${t.players.map((pp) => { const p = E.PLAYER_BY_KEY[`${t.id}:${pp.role}`]; return playerCard(p, roster, p.key === busy); }).join('')}</div>
+          ${traits.length ? `<div class="trait-help">${traits.map((k) => `<p>${traitTag({ trait: k })} ${TRAIT_INFO[k]}</p>`).join('')}</div>` : ''}`;
         foot = `
-          <p class="foot-hint">Los jugadores atenuados no se pueden elegir: su posición ya está ocupada o ya están en tu equipo.</p>
+          <p class="foot-hint">Toca a un jugador para ficharlo. Los atenuados no se pueden elegir: su posición ya está ocupada o ya están en tu equipo.</p>
           <div class="foot-btns">
-            <button class="btn-ghost" type="button" id="dwBack2"><span aria-hidden="true">‹</span><span>Volver</span></button>
-            <button class="btn-lock" type="button" id="dwLock" ${sel && !busy ? '' : 'disabled'}><span>Bloquear</span></button>
+            <button class="btn-ghost" type="button" id="dwBack2" ${busy ? 'disabled' : ''}><span aria-hidden="true">‹</span><span>Volver a los equipos</span></button>
           </div>`;
       }
       el.innerHTML = `
-        <div class="cs">
+        <div class="cs ${busy ? 'busy' : ''}">
           ${head(kicker, t ? 'Elige a tu jugador' : 'Elige un equipo', Math.min(4, done))}
           <div class="cs-body">
-            <aside class="col-left">${slots(roster, sel)}</aside>
+            <aside class="col-left">${slots(roster)}</aside>
             <main class="col-center">${center}</main>
-            <aside class="col-right">${miniMap(roster, sel)}${chemPanel(players)}</aside>
+            <aside class="col-right">${miniMap(roster)}${chemPanel(players)}</aside>
           </div>
           <footer class="cs-foot">${foot}</footer>
         </div>`;
       el.querySelectorAll('[data-team]').forEach((b) => (b.onclick = () => {
-        if (selTeam === b.dataset.team) { team = selTeam; selKey = null; } else selTeam = b.dataset.team;
+        if (busy) return;
+        team = b.dataset.team;
         draw();
+        el.querySelector('.col-center')?.scrollIntoView({ block: 'nearest' });
       }));
-      el.querySelector('#dwOpen')?.addEventListener('click', () => { team = selTeam; selKey = null; draw(); });
-      const back = () => { team = null; selKey = null; draw(); };
+      const back = () => { if (!busy) { team = null; draw(); } };
       el.querySelector('#dwBack')?.addEventListener('click', back);
       el.querySelector('#dwBack2')?.addEventListener('click', back);
-      el.querySelectorAll('[data-key]').forEach((b) => (b.onclick = () => { selKey = b.dataset.key; draw(); }));
-      el.querySelector('#dwReroll')?.addEventListener('click', async () => {
-        busy = true; draw();
-        try { options = await api.reroll(); api.rerollsLeft--; selTeam = null; } catch (err) { toast(err.message, 'error'); }
-        busy = false; draw();
-      });
-      el.querySelector('#dwLock')?.addEventListener('click', async () => {
-        if (!selKey) return;
-        busy = true; draw();
+      el.querySelectorAll('[data-key]').forEach((b) => (b.onclick = async () => {
+        if (busy) return;
+        busy = b.dataset.key; draw();
         try {
-          roster = await api.pick(selKey);
-          team = null; selTeam = null; selKey = null;
+          roster = await api.pick(busy);
+          team = null;
           if (E.ROLES.every((r) => roster[r])) return api.done(roster);
           options = await api.options();
         } catch (err) { toast(err.message, 'error'); }
-        busy = false; draw();
+        busy = null; draw();
+      }));
+      el.querySelector('#dwReroll')?.addEventListener('click', async () => {
+        busy = 'reroll'; draw();
+        try { options = await api.reroll(); api.rerollsLeft--; } catch (err) { toast(err.message, 'error'); }
+        busy = null; draw();
       });
     };
     draw();
@@ -649,7 +642,7 @@ export function createDraft(ctx) {
       <label class="field"><span>Empezar desde</span>
         <select id="${prefix}Size"><option value="16">Octavos (16 equipos)</option><option value="8">Cuartos (8 equipos)</option></select></label>
       <label class="field"><span>Dificultad de los bots</span>
-        <select id="${prefix}Level"><option value="facil">Fácil (eligen al azar)</option><option value="medio" selected>Media (entre sus 3 mejores opciones)</option><option value="imposible">Imposible (siempre la mejor)</option></select></label>`;
+        <select id="${prefix}Level"><option value="facil">Fácil</option><option value="medio" selected>Media</option><option value="imposible">Imposible</option></select></label>`;
   }
 
   function renderSoloSetup() {

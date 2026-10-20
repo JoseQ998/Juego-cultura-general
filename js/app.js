@@ -1433,7 +1433,7 @@ function draftAdminCard(dw) {
   if (!dw || dw.error) {
     return `<section class="card"><h3>Draft Worlds</h3><p class="error-text">No se pudo cargar: ${esc(dw?.error || '')}. ¿Ejecutaste el setup.sql nuevo en Supabase?</p></section>`;
   }
-  const LEVELS = [['facil', 'Fácil (eligen al azar)'], ['medio', 'Media (entre sus 3 mejores opciones)'], ['imposible', 'Imposible (siempre la mejor)']];
+  const LEVELS = [['facil', 'Fácil'], ['medio', 'Media'], ['imposible', 'Imposible']];
   const status = (l) => (l.status === 'drafting' ? 'Abierta' : l.championSeat == null ? '<span class="warn-text">Jugada, copa sin asignar</span>' : l.championSeat > 0 ? 'Copa entregada' : 'Ganó un bot');
   return `
     <section class="card">
