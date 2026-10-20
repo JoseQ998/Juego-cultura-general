@@ -460,6 +460,8 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .mapin.cine-on .bg { filter: saturate(.35) brightness(.36) blur(1.5px); }
 .hx .mapin.cine-on .tok:not(.focus) { filter: brightness(.45) grayscale(.6); }
 .hx .cine { --cA: #ffe39a; --cB: #e2b04a; --cC: #785a28; --glow: rgba(255, 210, 120, .55); --ink: #1b1307; position: absolute; inset: 0; z-index: 8; overflow: hidden; pointer-events: none; animation: cine-shake .4s linear calc(var(--el) + 720ms) both, cine-out .6s ease-in calc(var(--el) + 5600ms) both; }
+.hx .cine.clutch { animation: cine-shake .4s linear calc(var(--el) + 720ms) both, cine-shake .45s linear calc(var(--el) + 3300ms) forwards, cine-out .6s ease-in calc(var(--el) + 5600ms) both; }
+.hx .cine.clutch .cine-flash { animation: cine-flash .8s ease-out var(--el) both, cine-flash .9s ease-out calc(var(--el) + 3280ms) forwards; }
 .hx .cine.choke { --cA: #e4f8ff; --cB: #8fd8f5; --cC: #1d6f8f; --glow: rgba(143, 216, 245, .55); --ink: #03222e; }
 .hx .cine-flash { position: absolute; inset: 0; background: radial-gradient(circle at 30% 50%, var(--cA), transparent 62%); mix-blend-mode: screen; animation: cine-flash .8s ease-out var(--el) both; }
 .hx .cine-band { position: absolute; left: -6%; right: -6%; top: 50%; height: 46%; transform: translateY(-50%) skewY(-5deg); overflow: hidden; border-top: 2px solid var(--cB); border-bottom: 2px solid var(--cB); background: linear-gradient(90deg, #010a13, #0a1628 55%, #06101d); box-shadow: 0 0 34px var(--glow), inset 0 0 50px rgba(0, 0, 0, .6); animation: cine-band .55s cubic-bezier(.2, .9, .3, 1.15) calc(var(--el) + 120ms) both; }
