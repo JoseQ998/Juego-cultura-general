@@ -3,6 +3,7 @@ import { CATEGORIES, QUESTIONS, EXTRA_CATEGORY } from './questions.js';
 import * as store from './storage.js';
 import { getIdentity, rememberName } from './identity.js';
 import { createDraft } from './draft.js';
+import { createDraftOnline } from './draft-online.js';
 
 const QUESTION_COUNT = 15;
 const TIME_LIMIT = 10_000; // 10 segundos por pregunta
@@ -96,13 +97,17 @@ const profileOf = () => account?.profile || null;
 const isAdmin = () => profileOf()?.isAdmin === true && profileOf()?.status === 'approved';
 
 // Modo Draft Worlds (js/draft.js)
-const draft = createDraft({
+const draftCtx = {
   app, esc, toast, go: (h) => go(h), store,
   online: () => store.online(),
   playerName: () => profileOf()?.displayName || getName(),
+  setName: (n) => setName(n),
   profile: () => profileOf(),
   isAdmin: () => isAdmin(),
-});
+  badge: () => VERIFIED_BADGE,
+};
+const draft = createDraft(draftCtx);
+draftCtx.routeOnline = createDraftOnline(draftCtx, draft).route;
 
 // ---------------- salas (lobbies) ----------------
 // Código de sala = categorías (bits, 2 caracteres; 3 si no caben) + 4 caracteres de semilla.

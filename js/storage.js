@@ -69,6 +69,21 @@ export const adminWeek = call('adminWeek');
 export const adminDeletePlay = call('adminDeletePlay');
 export const adminSetWeek = call('adminSetWeek');
 
+// Draft Worlds (solo con Supabase)
+export const draftCreate = call('draftCreate');
+export const draftJoin = call('draftJoin');
+export const draftReady = call('draftReady');
+export const draftLeave = call('draftLeave');
+export const draftStart = call('draftStart');
+export const draftPick = call('draftPick');
+export const draftReroll = call('draftReroll');
+export const draftState = call('draftState');
+export const draftOfficial = call('draftOfficial');
+export const draftAward = call('draftAward');
+export const draftCupRanking = call('draftCupRanking');
+export const draftAdmin = call('draftAdmin');
+export const draftSetLevel = call('draftSetLevel');
+
 // ¿La partida a es mejor que b? (más aciertos; a igualdad, menos tiempo)
 function isBetter(a, b) {
   if (!b) return true;
@@ -167,6 +182,30 @@ function authMessage(error) {
   if (/signups not allowed/i.test(m)) return 'El registro de cuentas nuevas está desactivado.';
   return m || 'Error de conexión.';
 }
+
+// Estado de una sala de Draft Worlds.
+const ROSTER_ROLES = ['top', 'jungle', 'mid', 'bot', 'support'];
+const cleanRoster = (r) => {
+  const out = {};
+  if (r && typeof r === 'object') for (const role of ROSTER_ROLES) if (typeof r[role] === 'string') out[role] = r[role];
+  return out;
+};
+const cleanDraft = (s) => ({
+  code: str(s.code), name: str(s.name), size: num(s.size), level: str(s.level), official: s.official === true,
+  weekId: s.week_id == null ? null : num(s.week_id), status: str(s.status), seed: s.seed ? str(s.seed) : null,
+  countdownEndsAt: s.countdown_ends_at ? time(s.countdown_ends_at) : null,
+  simStartedAt: s.sim_started_at ? time(s.sim_started_at) : null,
+  championSeat: s.champion_seat == null ? null : num(s.champion_seat),
+  serverNow: time(s.now), host: s.host === true,
+  me: s.me ? {
+    seat: num(s.me.seat), ready: s.me.ready === true, done: s.me.done === true, roster: cleanRoster(s.me.roster),
+    options: Array.isArray(s.me.options) ? s.me.options.map(str) : [], rerolls: num(s.me.rerolls),
+  } : null,
+  seats: (Array.isArray(s.seats) ? s.seats : []).map((x) => ({
+    seat: num(x.seat), name: str(x.name), ready: x.ready === true, done: x.done === true, picks: num(x.picks),
+    verified: x.verified === true, roster: x.roster ? cleanRoster(x.roster) : null,
+  })),
+});
 
 async function supabaseImpl({ url, key }) {
   const { createClient } = await import(SUPABASE_JS);
@@ -351,6 +390,57 @@ async function supabaseImpl({ url, key }) {
     },
     async adminSetWeek(weekId, theme, extra) {
       await run(sb.rpc('admin_set_week', { p_week: weekId, p_theme: theme || null, p_extra: extra || null }));
+    },
+
+    // ----- Draft Worlds -----
+    async draftCreate(name, size, level, token, player) {
+      return str(await run(sb.rpc('draft_create', { p_name: cut(name, 40), p_size: size, p_level: level, p_token: token, p_player: cut(player, 20) })));
+    },
+    async draftJoin(code, token, player) {
+      return num(await run(sb.rpc('draft_join', { p_code: code, p_token: token, p_player: cut(player, 20) })));
+    },
+    async draftReady(code, token, ready) {
+      await run(sb.rpc('draft_ready', { p_code: code, p_token: token, p_ready: ready }));
+    },
+    async draftLeave(code, token) {
+      await run(sb.rpc('draft_leave', { p_code: code, p_token: token }));
+    },
+    async draftStart(code, token) {
+      await run(sb.rpc('draft_start', { p_code: code, p_token: token }));
+    },
+    async draftPick(code, token, key) {
+      await run(sb.rpc('draft_pick', { p_code: code, p_token: token, p_key: key }));
+    },
+    async draftReroll(code, token) {
+      await run(sb.rpc('draft_reroll', { p_code: code, p_token: token }));
+    },
+    async draftState(code, token) {
+      const s = await run(sb.rpc('draft_state', { p_code: code, p_token: token || null }));
+      return s && cleanDraft(s);
+    },
+    async draftOfficial() {
+      const code = await run(sb.rpc('draft_official'));
+      return code ? str(code) : null;
+    },
+    async draftAward(code, seat) {
+      await run(sb.rpc('draft_award', { p_code: code, p_seat: seat }));
+    },
+    async draftCupRanking() {
+      const rows = await run(sb.rpc('draft_cup_ranking'));
+      return rows.map((r) => ({ name: str(r.name), verified: r.verified === true, cups: num(r.cups) }));
+    },
+    async draftAdmin() {
+      const a = await run(sb.rpc('draft_admin'));
+      return {
+        level: str(a.level),
+        official: (a.official || []).map((l) => ({
+          code: str(l.code), weekId: num(l.week_id), status: str(l.status), players: num(l.players),
+          championSeat: l.champion_seat == null ? null : num(l.champion_seat), simStartedAt: l.sim_started_at ? time(l.sim_started_at) : null,
+        })),
+      };
+    },
+    async draftSetLevel(level) {
+      await run(sb.rpc('draft_set_level', { p_level: level }));
     },
   };
 }

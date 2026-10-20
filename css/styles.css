@@ -602,3 +602,12 @@ h2 .verified { width: .95em; height: .95em; }
 .dw-final-row small { color: var(--muted); font-size: .78rem; }
 .dw-final-row > b { font-family: 'Press Start 2P', monospace; color: var(--yellow); }
 .dw-intro p { margin-bottom: 0; }
+
+/* Draft Worlds online: salas */
+.dw-seats { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.dw-seats li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.12); }
+.dw-seats li.me { border-color: var(--cyan); }
+.dw-seats li > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dw-ok { color: var(--ok); font-weight: 700; }
+.dw-countdown { color: var(--yellow); }
+.dw-countdown b { font-family: 'Press Start 2P', monospace; }

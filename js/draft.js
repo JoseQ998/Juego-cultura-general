@@ -153,6 +153,12 @@ export function createDraft(ctx) {
     draw();
   }
 
+  // Resumen de un equipo ya armado: minimapa, valor y química.
+  function teamSummary(roster) {
+    const players = E.rosterPlayers(roster);
+    return `<div class="dw-board"><div>${mapView([{ players, side: 'home' }])}</div><div>${chemistryBox(players)}</div></div>`;
+  }
+
   // ---------- torneo: línea de tiempo de escenas ----------
   const label = (p, me) => (p.id === me ? 'Tu equipo' : p.bot ? p.name : `El equipo de ${p.name}`);
   const short = (p, me) => (p.id === me ? 'Tú' : p.name);
@@ -395,5 +401,5 @@ export function createDraft(ctx) {
     return renderMenu();
   }
 
-  return { route, stop, draftBoard, playTournament, sizeAndLevel, avatar, logo, later, every, finalCard };
+  return { route, stop, draftBoard, playTournament, sizeAndLevel, avatar, logo, later, every, finalCard, teamSummary };
 }
