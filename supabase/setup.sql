@@ -834,6 +834,9 @@ create table if not exists public.draft_seats (
   constraint draft_seat_token check (char_length(token) between 16 and 64)
 );
 
+-- Última vez que cada jugador eligió o hizo reroll (para no bloquear la sala si alguien se va).
+alter table public.draft_seats add column if not exists active_at timestamptz not null default now();
+
 create table if not exists public.draft_cups (
   week_id    int primary key,
   lobby      text not null,
@@ -1547,6 +1550,9 @@ begin
     update public.draft_seats set roster = private.draft_fill(roster), options = '{}', done = true
      where lobby = p_code and not done;
   end if;
+  -- quien pasa 3 minutos sin elegir se da por ido: su equipo se completa al azar
+  update public.draft_seats set roster = private.draft_fill(roster), options = '{}', done = true
+   where lobby = p_code and not done and active_at < now() - interval '3 minutes';
   select count(*) into v_left from public.draft_seats where lobby = p_code and not done;
   if v_left = 0 then
     update public.draft_lobbies set status = 'simulating', sim_started_at = now() + interval '3 seconds', countdown_ends_at = null
@@ -1726,7 +1732,7 @@ begin
   if exists (select 1 from public.draft_seats where lobby = l.code and not ready) then
     raise exception 'Todavía hay jugadores sin pulsar "Listo"';
   end if;
-  update public.draft_seats set options = private.draft_new_options(roster) where lobby = l.code;
+  update public.draft_seats set options = private.draft_new_options(roster), active_at = now() where lobby = l.code;
   update public.draft_lobbies set status = 'drafting', seed = md5(random()::text || clock_timestamp()::text)
    where code = l.code;
 end;
@@ -1760,7 +1766,7 @@ begin
   v_roster := s.roster || jsonb_build_object(p.role, p.key);
   v_done := (select count(*) from jsonb_object_keys(v_roster)) = 5;
   update public.draft_seats
-     set roster = v_roster, done = v_done,
+     set roster = v_roster, done = v_done, active_at = now(),
          options = case when v_done then '{}' else private.draft_new_options(v_roster) end
    where lobby = s.lobby and seat = s.seat;
   perform private.draft_advance(s.lobby);
@@ -1780,7 +1786,7 @@ begin
   if s.done or s.rerolls >= 2 or (select status from public.draft_lobbies where code = s.lobby) <> 'drafting' then
     raise exception 'No te quedan rerolls';
   end if;
-  update public.draft_seats set rerolls = rerolls + 1, options = private.draft_new_options(roster)
+  update public.draft_seats set rerolls = rerolls + 1, options = private.draft_new_options(roster), active_at = now()
    where lobby = s.lobby and seat = s.seat;
 end;
 $$;

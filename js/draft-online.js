@@ -110,6 +110,7 @@ export function createDraftOnline(ctx, ui) {
       busy = true;
       try {
         const s = await store.draftState(code, token());
+        if (s && st && s.serverNow < st.serverNow) return; // llegó tarde: ya hay un estado más nuevo
         if (s) clock = s.serverNow - Date.now();
         st = s;
         render();
@@ -161,6 +162,7 @@ export function createDraftOnline(ctx, ui) {
           <h2>${esc(st.name)}</h2>
           ${st.official ? '' : `<div class="code-box"><span class="code">${st.code}</span><button class="btn ghost sm" id="dwShare">Compartir enlace</button></div>`}
           <p class="muted small">${info}</p>
+          ${st.status === 'drafting' && !st.official ? '<p class="muted small">Si alguien pasa 3 minutos sin elegir, su equipo se completa al azar.</p>' : ''}
           ${left != null ? `<p class="dw-countdown">Falta un jugador por terminar: <b>${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</b>. Si no termina, su equipo se completa al azar.</p>` : ''}
           ${adminStart}
         </section>`;
@@ -284,7 +286,7 @@ export function createDraftOnline(ctx, ui) {
           me = s.me;
           return me.roster;
         },
-        done: () => { view = ''; refresh(); },
+        done: () => { view = ''; render(); },
       };
       ui.draftBoard(document.getElementById('dwMain'), api);
     }

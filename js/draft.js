@@ -2,7 +2,8 @@
 // Sirve igual para jugar en solitario contra bots que para las salas online.
 import * as E from './draft-engine.js';
 
-const FILE = (f, w) => `https://lol.fandom.com/wiki/Special:FilePath/${encodeURIComponent(f)}?width=${w}`;
+// Imágenes de Leaguepedia. Sin "referrer": su servidor rechaza las imágenes pedidas desde otras webs.
+const FILE = (f, w) => `https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/${f.split('/').map(encodeURIComponent).join('/')}/revision/latest/scale-to-width-down/${w}`;
 const PLACE = { 1: 'Campeón', 2: 'Finalista', 3: 'Semifinal', 5: 'Cuartos' };
 const GAME_STEP = 1700; // ms entre mensajes de una partida
 
@@ -47,11 +48,11 @@ export function createDraft(ctx) {
   // ---------- piezas visuales ----------
   function avatar(p, cls = '') {
     const ini = esc(p.name.slice(0, 2).toUpperCase());
-    const img = p.photo ? `<img src="${FILE(p.photo, 120)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const img = p.photo ? `<img src="${FILE(p.photo, 120)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
     return `<span class="dw-av ${cls}" style="--h:${hue(p.org || p.team)}"><b>${ini}</b>${img}</span>`;
   }
   function logo(team, cls = '') {
-    const img = team.logo ? `<img src="${FILE(team.logo, 96)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const img = team.logo ? `<img src="${FILE(team.logo, 96)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
     return `<span class="dw-logo ${cls}" style="--h:${hue(team.org)}"><b>${esc(team.tag)}</b>${img}</span>`;
   }
   const traitTag = (p) => (p.trait === 'clutch' ? '<span class="dw-trait clutch">CLUTCH</span>' : p.trait === 'choke' ? '<span class="dw-trait choke">PECHO FRÍO</span>' : '');

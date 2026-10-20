@@ -1,6 +1,7 @@
 // Calcula las notas de cada jugador-temporada y genera js/draft-data.js
 // Uso: node tools/draft-data/build.mjs [--report]  (los datos en bruto están en esta carpeta)
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 const DIR = new URL('.', import.meta.url).pathname;
 const OUT = new URL('../../js/draft-data.js', import.meta.url).pathname;
 
@@ -158,17 +159,25 @@ for (const k of [...CLUTCH, ...CHOKE]) {
 }
 
 // ---------- salida ----------
+// Ruta del archivo en el servidor de imágenes de Leaguepedia (carpetas por el md5 del nombre, como en MediaWiki).
+// Se enlaza directamente porque Special:FilePath pasa por una redirección que Cloudflare puede bloquear.
+function filePath(name) {
+  let n = name.replace(/ /g, '_');
+  n = n[0].toUpperCase() + n.slice(1);
+  const h = crypto.createHash('md5').update(n).digest('hex');
+  return `${h[0]}/${h.slice(0, 2)}/${n}`;
+}
 const teams = [];
 for (const r of rows) {
   const id = `${r.year}-${(TEAMS[r.team]?.[2] || r.team).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
   let t = teams.find((x) => x.id === id);
   if (!t) {
     const [org, region, tag] = TEAMS[r.team] || [r.team, '?', r.team];
-    t = { id, year: r.year, name: r.team, tag, org, region, place: r.place, ...(logos.get(r.team) ? { logo: logos.get(r.team) } : {}), players: [] };
+    t = { id, year: r.year, name: r.team, tag, org, region, place: r.place, ...(logos.get(r.team) ? { logo: filePath(logos.get(r.team)) } : {}), players: [] };
     teams.push(t);
   }
   const photo = photos.get(`${r.year}|${r.team}|${r.name}`);
-  t.players.push({ role: r.role, name: r.name, rating: r.rating, ...(photo ? { photo } : {}), ...(r.trait ? { trait: r.trait } : {}), ...(r.mvp ? { mvp: true } : {}) });
+  t.players.push({ role: r.role, name: r.name, rating: r.rating, ...(photo ? { photo: filePath(photo) } : {}), ...(r.trait ? { trait: r.trait } : {}), ...(r.mvp ? { mvp: true } : {}) });
 }
 if (process.argv.includes('--report')) {
   for (const r of rows) console.log(`${r.year} ${r.team.padEnd(26)} ${r.role.padEnd(8)} ${r.name.padEnd(13)} ${String(r.rating).padStart(2)}  ${JSON.stringify(r.parts)} ${r.titles.join(',')}${r.trait ? ' [' + r.trait + ']' : ''}`);
@@ -178,7 +187,7 @@ const header = `// Datos del modo Draft Worlds: equipos que llegaron a cuartos d
 // base por ronda (campeón 80, finalista 72, semifinal 64, cuartos 56) + MVP de la final 6
 // + MSI 3 + cada título de liga ese año 3 + rendimiento en ese Worlds (-15 a +10).
 // place: 1 campeón, 2 finalista, 3 semifinal, 5 cuartos.
-// logo y photo son nombres de archivo de Leaguepedia: https://lol.fandom.com/wiki/Special:FilePath/<archivo>
+// logo y photo son rutas de archivos de Leaguepedia: https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/<ruta>
 `;
 fs.writeFileSync(OUT, header + 'export const DRAFT_TEAMS = ' + JSON.stringify(teams, null, 0).replace(/\},\{"id"/g, '},\n{"id"') + ';\n');
 console.log('equipos:', teams.length, 'jugadores:', rows.length, '->', OUT);

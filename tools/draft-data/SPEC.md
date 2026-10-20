@@ -74,7 +74,9 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
 
 ## 7. Imágenes
 
-- Logo y foto: `https://lol.fandom.com/wiki/Special:FilePath/<archivo>` (campos `logo` y `photo`).
+- Logo y foto: archivos de Leaguepedia enlazados directamente en `https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/<ruta>`
+  (campos `logo` y `photo`, con la ruta que calcula `build.mjs`) y con `referrerpolicy="no-referrer"`: ese servidor
+  rechaza las imágenes pedidas desde otras webs, y `Special:FilePath` pasa por una redirección que Cloudflare puede bloquear.
   Si no hay archivo o no carga, iniciales con el color del equipo.
 - Minimapa: imagen de la Grieta (puede ser de la wiki de LoL vía Special:FilePath o dibujado en SVG).
 
