@@ -23,12 +23,12 @@
 2011|Counter Logic Gaming|bigfatlp|CLG bigfatlp.gif
 2011|Counter Logic Gaming|Chauster|CLG Chauster.gif
 2011|Counter Logic Gaming|Elementz|Crs elementz lcs.png
-2011|Team gamed!de|Kevin|
+2011|Team gamed!de|Kevin|SK Kev1n 2013 Summer.png
 2011|Team gamed!de|Zylor|
 2011|Team gamed!de|Reyk|
 2011|Team gamed!de|CndyPnda|SK CandyPanda 2013 Summer.png
 2011|Team gamed!de|Nyph|SK Nyph 2013 Summer.png
-2011|Xan|Vech|
+2011|Xan|Vech|Vech.jpg
 2011|Xan|Radeon6870|Xan Radeon6870.PNG
 2011|Xan|Axion|
 2011|Xan|d4rkness|SGS d4rkness.jpg
@@ -46,7 +46,7 @@
 2012|Azubu Frost|Shy|Azubufshy.jpg
 2012|Azubu Frost|CloudTemplar|MiG CloudTemplar.gif
 2012|Azubu Frost|RapidStar|MiG RapidStar.gif
-2012|Azubu Frost|Woong|
+2012|Azubu Frost|Woong|Azubufwoong.jpg
 2012|Azubu Frost|MadLife|MiG MadLife.gif
 2012|Counter Logic Gaming Europe|Wickd|EG Wickd 2013 Summer.png
 2012|Counter Logic Gaming Europe|Snoopeh|EG Snoopeh 2013 Summer.png
@@ -59,7 +59,7 @@
 2012|Moscow Five|Genja|GMB Genja 2013 Summer.png
 2012|Moscow Five|GoSu Pepper|CRS EDward 2013 Summer.png
 2012|Invictus Gaming|Pdd|Igpdd.png
-2012|Invictus Gaming|illuSioN|
+2012|Invictus Gaming|illuSioN|IGillusion.jpg
 2012|Invictus Gaming|zz1tai|IG-Zitai-2015lpl.jpg
 2012|Invictus Gaming|Kid|IG Kid 2015.jpg
 2012|Invictus Gaming|XiaoXiao|XiaoXiao.jpg
@@ -84,7 +84,7 @@
 2013|SK Telecom T1|Piglet|SKT Piglet 2013 WCS.png
 2013|SK Telecom T1|PoohManDu|SKT PoohManDu 2013 WCS.png
 2013|Royal Club|GoDlike|S3 Royal Godlike.png
-2013|Royal Club|Lucky|
+2013|Royal Club|Lucky|S3 Royal Lucky.png
 2013|Royal Club|Wh1t3zZ|Wh1t3zZ.jpg
 2013|Royal Club|Uzi|S3 Royal Uzi.png
 2013|Royal Club|Tabe|S3 Royal Tabe.png
@@ -123,11 +123,11 @@
 2014|Samsung White|PawN|SSW PawN 2014 WCS.jpg
 2014|Samsung White|imp|SSW imp 2014 WCS.png
 2014|Samsung White|Mata|SSW Mata 2014 WCS.png
-2014|Star Horn Royal Club|Cola|
+2014|Star Horn Royal Club|Cola|SHR Cola 2014 WCS.jpg
 2014|Star Horn Royal Club|inSec|SHR inSec 2014 WCS.jpg
-2014|Star Horn Royal Club|corn|
+2014|Star Horn Royal Club|corn|SHR corn 2014 WCS.jpg
 2014|Star Horn Royal Club|Uzi|S3 Royal Uzi.png
-2014|Star Horn Royal Club|Zero|
+2014|Star Horn Royal Club|Zero|SHR Zero 2014 WCS.jpg
 2014|Samsung Blue|Acorn|SSB Acorn 2014 WCS.png
 2014|Samsung Blue|Spirit|SSB Spirit 2014 WCS.png
 2014|Samsung Blue|Dade|SSB dade 2014 WCS.png
@@ -233,7 +233,7 @@
 2016|EDward Gaming|Scout|EDG Scout 2016 Worlds.png
 2016|EDward Gaming|Deft|EDG Deft 2015.jpg
 2016|EDward Gaming|Meiko|EDG Meiko 2017 WC.png
-2016|Albus NoX Luna|Smurf|
+2016|Albus NoX Luna|Smurf|Smurf Summer 2016.png
 2016|Albus NoX Luna|PvPStejos|PvPStejos.jpg
 2016|Albus NoX Luna|Kira|E6ckRqHmCnw.jpg
 2016|Albus NoX Luna|aMiracle|AMiracle 2016Worlds.png

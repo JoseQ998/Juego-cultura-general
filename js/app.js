@@ -262,6 +262,7 @@ async function route() {
   const [, page, arg, arg2] = h.split('/');
   window.scrollTo(0, 0);
   document.body.classList.toggle('wide', page === 'registro' || page === 'admin');
+  document.body.classList.toggle('dw', page === 'draft'); // Draft Worlds tiene su propio estilo (css/draft.css)
   if (page === 'sala' && arg) return renderLobby(arg);
   if (page === 'crear') return renderCreateLobby();
   if (page === 'ranking') return renderRanking(arg ? decodeURIComponent(arg) : 'semanal', arg2 ? decodeURIComponent(arg2) : '');

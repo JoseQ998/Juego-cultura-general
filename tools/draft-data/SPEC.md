@@ -13,10 +13,10 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
 - **2 rerolls** por draft (cambian las 3 opciones de esa ronda).
 - Las tarjetas muestran foto, nombre, año, equipo (logo) y posición, y las etiquetas **CLUTCH**
   (amarillo) y **PECHO FRÍO** (azul hielo) cuando correspondan.
-- Diseño inspirado en LoLdle "Worlds Mayhem": minimapa de la Grieta del Invocador con la foto de cada
-  jugador en su posición; tarjetas de equipo con logo, año y los 5 jugadores; tarjeta final con hasta
-  qué ronda llegaste, el resultado de cada ronda, rerolls usados y tus 5 jugadores. Mantener el estilo
-  "Arcade neón" del juego.
+- Diseño: estilo del cliente de LoL (elegido entre 4 propuestas): tus 5 posiciones a la izquierda, los 3 equipos
+  en el centro, la Grieta y la química a la derecha; se marca un equipo y se pulsa "Elegir equipo", se marca un
+  jugador y se pulsa "Bloquear". NO se muestra nada que diga si un jugador es mejor o peor: ni nota, ni media, ni
+  valor del equipo, ni MVP de la final, ni hasta dónde llegó su equipo ese año.
 
 ## 2. Valor del equipo
 

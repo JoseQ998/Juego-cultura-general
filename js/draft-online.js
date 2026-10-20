@@ -46,16 +46,14 @@ export function createDraftOnline(ctx, ui) {
 
   // ---------- crear sala ----------
   function renderCreate() {
-    app.innerHTML = `
-      <a class="back" href="#/draft">← Volver</a>
+    ui.page(`<div class="room">${ui.head('Draft Worlds', 'Crear sala')}
       <section class="card narrow">
-        <p class="eyebrow">Draft Worlds</p><h2>Crear sala</h2>
         <label class="field"><span>Nombre de la sala</span><input id="dwRoom" maxlength="40" placeholder="Opcional"></label>
         ${ui.sizeAndLevel('dwc')}
         ${nameField()}
         <p class="muted small">Comparte el código con tus amigos. Cuando todos pulsen "Listo", empiezas tú. Las plazas que falten se llenan con bots.</p>
         <button class="btn big" id="dwCreate">Crear sala</button>
-      </section>`;
+      </section></div>`, { phase: 'draft', chip: 'Sala con amigos' });
     document.getElementById('dwCreate').onclick = async (e) => {
       const player = readName();
       if (!player) return;
@@ -75,16 +73,16 @@ export function createDraftOnline(ctx, ui) {
 
   // ---------- sala oficial ----------
   async function renderOfficial() {
-    app.innerHTML = '<a class="back" href="#/draft">← Volver</a><p class="loading">Buscando la sala oficial…</p>';
+    ui.page('<div class="room"><p class="loading">Buscando la sala oficial…</p></div>', { phase: 'draft' });
     try {
       const code = await store.draftOfficial();
       if (!code) {
-        app.innerHTML = '<a class="back" href="#/draft">← Volver</a><section class="card"><h2>Sala oficial</h2><p class="muted">La primera sala oficial se abre con la primera semana del modo semanal.</p></section>';
+        ui.page('<div class="room"><section class="card"><h2>Sala oficial</h2><p class="muted">La primera sala oficial se abre con la primera semana del modo semanal.</p></section></div>', { phase: 'draft' });
         return;
       }
       location.replace(`#/draft/sala/${code}`);
     } catch (err) {
-      app.innerHTML = `<a class="back" href="#/draft">← Volver</a><section class="card"><h2>Sala oficial</h2><p class="error">${esc(errMsg(err))}</p></section>`;
+      ui.page(`<div class="room"><section class="card"><h2>Sala oficial</h2><p class="error">${esc(errMsg(err))}</p></section></div>`, { phase: 'draft' });
     }
   }
 
@@ -103,7 +101,7 @@ export function createDraftOnline(ctx, ui) {
     const mySeat = () => st?.me?.seat;
     const myId = () => (mySeat() ? `s${mySeat()}` : null);
 
-    app.innerHTML = '<a class="back" href="#/draft">← Volver</a><p class="loading">Cargando sala…</p>';
+    ui.page('<div class="room"><p class="loading">Cargando sala…</p></div>', { phase: 'draft' });
 
     async function refresh() {
       if (busy || !here()) return;
@@ -115,7 +113,7 @@ export function createDraftOnline(ctx, ui) {
         st = s;
         render();
       } catch (err) {
-        if (!st) app.innerHTML = `<a class="back" href="#/draft">← Volver</a><section class="card"><p class="error">${esc(errMsg(err))}</p></section>`;
+        if (!st) ui.page(`<div class="room"><section class="card"><p class="error">${esc(errMsg(err))}</p></section></div>`, { phase: 'draft' });
       } finally {
         busy = false;
       }
@@ -126,7 +124,7 @@ export function createDraftOnline(ctx, ui) {
       if (!here()) return;
       if (!st) {
         view = 'gone';
-        app.innerHTML = `<a class="back" href="#/draft">← Volver</a><section class="card"><h2>Sala no encontrada</h2><p class="muted">No hay ninguna sala de draft con el código «${esc(code)}», o quien la creó la cerró.</p></section>`;
+        ui.page(`<div class="room"><section class="card"><h2>Sala no encontrada</h2><p class="muted">No hay ninguna sala de draft con el código «${esc(code)}», o quien la creó la cerró.</p></section></div>`, { phase: 'draft' });
         return;
       }
       const v = st.status === 'simulating' ? 'sim'
@@ -136,7 +134,7 @@ export function createDraftOnline(ctx, ui) {
       if (v !== view) {
         view = v;
         if (v === 'sim') return showSim();
-        app.innerHTML = `<a class="back" href="#/draft">← Volver</a><div id="dwHead"></div><div id="dwMain"></div><div id="dwSeats"></div>`;
+        ui.page('<div class="room"><div id="dwHead"></div><div id="dwMain"></div><div id="dwSeats"></div></div>', { phase: 'draft', chip: st.official ? 'Sala oficial' : `Sala ${st.code}` });
         if (v === 'draft') showDraft();
       }
       if (v === 'sim') return;
@@ -295,7 +293,7 @@ export function createDraftOnline(ctx, ui) {
     function showSim() {
       const result = resultOf(st);
       const me = myId();
-      app.innerHTML = `<a class="back" href="#/draft">← Volver</a><div id="dwPlay"></div>`;
+      ui.page('<div id="dwPlay"></div>', { phase: 'mundial', chip: st.official ? 'Sala oficial' : `Sala ${st.code}` });
       const admin = st.official && ctx.isAdmin?.();
       const award = async () => {
         if (!admin || awarded || st.championSeat != null) return;
@@ -309,7 +307,7 @@ export function createDraftOnline(ctx, ui) {
         startAt: serverToLocal(st.simStartedAt),
         allowSkip: true,
         rerollsUsed: st.me?.rerolls ?? 0,
-        actions: `<div class="row center">${st.official ? '<a class="btn" href="#/ranking/copas">Ranking de copas</a>' : '<a class="btn" href="#/draft/crear">Crear otra sala</a>'}<a class="btn ghost" href="#/draft">Menú del draft</a></div>`,
+        actions: `<div class="res-actions"><a class="btn-ghost" href="#/draft"><span>Menú del draft</span></a>${st.official ? '<a class="btn-lock" href="#/ranking/copas"><span>Ranking de copas</span></a>' : '<a class="btn-lock" href="#/draft/crear"><span>Crear otra sala</span></a>'}</div>`,
         onEnd: award,
       });
     }
@@ -326,7 +324,7 @@ export function createDraftOnline(ctx, ui) {
   function route(arg, arg2) {
     if (!['crear', 'sala', 'oficial'].includes(arg)) return false;
     if (!store.online()) {
-      app.innerHTML = '<a class="back" href="#/draft">← Volver</a><section class="card"><h2>Sin conexión</h2><p class="muted">Las salas online necesitan conexión con el servidor. Puedes jugar contra bots.</p></section>';
+      ui.page('<div class="room"><section class="card"><h2>Sin conexión</h2><p class="muted">Las salas online necesitan conexión con el servidor. Puedes jugar contra bots.</p></section></div>', { phase: 'draft' });
       return true;
     }
     if (arg === 'crear') renderCreate();

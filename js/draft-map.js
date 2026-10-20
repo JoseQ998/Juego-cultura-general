@@ -177,7 +177,8 @@ function analyze(ev, teams, sideMap, seed) {
 }
 
 // Posiciones de los 10 jugadores en el instante t de la partida gi de la serie m.
-// Devuelve { pos: { 'home:top': { x, y, dead } ... }, ping: { x, y, side, step } | null, step }
+// Devuelve { pos: { 'home:top': { x, y, dead } ... }, ping: { x, y, side, step } | null, step,
+//   focus: { keys: ['home:mid', ...], kind } | null }  (focus = quién protagoniza la jugada en curso)
 export function gameLayout(m, gi, t, me) {
   const g = m.games[gi];
   const n = g.events.length;
@@ -221,6 +222,7 @@ export function gameLayout(m, gi, t, me) {
 
   // 2) la jugada en curso: solo se mueven los que participan
   let ping = null;
+  let focus = null;
   if (step >= 0) {
     const e = info[step];
     const { S, O } = e;
@@ -269,6 +271,10 @@ export function gameLayout(m, gi, t, me) {
     if (e.play.also) group(e.play.also, 'b');
     const P0 = group(e.play, 'a');
     ping = { x: P0[0], y: P0[1], side: S, step };
+    // protagonistas: los jugadores que nombra el mensaje (en un PECHO FRÍO, el que falla)
+    const kind = g.events[step].kind;
+    const keys = kind === 'choke' ? e.victims.map((r) => `${O}:${r}`) : e.actors.map((r) => `${S}:${r}`);
+    if (keys.length) focus = { keys: keys.slice(0, 2), kind, side: kind === 'choke' ? O : S };
   }
 
   // 3) pequeños movimientos para que nadie esté quieto
@@ -277,5 +283,5 @@ export function gameLayout(m, gi, t, me) {
     v.x += (unit(`${seed}${key}${sub}x`) - 0.5) * 2;
     v.y += (unit(`${seed}${key}${sub}y`) - 0.5) * 2 * MAP_RATIO;
   }
-  return { pos, ping, step };
+  return { pos, ping, step, focus };
 }
