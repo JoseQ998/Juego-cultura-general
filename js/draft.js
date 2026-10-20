@@ -1,35 +1,27 @@
 // Interfaz del modo Draft Worlds: menú, draft, partidas en vivo, cuadro y tarjeta final.
 // Sirve igual para jugar en solitario contra bots que para las salas online.
 import * as E from './draft-engine.js';
+import * as MAP from './draft-map.js';
 
 // Imágenes de Leaguepedia. Sin "referrer": su servidor rechaza las imágenes pedidas desde otras webs.
 const FILE = (f, w) => `https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/${f.split('/').map(encodeURIComponent).join('/')}/revision/latest/scale-to-width-down/${w}`;
 const PLACE = { 1: 'Campeón', 2: 'Finalista', 3: 'Semifinal', 5: 'Cuartos' };
-const GAME_STEP = 1700; // ms entre mensajes de una partida
 
-// Posiciones en el minimapa (%): tu equipo abajo a la izquierda, el rival arriba a la derecha.
-const SPOTS = {
-  home: { top: [11, 24], jungle: [27, 46], mid: [47, 55], bot: [78, 89], support: [64, 82] },
-  away: { top: [38, 10], jungle: [70, 30], mid: [56, 42], bot: [90, 74], support: [84, 56] },
-};
-
-// Iconos de posición (SVG propios, sin emojis)
+// Iconos de posición: las formas de los iconos oficiales de LoL, dibujadas en SVG para que se vean
+// nítidos a cualquier tamaño, cada uno con su color (top rojo, jungla verde, mid naranja,
+// tirador azul, apoyo celeste).
+const TOP_ICON = '<path d="M2 2h28l-6 6H8v16l-6 6z"/><path d="M30 8v22H8l5-5h12V13z" opacity=".3"/><rect x="12.5" y="12.5" width="7" height="7" opacity=".7"/>';
 const ROLE_ICON = {
-  top: '<path d="M3 3h14v4H7v10H3z"/><path d="M11 11h10v10H11z" opacity=".35"/>',
-  jungle: '<path d="M12 2c3 4 7 6 7 11a7 7 0 0 1-14 0c0-5 4-7 7-11z"/>',
-  mid: '<path d="M3 17L17 3l4 4L7 21z"/><path d="M3 3h6v3H6v3H3zM21 21h-6v-3h3v-3h3z" opacity=".35"/>',
-  bot: '<path d="M21 21H7v-4h10V7h4z"/><path d="M3 3h10v10H3z" opacity=".35"/>',
-  support: '<path d="M12 2l9 4v6c0 5-4 9-9 10C7 21 3 17 3 12V6z"/>',
+  top: TOP_ICON,
+  jungle: '<path d="M16 30C14.4 21 14.6 11 17 2c1.7 9 1.4 19-1 28z"/><path d="M15 30C11 25 7.4 18 5 10c5.6 5 8.7 11 10 20zM17 30c4-5 7.6-12 10-20-5.6 5-8.7 11-10 20z"/><path d="M13 30c-4.2-1.8-8.2-5.6-11-11 5.2 2 9.1 5.6 11 11zM19 30c4.2-1.8 8.2-5.6 11-11-5.2 2-9.1 5.6-11 11z" opacity=".75"/>',
+  mid: '<path d="M2 2h16l-5 5H7v6l-5 5zM30 30H14l5-5h6v-6l5-5z" opacity=".3"/><path d="M2 25L25 2h5v5L7 30H2z"/>',
+  bot: `<g transform="rotate(180 16 16)">${TOP_ICON}</g>`,
+  support: '<path d="M16 1l3.6 6L16 11.2 12.4 7z"/><path d="M14.4 12.6L2.5 9.5l3.7 5.6-2 2.6 9.6-.2zM17.6 12.6l11.9-3.1-3.7 5.6 2 2.6-9.6-.2z" opacity=".85"/><path d="M14 13h4l-1.1 17h-1.8z"/>',
 };
-export const roleIcon = (r) => `<svg class="dw-role" viewBox="0 0 24 24" aria-label="${E.ROLE_NAMES[r]}"><title>${E.ROLE_NAMES[r]}</title>${ROLE_ICON[r]}</svg>`;
+export const roleIcon = (r) => `<svg class="dw-role ${r}" viewBox="0 0 32 32" role="img" aria-label="${E.ROLE_NAMES[r]}"><title>${E.ROLE_NAMES[r]}</title>${ROLE_ICON[r]}</svg>`;
 
-const MINIMAP = `<svg class="dw-map-bg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-  <rect x="1" y="1" width="98" height="98" rx="6" class="ground"/>
-  <path d="M14 14 L86 86" class="river"/>
-  <path d="M8 92 V8 H92" class="lane"/><path d="M8 92 H92 V8" class="lane"/><path d="M10 90 L90 10" class="lane"/>
-  <path d="M24 30 q6 -6 12 0 t12 0 M30 64 q6 -6 12 0 M58 36 q6 -6 12 0 M52 70 q6 -6 12 0 t12 0" class="jungle"/>
-  <circle cx="8" cy="92" r="8" class="base home"/><circle cx="92" cy="8" r="8" class="base away"/>
-</svg>`;
+// Arte de la Grieta del Invocador (Riot Games, vía la wiki de LoL)
+const MAP_BG = `<img class="dw-map-bg" src="${MAP.MAP_IMG}" alt="" aria-hidden="true" draggable="false">`;
 
 function hue(s) { return E.hashStr(String(s)) % 360; }
 
@@ -59,13 +51,53 @@ export function createDraft(ctx) {
   const fmt1 = (n) => (Math.round(n * 10) / 10).toString().replace('.', ',');
   const signed = (n) => (n > 0 ? '+' : '') + fmt1(n);
 
+  // Mapa del draft: tus jugadores en su posición de tu mitad del mapa.
   function mapView(sides) {
-    // sides: [{ players, side: 'home'|'away' }]
+    // sides: [{ players, side: 'home' }]
     const tokens = sides.flatMap(({ players, side }) => players.filter(Boolean).map((p) => {
-      const [x, y] = SPOTS[side][p.role];
+      const [x, y] = MAP.DRAFT_SPOTS[p.role];
       return `<div class="dw-token ${side}" style="left:${x}%;top:${y}%">${avatar(p)}<span class="dw-token-name">${esc(p.name)}</span><span class="dw-token-year">${p.year}</span></div>`;
     }));
-    return `<div class="dw-map">${MINIMAP}${tokens.join('')}</div>`;
+    return `<div class="dw-map">${MAP_BG}${tokens.join('')}</div>`;
+  }
+
+  // Mapa de una partida en vivo: los 10 jugadores se mueven según lo que pasa (js/draft-map.js).
+  function liveMap(m, gi, t, me, home, away) {
+    const L = MAP.gameLayout(m, gi, t, me);
+    const tok = (side, p) => {
+      const v = L.pos[`${side}:${p.role}`];
+      return `<div class="dw-token live ${side}${v.dead ? ' dead' : ''}" data-tok="${side}:${p.role}" style="left:${v.x.toFixed(2)}%;top:${v.y.toFixed(2)}%">${avatar(p)}<span class="dw-token-name">${esc(p.name)}</span></div>`;
+    };
+    return `<div class="dw-map live">${MAP_BG}<span class="dw-ping"></span>${home.players.map((p) => tok('home', p)).join('')}${away.players.map((p) => tok('away', p)).join('')}</div>`;
+  }
+  function moveTokens(mapEl, m, gi, t, me) {
+    if (!mapEl) return;
+    const L = MAP.gameLayout(m, gi, t, me);
+    for (const el of mapEl.querySelectorAll('[data-tok]')) {
+      const v = L.pos[el.dataset.tok];
+      if (!v) continue;
+      if (el.classList.contains('dead') && !v.dead) {
+        // reaparece en su fuente y vuelve caminando
+        const [fx, fy] = MAP.fountain(el.dataset.tok.split(':')[0]);
+        el.style.transition = 'none';
+        el.style.left = `${fx}%`;
+        el.style.top = `${fy}%`;
+        void el.offsetWidth;
+        el.style.transition = '';
+      }
+      el.classList.toggle('dead', v.dead);
+      el.style.left = `${v.x.toFixed(2)}%`;
+      el.style.top = `${v.y.toFixed(2)}%`;
+    }
+    const ping = mapEl.querySelector('.dw-ping');
+    if (ping && L.ping && ping.dataset.step !== String(L.ping.step)) {
+      ping.dataset.step = L.ping.step;
+      ping.className = `dw-ping ${L.ping.side}`;
+      ping.style.left = `${L.ping.x}%`;
+      ping.style.top = `${L.ping.y}%`;
+      void ping.offsetWidth;
+      ping.classList.add('on');
+    }
   }
 
   function chemistryBox(players) {
@@ -170,7 +202,7 @@ export function createDraft(ctx) {
       const watch = alive && mine ? mine : (!alive && round.size === 2 ? round.matches[0] : null);
       if (watch) {
         add('preview', 4000, { ri, m: watch });
-        watch.games.forEach((g, gi) => add('game', 1500 + g.events.length * GAME_STEP + 2200, { ri, m: watch, gi }));
+        watch.games.forEach((g, gi) => add('game', MAP.gameDuration(g.events.length), { ri, m: watch, gi }));
         add('series', 3000, { ri, m: watch });
       }
       if (round.size > 2) add('bracket', 4500, { ri });
@@ -209,13 +241,25 @@ export function createDraft(ctx) {
     return `${card(l)}<div class="dw-vs">VS</div>${card(r)}`;
   }
 
+  // Partida en vivo: el mapa se dibuja una vez y luego solo se mueven los jugadores;
+  // el panel de la derecha (marcador y mensajes) se actualiza aparte.
   function gameView(round, m, gi, t, me) {
     const mySide = sideOf(m, me) || 'a';
     const home = mySide === 'a' ? m.a : m.b, away = mySide === 'a' ? m.b : m.a;
+    return `
+      <div class="dw-live">
+        <div class="dw-live-map">${liveMap(m, gi, t, me, home, away)}
+          <p class="dw-live-teams"><span class="home">${esc(label(home, me))}</span> vs <span class="away">${esc(label(away, me))}</span></p></div>
+        <div class="dw-live-side">${gameSide(round, m, gi, t, me)}</div>
+      </div>`;
+  }
+
+  function gameSide(round, m, gi, t, me) {
+    const mySide = sideOf(m, me) || 'a';
     const g = m.games[gi];
     const before = m.games.slice(0, gi);
-    const shownEvents = Math.min(g.events.length, Math.max(0, Math.floor((t - 1200) / GAME_STEP) + 1));
-    const finished = shownEvents >= g.events.length && t > 1500 + g.events.length * GAME_STEP;
+    const shownEvents = MAP.shownEvents(t, g.events.length);
+    const finished = MAP.gameFinished(t, g.events.length);
     const winsOf = (s, list) => list.filter((x) => x.winner === s).length;
     const doneList = finished ? m.games.slice(0, gi + 1) : before;
     const score = [winsOf(mySide, doneList), winsOf(mySide === 'a' ? 'b' : 'a', doneList)];
@@ -233,16 +277,10 @@ export function createDraft(ctx) {
       return `<li class="dw-ev ${neutral ? (e.side === 'a' ? 'na' : 'nb') : good ? 'good' : 'bad'} ${e.kind}">${esc(txt)}</li>`;
     }).join('');
     return `
-      <div class="dw-live">
-        <div class="dw-live-map">${mapView([{ players: home.players, side: 'home' }, { players: away.players, side: 'away' }])}
-          <p class="dw-live-teams"><span class="home">${esc(label(home, me))}</span> vs <span class="away">${esc(label(away, me))}</span></p></div>
-        <div class="dw-live-side">
           <div class="dw-series"><span>${round.name} · Bo${m.bestOf}</span><b>${score[0]} - ${score[1]}</b></div>
           <div class="dw-boxes">${boxes}</div>
           <ul class="dw-events">${events}</ul>
-          ${finished ? `<p class="dw-gameend ${g.winner === mySide ? 'win' : 'lose'}">${sideOf(m, me) ? (g.winner === mySide ? 'Partida ganada' : 'Partida perdida') : `Gana ${esc(teamName(g.winner))}`}</p>` : `<p class="muted small">Partida ${gi + 1} en juego…</p>`}
-        </div>
-      </div>`;
+          ${finished ? `<p class="dw-gameend ${g.winner === mySide ? 'win' : 'lose'}">${sideOf(m, me) ? (g.winner === mySide ? 'Partida ganada' : 'Partida perdida') : `Gana ${esc(teamName(g.winner))}`}</p>` : `<p class="muted small">Partida ${gi + 1} en juego…</p>`}`;
   }
 
   function finalCard(result, me, extra = {}) {
@@ -273,16 +311,28 @@ export function createDraft(ctx) {
     const startAt = opts.startAt || Date.now();
     let offset = 0; // saltos locales
     let lastKey = '';
-    const tick = () => {
-      if (!el.isConnected) return;
+    let lastSide = '';
+    // escena actual y tiempo dentro de ella
+    const locate = () => {
       let t = Date.now() - startAt + offset;
       let i = 0;
       while (i < scenes.length - 1 && t >= scenes[i].dur) { t -= scenes[i].dur; i++; }
+      return { i, t };
+    };
+    const tick = () => {
+      if (!el.isConnected) return;
+      const { i, t } = locate();
       const s = scenes[i];
       const round = result.rounds[s.ri];
-      const key = `${i}:${s.type === 'game' ? Math.floor(t / 400) : ''}`;
-      if (key === lastKey) return;
-      lastKey = key;
+      if (s.type === 'game' && lastKey === String(i)) {
+        const side = gameSide(round, s.m, s.gi, t, me);
+        if (side !== lastSide) { lastSide = side; el.querySelector('.dw-live-side').innerHTML = side; }
+        moveTokens(el.querySelector('.dw-map.live'), s.m, s.gi, t, me);
+        return;
+      }
+      if (lastKey === String(i)) return;
+      lastKey = String(i);
+      lastSide = '';
       let html = '';
       if (s.type === 'preview') html = `<section class="card"><p class="eyebrow">${round.name} · Bo${round.bestOf}</p><div class="dw-vswrap">${vsView(s.m, me)}</div></section>`;
       else if (s.type === 'game') html = `<section class="card">${gameView(round, s.m, s.gi, t, me)}</section>`;
@@ -301,7 +351,7 @@ export function createDraft(ctx) {
         return;
       }
       el.innerHTML = `${html}<div class="row center dw-skip">${opts.allowSkip ? '<button class="btn ghost sm" id="dwSkip">Saltar</button><button class="btn ghost sm" id="dwEnd">Ir al final</button>' : ''}</div>`;
-      el.querySelector('#dwSkip')?.addEventListener('click', () => { offset += Math.max(0, scenes[i].dur - t) + 1; lastKey = ''; tick(); });
+      el.querySelector('#dwSkip')?.addEventListener('click', () => { const c = locate(); offset += Math.max(0, scenes[c.i].dur - c.t) + 1; lastKey = ''; tick(); });
       el.querySelector('#dwEnd')?.addEventListener('click', () => { offset += 1e9; lastKey = ''; tick(); });
     };
     const timer = every(tick, 200);

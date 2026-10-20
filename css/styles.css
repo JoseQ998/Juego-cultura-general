@@ -476,7 +476,13 @@ h2 .verified { width: .95em; height: .95em; }
 .dw-team-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 4px 10px; margin-top: 8px; font-size: .85rem; }
 .dw-team-players span { display: flex; gap: 5px; align-items: center; }
 .dw-team-players span.off { opacity: .35; text-decoration: line-through; }
-.dw-role { width: 14px; height: 14px; fill: var(--yellow); flex: none; }
+.dw-role { width: 16px; height: 16px; flex: none; fill: currentColor; color: var(--yellow); filter: drop-shadow(0 0 3px currentColor); }
+.dw-role.top { color: #ff5a76; }
+.dw-role.jungle { color: #48e07e; }
+.dw-role.mid { color: #ffb43c; }
+.dw-role.bot { color: #4fa8ff; }
+.dw-role.support { color: #9ad8ff; }
+.dw-player-info small .dw-role, .dw-final-row > .dw-role { width: 18px; height: 18px; }
 .dw-player { display: flex; gap: 12px; align-items: center; }
 .dw-player:disabled { opacity: .4; cursor: not-allowed; }
 .dw-player-info { flex: 1; min-width: 0; display: grid; gap: 2px; }
@@ -499,21 +505,29 @@ h2 .verified { width: .95em; height: .95em; }
 .dw-logo img { object-fit: contain; padding: 4px; background: #0b0b1e; }
 
 /* minimapa */
-.dw-map { position: relative; width: 100%; aspect-ratio: 1; max-width: 520px; margin: 0 auto 14px; }
-.dw-map-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.dw-map-bg .ground { fill: #0b1f1a; stroke: rgba(25,240,255,.45); stroke-width: .6; }
-.dw-map-bg .river { stroke: rgba(25,140,255,.55); stroke-width: 9; stroke-linecap: round; fill: none; }
-.dw-map-bg .lane { stroke: rgba(230,214,150,.35); stroke-width: 4.5; fill: none; stroke-linejoin: round; }
-.dw-map-bg .jungle { stroke: rgba(70,170,110,.45); stroke-width: 1.2; fill: none; }
-.dw-map-bg .base { stroke-width: 1; }
-.dw-map-bg .base.home { fill: rgba(25,240,255,.25); stroke: var(--cyan); }
-.dw-map-bg .base.away { fill: rgba(255,46,151,.25); stroke: var(--pink); }
+.dw-map { position: relative; width: 100%; aspect-ratio: 1000 / 842; max-width: 560px; margin: 0 auto 14px; overflow: hidden;
+  border: 1px solid rgba(25,240,255,.45); border-radius: 6px; box-shadow: 0 0 18px rgba(25,240,255,.2); background: #0b1f1a; }
+.dw-map-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; user-select: none; pointer-events: none; }
+/* partida en vivo: los jugadores se mueven con transiciones */
+.dw-map.live .dw-token { width: 62px; transition: left 1s cubic-bezier(.45,.05,.35,1), top 1s cubic-bezier(.45,.05,.35,1), opacity .4s, filter .4s; z-index: 2; }
+.dw-map.live .dw-token .dw-av { width: 32px; height: 32px; }
+.dw-map.live .dw-token-name { font-size: .6rem; }
+.dw-map.live .dw-token.dead { opacity: .4; filter: grayscale(1); z-index: 1; }
+.dw-map.live .dw-token.dead .dw-av::after { content: ''; position: absolute; inset: 0; background:
+  linear-gradient(45deg, transparent 46%, rgba(255,60,80,.9) 46% 54%, transparent 54%),
+  linear-gradient(-45deg, transparent 46%, rgba(255,60,80,.9) 46% 54%, transparent 54%); }
+.dw-ping { position: absolute; width: 14%; aspect-ratio: 1; transform: translate(-50%, -50%) scale(.2); border-radius: 50%; opacity: 0; pointer-events: none; z-index: 1; border: 3px solid var(--cyan); box-shadow: 0 0 18px var(--cyan), inset 0 0 18px var(--cyan); }
+.dw-ping.away { border-color: var(--pink); box-shadow: 0 0 18px var(--pink), inset 0 0 18px var(--pink); }
+.dw-ping.on { animation: dw-ping 1.4s ease-out .9s; }
+@keyframes dw-ping { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.2); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); } }
+@media (prefers-reduced-motion: reduce) { .dw-map.live .dw-token { transition-duration: .01s; } .dw-ping.on { animation: none; } }
 .dw-token { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 1px; width: 76px; text-align: center; }
 .dw-token .dw-av { width: 46px; height: 46px; border: 2px solid var(--cyan); box-shadow: 0 0 10px rgba(25,240,255,.6); }
 .dw-token.away .dw-av { border-color: var(--pink); box-shadow: 0 0 10px rgba(255,46,151,.6); }
 .dw-token-name { font-size: .72rem; font-weight: 700; background: rgba(0,0,0,.7); padding: 0 4px; border-radius: 2px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dw-token-year { font-size: .6rem; color: var(--muted); background: rgba(0,0,0,.6); padding: 0 3px; }
-@media (max-width: 480px) { .dw-token { width: 58px; } .dw-token .dw-av { width: 34px; height: 34px; } .dw-token-name { font-size: .6rem; } }
+@media (max-width: 480px) { .dw-token { width: 58px; } .dw-token .dw-av { width: 34px; height: 34px; } .dw-token-name { font-size: .6rem; }
+  .dw-map.live .dw-token { width: 48px; } .dw-map.live .dw-token .dw-av { width: 24px; height: 24px; } .dw-map.live .dw-token-name { font-size: .5rem; padding: 0 2px; } }
 
 /* valor y química */
 .dw-value { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }

@@ -75,7 +75,7 @@ Sin este paso el juego funciona en **modo local**: cada dispositivo ve solo sus 
 
 - **Draft:** 5 rondas. En cada una salen 3 equipos-año al azar; eliges uno y uno de sus jugadores para una posición libre. No puedes repetir jugador (ninguna versión de otro año). Tienes **2 rerolls**.
 - **Valor del equipo:** media de las notas + química. **Las notas no se muestran** (ni la media ni el valor), para que gane quien más sabe de LoL; solo se ve la química. La química suma por excompañeros, misma organización y misma región, y resta si tirador + apoyo o mid + jungla no tienen ningún vínculo; va de -6 a +12.
-- **Simulación:** octavos y cuartos al mejor de 3; semifinal y final al mejor de 5. Los 8 jugadores **CLUTCH** y los 8 **PECHO FRÍO** pueden decidir una partida. Si te eliminan, sigues viendo el torneo hasta la final.
+- **Simulación:** octavos y cuartos al mejor de 3; semifinal y final al mejor de 5. Cada partida se ve sobre el mapa de la Grieta del Invocador: los jugadores salen de la fuente, van a sus líneas y se mueven hacia cada jugada (peleas en las líneas, dragón, Barón, invasiones de jungla, asedio a la base); los que caen se ven en gris y al final el ganador entra hasta el Nexo rival. En una sala, todos ven el mismo movimiento. Los 8 jugadores **CLUTCH** y los 8 **PECHO FRÍO** pueden decidir una partida. Si te eliminan, sigues viendo el torneo hasta la final.
 - **Contra bots:** sin cuenta ni conexión. Eliges octavos (16) o cuartos (8) y la dificultad: Fácil, Media o Imposible.
 - **Salas:** en el menú del draft, **Crear sala** da un código de 6 caracteres. Todos pulsan **Listo** y quien la creó pulsa **Empezar**. Cada uno hace su draft a su ritmo; cuando solo falta uno, tiene **1 minuto** o su equipo se completa al azar. Si alguien pasa 3 minutos sin elegir (por ejemplo, porque cerró la página), también se completa al azar, para que la sala no se quede bloqueada. Las plazas libres se llenan con bots. Quien abra el enlace después puede mirar.
 - **Sala oficial:** se abre cada **sábado a las 8pm** con la semana. Solo **cuentas verificadas**, los **16 primeros**. Cada uno arma su equipo al entrar y espera; **solo el administrador la inicia** (botón *Iniciar la sala oficial* dentro de la sala). Quien no terminó su equipo lo recibe completado al azar. El campeón gana **1 copa** (ranking **Copas**); si gana un bot, esa semana no hay copa.
@@ -104,6 +104,10 @@ Están en [`js/questions.js`](js/questions.js). Cada pregunta es una línea:
 
 Las preguntas nuevas se añaden al **final** de su categoría (el reto semanal las identifica por su posición, por ejemplo `futbol-3`) y las categorías nuevas al **final** de `CATEGORIES` (el código de sala depende de ese orden). La respuesta correcta siempre va en segundo lugar; el juego baraja las opciones al mostrarlas.
 
+## League of Legends y Riot Games
+
+El modo Draft Worlds usa el arte de la Grieta del Invocador (de la wiki de League of Legends), las fotos y logos de [Leaguepedia](https://lol.fandom.com) y las formas de los iconos de posición. *Cultura General no está respaldado por Riot Games y no refleja las opiniones de Riot Games ni de nadie involucrado oficialmente en la producción o gestión de las propiedades de Riot Games. Riot Games y todas las propiedades asociadas son marcas comerciales o marcas registradas de Riot Games, Inc.*
+
 ## Donaciones
 
 La tarjeta "Apoya el juego" (con el logo de Binance, de [Simple Icons](https://simpleicons.org), licencia CC0) se abre con el botón **Donar** de la barra de arriba. El Binance ID se cambia en `js/config.js` → `DONATION.binanceId`. Solo sirve para recibir; no pongas ahí tu correo ni tu teléfono.
@@ -122,6 +126,8 @@ js/app.js           Lógica del juego, reto semanal, salas, rankings, cuentas y 
 js/draft.js         Draft Worlds: draft, partidas en vivo, cuadro y modo contra bots
 js/draft-online.js  Draft Worlds: salas con código y sala oficial
 js/draft-engine.js  Draft Worlds: química, bots y simulación del torneo
+js/draft-map.js     Draft Worlds: mapa y movimiento de los jugadores en cada partida
+img/grieta.webp     Mapa de la Grieta del Invocador
 js/draft-data.js    Draft Worlds: equipos y jugadores (generado)
 tools/draft-data/   Datos de origen y scripts del Draft Worlds
 js/questions.js     Banco de preguntas (807 preguntas, 12 categorías)

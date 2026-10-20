@@ -81,7 +81,9 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
   (campos `logo` y `photo`, con la ruta que calcula `build.mjs`) y con `referrerpolicy="no-referrer"`: ese servidor
   rechaza las imágenes pedidas desde otras webs, y `Special:FilePath` pasa por una redirección que Cloudflare puede bloquear.
   Si no hay archivo o no carga, iniciales con el color del equipo.
-- Minimapa: imagen de la Grieta (puede ser de la wiki de LoL vía Special:FilePath o dibujado en SVG).
+- Mapa: arte de la Grieta del Invocador (`img/grieta.webp`, recortado de "Summoner's Rift Update Map" de la wiki de LoL).
+  En cada partida los jugadores se mueven según los mensajes (`js/draft-map.js`).
+- Iconos de posición: las formas de los iconos oficiales en SVG, con el color de cada rol.
 
 ## 8. Inicio
 
