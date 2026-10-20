@@ -36,8 +36,11 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
 
 - Probabilidad de ganar una partida según la diferencia de valor `d`: `p = 1 / (1 + e^(-0.0847·d))`
   (5 puntos → 60 %, 10 → 70 %, 20 → 85 %).
-- **Rasgos:** cada jugador CLUTCH tiene un 4 % por partida (8 % en la partida decisiva: la 3.ª de un Bo3 o la 5.ª de un Bo5)
-  de ganar la partida para su equipo pase lo que pase; cada PECHO FRÍO, un 4 % (8 %) de perderla.
+- **Rasgos (reglas 2, desde el 21/10/2026):** solo deciden en la partida decisiva (la 3.ª de un Bo3 o la 5.ª de un Bo5):
+  cada CLUTCH tiene un 15 % de ganarla para su equipo pase lo que pase y cada PECHO FRÍO un 30 % de perderla. En las demás
+  partidas cada PECHO FRÍO suma 4 al valor de su equipo ("rey de la liga"). Simulado: con la misma nota, un CLUTCH y un
+  PECHO FRÍO dan casi la misma probabilidad de ser campeón (11,2 % y 11,5 % frente a 9,1 % sin rasgo).
+  Reglas 1 (salas anteriores): 4 % por partida (8 % en la decisiva) de ganarla (CLUTCH) o perderla (PECHO FRÍO).
   Si saltan efectos contrarios en la misma partida, se anulan y se juega normal.
 - **Formato:** octavos Bo3, cuartos Bo3, semifinal Bo5, final Bo5 (en todas las salas). Sorteo del cuadro al azar.
 - Presentación de cada partida: mapa con los 10 jugadores (tu equipo cian, rival rosa), marcador de la serie,

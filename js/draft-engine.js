@@ -154,8 +154,20 @@ export function autoComplete(roster, seed) {
 const ROUND_NAMES = { 16: 'Octavos', 8: 'Cuartos', 4: 'Semifinal', 2: 'Final' };
 const BEST_OF = { 16: 3, 8: 3, 4: 5, 2: 5 };
 
+// Rasgos CLUTCH y PECHO FRÍO. Reglas 2 (las de ahora): solo cuentan en la partida decisiva de una serie
+// (la 3.ª de un Bo3 o la 5.ª de un Bo5): CLUTCH la gana él solo con un 15 % y PECHO FRÍO la pierde con un 30 %;
+// en las demás partidas cada PECHO FRÍO suma 4 al valor de su equipo (rinde por encima de su nivel).
+// Así ninguno de los dos es mejor que el otro en promedio. Reglas 1 (hasta el 21/10/2026): 4 % por partida
+// (8 % en la decisiva) de decidirla, a favor si es CLUTCH y en contra si es PECHO FRÍO.
+const CLUTCH_CHANCE = 0.15;
+const CHOKE_CHANCE = 0.30;
+const CHOKE_BONUS = 4;
+// Las salas que empezaron antes del cambio se siguen viendo con las reglas de entonces (mismo resultado y copa).
+export const RULES_V2_FROM = Date.parse('2026-10-21T00:30:00Z');
+export const rulesFor = (startedAt) => (startedAt && Date.parse(startedAt) < RULES_V2_FROM ? 1 : 2);
+
 // participants: [{ id, name, bot, roster }]; size 8 o 16
-export function simulateTournament(participants, seed) {
+export function simulateTournament(participants, seed, { rules = 2 } = {}) {
   const r = rng(`worlds:${seed}`);
   const entrants = participants.map((x) => {
     const players = rosterPlayers(x.roster);
@@ -166,40 +178,42 @@ export function simulateTournament(participants, seed) {
   while (alive.length > 1) {
     const n = alive.length;
     const matches = [];
-    for (let i = 0; i < n; i += 2) matches.push(simulateSeries(alive[i], alive[i + 1], BEST_OF[n], r));
+    for (let i = 0; i < n; i += 2) matches.push(simulateSeries(alive[i], alive[i + 1], BEST_OF[n], r, rules));
     rounds.push({ name: ROUND_NAMES[n], size: n, bestOf: BEST_OF[n], matches });
     alive = matches.map((m) => (m.winner === 'a' ? m.a : m.b));
   }
   return { rounds, champion: alive[0], entrants };
 }
 
-function simulateSeries(a, b, bestOf, r) {
+function simulateSeries(a, b, bestOf, r, rules) {
   const need = Math.ceil(bestOf / 2);
   const games = [];
   const used = new Set(); // frases ya salidas en la serie
   let wa = 0, wb = 0;
   while (wa < need && wb < need) {
     const decisive = wa === need - 1 && wb === need - 1;
-    const g = simulateGame(a, b, decisive, r, used);
+    const g = simulateGame(a, b, decisive, r, used, rules);
     games.push(g);
     if (g.winner === 'a') wa++; else wb++;
   }
   return { a, b, bestOf, games, score: [wa, wb], winner: wa > wb ? 'a' : 'b' };
 }
 
-function simulateGame(a, b, decisive, r, used) {
-  const chance = decisive ? 0.08 : 0.04;
+function simulateGame(a, b, decisive, r, used, rules) {
+  const chanceOf = (p) => (rules === 1 ? (decisive ? 0.08 : 0.04) : !decisive ? 0 : p.trait === 'clutch' ? CLUTCH_CHANCE : CHOKE_CHANCE);
   const swings = [];
   for (const [side, team] of [['a', a], ['b', b]]) {
     for (const p of team.players) {
-      if (!p.trait) continue;
-      if (r() < chance) swings.push({ side, p, winner: p.trait === 'clutch' ? side : (side === 'a' ? 'b' : 'a') });
+      if (!p.trait || !chanceOf(p)) continue;
+      if (r() < chanceOf(p)) swings.push({ side, p, winner: p.trait === 'clutch' ? side : (side === 'a' ? 'b' : 'a') });
     }
   }
+  // PECHO FRÍO rinde por encima de su nivel fuera de la partida decisiva
+  const lift = (t) => (rules === 1 || decisive ? 0 : t.players.filter((p) => p.trait === 'choke').length * CHOKE_BONUS);
   const sides = new Set(swings.map((s) => s.winner));
   let winner, swing = null;
   if (sides.size === 1) { winner = swings[0].winner; swing = swings[0]; }
-  else winner = r() < winProb(a.value - b.value) ? 'a' : 'b';
+  else winner = r() < winProb(a.value + lift(a) - b.value - lift(b)) ? 'a' : 'b';
   return { winner, decisive, events: gameEvents(a, b, winner, swing, r, used) };
 }
 

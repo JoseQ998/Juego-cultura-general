@@ -23,7 +23,7 @@ export function participantsOf(st) {
   for (let i = 1; list.length < st.size; i++) list.push({ id: `bot${i}`, name: `Bot ${i}`, bot: true, roster: E.botDraft(`${st.seed}:${i}`, st.level) });
   return list;
 }
-export const resultOf = (st) => E.simulateTournament(participantsOf(st), st.seed);
+export const resultOf = (st) => E.simulateTournament(participantsOf(st), st.seed, { rules: E.rulesFor(st.simStartedAt) });
 // Plaza del campeón (0 si gana un bot).
 export const championSeat = (result) => result.champion.seat || 0;
 

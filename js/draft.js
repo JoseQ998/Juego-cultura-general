@@ -47,8 +47,8 @@ const CUP = `<svg class="cup" viewBox="0 0 120 150" aria-hidden="true">
   <path d="M30 128h60" stroke="url(#hxGold)" stroke-width="1"/><path d="M60 123l5 5-5 5-5-5z" fill="#c8aa6e"/>
 </svg>`;
 const TRAIT_INFO = {
-  clutch: 'En las partidas decisivas puede ganar la partida él solo.',
-  choke: 'En los momentos decisivos puede costarle la partida a su equipo.',
+  clutch: 'Aparece cuando importa: en la partida decisiva de una serie puede ganarla él solo.',
+  choke: 'Rey de la liga: en las partidas normales juega por encima de su nivel, pero en la decisiva de una serie puede hundir a su equipo.',
 };
 const GAME_MIN = 33; // minutos de partida que se muestran en el reloj (solo decoración)
 
