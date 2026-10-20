@@ -9,7 +9,8 @@ Página web de preguntas de cultura general. Funciona sin servidor propio: se pu
 | **Reto semanal** | 15 preguntas iguales para todos, una sola partida por semana y por cuenta. Se renueva cada **sábado a las 8pm (hora de Venezuela)**. Las preguntas de una semana nunca se repiten en otra. Necesita cuenta (se crea al momento, sin esperar aprobación). |
 | **Modo Aleatorio** | 15 preguntas distintas en cada partida, repartidas entre todas las categorías (evita repetir las que ya viste). Libre, sin cuenta. |
 | **Salas** | Eliges las categorías (videojuegos, música, deportes, arte, historia, geografía, ciencia, cine y TV, literatura, tecnología, League of Legends y fútbol) y se genera un código de 6 o 7 caracteres. Todos los que entran con ese código reciben las mismas preguntas. Libre, sin cuenta. |
-| **Rankings** | Semanal (en directo), mensual y anual del reto semanal, con el filtro **Todos / Solo verificados**; uno del Aleatorio y uno por cada sala. |
+| **Draft Worlds** | Modo de League of Legends: armas un equipo con jugadores de los Worlds de 2011 a 2025 (cada uno en su versión de ese año) y juegas un Mundial simulado contra bots, en salas con tus amigos o en la **sala oficial semanal**, cuyo campeón gana una **copa**. |
+| **Rankings** | Semanal (en directo), mensual y anual del reto semanal, con el filtro **Todos / Solo verificados**; **Copas** del Draft Worlds; uno del Aleatorio y uno por cada sala. |
 | **10 segundos** | Límite por pregunta. Si se acaba el tiempo, cuenta como fallo. |
 | **Panel de administrador** | Dar la insignia de **verificado** (como la de Twitter) a las cuentas que hayas comprobado, bloquear cuentas, cambiar contraseñas, borrar la partida semanal de alguien, elegir el tema de la semana y añadir la pregunta extra. |
 | **Registro** | Solo para el administrador: todas las partidas, con aviso de los dispositivos y navegadores desde los que se jugó con varios nombres. |
@@ -70,7 +71,19 @@ Sin este paso el juego funciona en **modo local**: cada dispositivo ve solo sus 
 - **Pregunta extra o trampa:** en el mismo formulario escribe la pregunta, la respuesta correcta y 3 incorrectas. Sale **por sorpresa** al final, después de las 15 (el contador dice /15), y suma 1 acierto. Se puede cambiar o quitar mientras nadie haya jugado esa semana.
 - **Preguntas que no se repiten:** Supabase guarda qué preguntas usó cada semana. Hay más de 800, suficientes para más de un año.
 
-## 5. Registro (log)
+## 5. Draft Worlds
+
+- **Draft:** 5 rondas. En cada una salen 3 equipos-año al azar; eliges uno y uno de sus jugadores para una posición libre. No puedes repetir jugador (ninguna versión de otro año). Tienes **2 rerolls**.
+- **Valor del equipo:** media de las notas + química (excompañeros, misma organización, misma región; tirador + apoyo y mid + jungla sin ningún vínculo restan). Entre -6 y +12.
+- **Simulación:** octavos y cuartos al mejor de 3; semifinal y final al mejor de 5. Los 8 jugadores **CLUTCH** y los 8 **PECHO FRÍO** pueden decidir una partida. Si te eliminan, sigues viendo el torneo hasta la final.
+- **Contra bots:** sin cuenta ni conexión. Eliges octavos (16) o cuartos (8) y la dificultad: Fácil, Media o Imposible.
+- **Salas:** en el menú del draft, **Crear sala** da un código de 6 caracteres. Todos pulsan **Listo** y quien la creó pulsa **Empezar**. Cada uno hace su draft a su ritmo; cuando solo falta uno, tiene **1 minuto** o su equipo se completa al azar. Las plazas libres se llenan con bots. Quien abra el enlace después puede mirar.
+- **Sala oficial:** se abre cada **sábado a las 8pm** con la semana. Solo **cuentas verificadas**, los **16 primeros**. Cada uno arma su equipo al entrar y espera; **solo el administrador la inicia** (botón *Iniciar la sala oficial* dentro de la sala). Quien no terminó su equipo lo recibe completado al azar. El campeón gana **1 copa** (ranking **Copas**); si gana un bot, esa semana no hay copa.
+- **Copa:** se entrega sola cuando la simulación termina en la pantalla del administrador (vale con *Ir al final*). Si la cerraste antes, en el panel aparece **Asignar copa**. El torneo sale de una semilla que guarda Supabase y todos ven el mismo; nadie puede darse una copa desde su navegador.
+- **Dificultad de los bots de la sala oficial:** en el panel de administrador, sección *Draft Worlds* (por defecto Media).
+- **Datos:** 120 equipos y 600 jugadores en `js/draft-data.js`, generado con `tools/draft-data/build.mjs` (cómo se calculan las notas en `tools/draft-data/README.md`). Si cambias los datos, ejecuta también `node tools/draft-data/sql.mjs` y vuelve a ejecutar `supabase/setup.sql` en Supabase. Las fotos y logos se cargan de Leaguepedia; si no cargan, salen las iniciales.
+
+## 6. Registro (log)
 
 - Con Supabase solo lo ve la cuenta de administrador (enlace **Registro** al pie o desde el panel). En modo local se protege con `ADMIN_PIN` de `js/config.js`.
 - Muestra todas las partidas (reto semanal, Aleatorio y salas), incluidas las abandonadas, y cuántas veces salió el jugador de la pestaña.
@@ -106,6 +119,11 @@ index.html          Página principal
 css/styles.css      Estilos (tema Arcade neón)
 fonts/              Tipografías del tema
 js/app.js           Lógica del juego, reto semanal, salas, rankings, cuentas y panel
+js/draft.js         Draft Worlds: draft, partidas en vivo, cuadro y modo contra bots
+js/draft-online.js  Draft Worlds: salas con código y sala oficial
+js/draft-engine.js  Draft Worlds: química, bots y simulación del torneo
+js/draft-data.js    Draft Worlds: equipos y jugadores (generado)
+tools/draft-data/   Datos de origen y scripts del Draft Worlds
 js/questions.js     Banco de preguntas (807 preguntas, 12 categorías)
 js/storage.js       Guardado en Supabase o en el navegador
 js/identity.js      Identificación del dispositivo para el registro

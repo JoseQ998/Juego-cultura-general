@@ -420,6 +420,10 @@ function renderHome() {
         <span class="mode-icon">VS</span>
         <span><strong>Crear sala</strong><small>Elige las categorías y comparte el código con tus amigos. Cada sala tiene su propio ranking.</small></span>
       </a>
+      <a class="mode" href="#/draft">
+        <span class="mode-icon">LOL</span>
+        <span><strong>Draft Worlds</strong><small>Arma un equipo con jugadores de los Worlds de 2011 a 2025 y juega un Mundial contra bots o con tus amigos. Sala oficial semanal con copas.</small></span>
+      </a>
     </section>
 
     ${profileOf() ? '' : `<section class="card">${nameField()}</section>`}
