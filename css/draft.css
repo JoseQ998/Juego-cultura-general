@@ -409,7 +409,7 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .mapin::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(200, 170, 110, .35), inset 0 0 60px rgba(1, 10, 19, .75); }
 .hx .corner { position: absolute; z-index: 3; width: 12px; height: 12px; transform: rotate(45deg); background: var(--bg0); border: 1px solid var(--gold2); }
 .hx .corner.tl { left: -5px; top: -5px; } .hx .corner.tr { right: -5px; top: -5px; } .hx .corner.bl { left: -5px; bottom: -5px; } .hx .corner.br { right: -5px; bottom: -5px; }
-.hx .tok { position: absolute; z-index: 3; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -22px); transition: left 1s ease-in-out, top 1s ease-in-out, opacity .4s, transform .35s; pointer-events: none; }
+.hx .tok { position: absolute; z-index: 3; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -22px); transition: left 1.2s ease-in-out, top 1.2s ease-in-out, opacity .4s, transform .35s; pointer-events: none; }
 .hx .tok .ring { padding: 2px; box-shadow: 0 0 0 1.5px var(--bg0), 0 4px 10px rgba(0, 0, 0, .7); }
 .hx .tok.home .ring { background: linear-gradient(180deg, #9fd9ff, var(--home)); }
 .hx .tok.away .ring { background: linear-gradient(180deg, #ffb0b5, var(--away)); }
@@ -433,7 +433,7 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .tok.focus.choke .nm { background: linear-gradient(180deg, var(--choke1), var(--choke2)); color: #03222e; }
 @keyframes hx-focus { 50% { filter: brightness(1.25); } }
 .hx .ping { position: absolute; z-index: 2; width: 74px; height: 74px; transform: translate(-50%, -50%); border-radius: 50%; opacity: 0; pointer-events: none; }
-.hx .ping.on { opacity: 1; border: 2px solid var(--home); background: radial-gradient(circle, rgba(47, 166, 230, .3), transparent 65%); box-shadow: 0 0 18px rgba(47, 166, 230, .55); animation: hx-pingin .4s ease-out .9s both; }
+.hx .ping.on { opacity: 1; border: 2px solid var(--home); background: radial-gradient(circle, rgba(47, 166, 230, .3), transparent 65%); box-shadow: 0 0 18px rgba(47, 166, 230, .55); animation: hx-pingin .4s ease-out 1.3s both; }
 .hx .ping.away.on { border-color: var(--away); background: radial-gradient(circle, rgba(232, 72, 79, .3), transparent 65%); box-shadow: 0 0 18px rgba(232, 72, 79, .55); }
 .hx .ping.on::before, .hx .ping.on::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid; border-color: inherit; animation: hx-ping 1.8s ease-out infinite; }
 .hx .ping.on::after { animation-delay: .9s; }

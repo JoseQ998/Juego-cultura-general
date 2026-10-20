@@ -299,14 +299,14 @@ export function createDraft(ctx) {
       const mine = round.matches.find((m) => m.a.id === me || m.b.id === me);
       const watch = alive && mine ? mine : (!alive && round.size === 2 ? round.matches[0] : null);
       if (watch) {
-        add('preview', 4500, { ri, m: watch });
+        add('preview', 7000, { ri, m: watch });
         watch.games.forEach((g, gi) => add('game', MAP.gameDuration(g.events.length), { ri, m: watch, gi }));
-        add('series', 3000, { ri, m: watch });
+        add('series', 4500, { ri, m: watch });
       }
-      if (round.size > 2) add('bracket', 4500, { ri });
+      if (round.size > 2) add('bracket', 7000, { ri });
       if (alive && mine && (mine.winner === 'a' ? mine.a.id : mine.b.id) !== me) {
         alive = false;
-        add('out', 6000, { ri });
+        add('out', 7000, { ri });
       }
     });
     add('end', Infinity, {});
@@ -558,7 +558,7 @@ export function createDraft(ctx) {
       while (i < scenes.length - 1 && t >= scenes[i].dur) { t -= scenes[i].dur; i++; }
       return { i, t };
     };
-    const skipRow = () => (opts.allowSkip ? '<div class="skip-row"><button class="btn-ghost" type="button" id="dwSkip"><span>Saltar</span></button><button class="btn-ghost hex" type="button" id="dwEnd"><span>Ir al final</span></button></div>' : '');
+    const skipRow = () => (opts.allowSkip ? '<div class="skip-row"><button class="btn-ghost" type="button" id="dwSkip"><span>Continuar</span></button><button class="btn-ghost hex" type="button" id="dwEnd"><span>Ir al final</span></button></div>' : '');
     const tick = () => {
       if (!el.isConnected) return;
       const { i, t } = locate();

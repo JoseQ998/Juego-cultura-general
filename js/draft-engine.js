@@ -176,17 +176,18 @@ export function simulateTournament(participants, seed) {
 function simulateSeries(a, b, bestOf, r) {
   const need = Math.ceil(bestOf / 2);
   const games = [];
+  const used = new Set(); // frases ya salidas en la serie
   let wa = 0, wb = 0;
   while (wa < need && wb < need) {
     const decisive = wa === need - 1 && wb === need - 1;
-    const g = simulateGame(a, b, decisive, r);
+    const g = simulateGame(a, b, decisive, r, used);
     games.push(g);
     if (g.winner === 'a') wa++; else wb++;
   }
   return { a, b, bestOf, games, score: [wa, wb], winner: wa > wb ? 'a' : 'b' };
 }
 
-function simulateGame(a, b, decisive, r) {
+function simulateGame(a, b, decisive, r, used) {
   const chance = decisive ? 0.08 : 0.04;
   const swings = [];
   for (const [side, team] of [['a', a], ['b', b]]) {
@@ -199,7 +200,7 @@ function simulateGame(a, b, decisive, r) {
   let winner, swing = null;
   if (sides.size === 1) { winner = swings[0].winner; swing = swings[0]; }
   else winner = r() < winProb(a.value - b.value) ? 'a' : 'b';
-  return { winner, decisive, events: gameEvents(a, b, winner, swing, r) };
+  return { winner, decisive, events: gameEvents(a, b, winner, swing, r, used) };
 }
 
 // ---------------- mensajes ----------------
@@ -265,6 +266,9 @@ const LATE = [
   '{mid} ejecuta al tirador rival y abre el camino hacia el Nexo',
 ];
 const END = '{eq} destruye el Nexo';
+// Jugadas que solo pueden pasar una vez en cada partida.
+const ONCE = [[/^Primera sangre/, 'sangre'], [/primera torre/, 'torre']];
+const onceOf = (tpl) => ONCE.find(([re]) => re.test(tpl))?.[1];
 
 const CLUTCH_ANY = [
   '{jugador} se echa el equipo a la espalda y da la vuelta a una partida perdida',
@@ -324,13 +328,24 @@ function fill(tpl, us, them) {
   });
 }
 
-function gameEvents(a, b, winner, swing, r) {
+function gameEvents(a, b, winner, swing, r, used = new Set()) {
   const teams = { a, b };
   const other = (s) => (s === 'a' ? 'b' : 'a');
   const loser = other(winner);
   const ev = [];
+  const once = new Set();
+  // Sin repetir frase en la serie ni jugada única en la partida. Gasta un solo número del azar,
+  // como antes, para que los resultados no cambien.
+  const choose = (pool) => {
+    const ok = (t) => !once.has(onceOf(t));
+    const opts = [pool.filter((t) => ok(t) && !used.has(t)), pool.filter((t) => ok(t) && !ev.some((e) => e.tpl === t)), pool].find((x) => x.length);
+    const tpl = pick(opts, r);
+    used.add(tpl);
+    if (onceOf(tpl)) once.add(onceOf(tpl));
+    return tpl;
+  };
   const add = (pool, side) => {
-    const tpl = pick(pool, r);
+    const tpl = choose(pool);
     ev.push({ side, kind: 'normal', tpl, text: fill(tpl, teams[side], teams[other(side)]) });
   };
   add(EARLY, r() < 0.6 ? winner : loser);
@@ -341,7 +356,7 @@ function gameEvents(a, b, winner, swing, r) {
     const { p } = swing;
     const own = OWN[`${p.name} ${p.year}`] || [];
     const pool = p.trait === 'clutch' ? [...CLUTCH_ANY, ...CLUTCH_ROLE[p.role], ...own, ...own] : [...CHOKE_ANY, ...CHOKE_ROLE[p.role], ...own, ...own];
-    const tpl = pick(pool, r);
+    const tpl = choose(pool);
     ev.push({ side: winner, kind: p.trait, tpl, text: tpl.replace('{jugador}', p.name) });
   } else {
     add(LATE, winner);

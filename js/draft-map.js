@@ -8,13 +8,15 @@ export const MAP_IMG = 'img/grieta.webp';
 export const MAP_RATIO = 1000 / 842; // ancho / alto de la imagen
 
 // Tiempos de una partida (ms desde que empieza la escena).
-export const INTRO = 2000; // los jugadores salen de la fuente y llegan a sus líneas
-export const STEP = 2100; // entre mensajes (cada jugada se ve un rato antes de pasar a la siguiente)
-export const MOVE = 1000; // se mueven hacia la jugada antes de que salga el mensaje
-const WANDER = 750; // pequeños movimientos mientras tanto
-export const gameDuration = (n) => INTRO + n * STEP + 1800;
+export const INTRO = 3200; // los jugadores salen de la fuente y llegan a sus líneas
+export const STEP = 4400; // entre mensajes: da tiempo a leer cada jugada y verla en el mapa
+export const MOVE = 1400; // se mueven hacia la jugada antes de que salga el mensaje
+const WANDER = 900; // pequeños movimientos mientras tanto
+const VERDICT = 1600; // tras el último mensaje, sale Victoria o Derrota
+const OUTRO = 4200; // y se queda a la vista antes de pasar a lo siguiente
+export const gameDuration = (n) => INTRO + (n - 1) * STEP + VERDICT + OUTRO;
 export const shownEvents = (t, n) => (t < INTRO ? 0 : Math.min(n, Math.floor((t - INTRO) / STEP) + 1));
-export const gameFinished = (t, n) => t >= INTRO + (n - 1) * STEP + 900;
+export const gameFinished = (t, n) => t >= INTRO + (n - 1) * STEP + VERDICT;
 
 const FOUNTAIN = { home: [6, 92], away: [93, 7] };
 export const fountain = (side) => FOUNTAIN[side];
