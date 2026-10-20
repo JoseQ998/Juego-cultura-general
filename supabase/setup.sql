@@ -1859,11 +1859,14 @@ declare
   v_user uuid;
 begin
   perform private.require_admin();
-  select * into l from public.draft_lobbies where code = upper(p_code);
+  select * into l from public.draft_lobbies where code = upper(p_code) for update;
   if not found or not l.official or l.status <> 'simulating' then
     raise exception 'Esa sala oficial no se ha jugado';
   end if;
-  update public.draft_lobbies set champion_seat = p_seat where code = l.code and champion_seat is null;
+  if l.champion_seat is not null then
+    return; -- la copa de esa semana ya se entregó
+  end if;
+  update public.draft_lobbies set champion_seat = greatest(coalesce(p_seat, 0), 0) where code = l.code;
   if p_seat is null or p_seat <= 0 then
     return; -- ganó un bot: no hay copa
   end if;

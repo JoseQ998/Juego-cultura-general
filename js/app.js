@@ -3,7 +3,7 @@ import { CATEGORIES, QUESTIONS, EXTRA_CATEGORY } from './questions.js';
 import * as store from './storage.js';
 import { getIdentity, rememberName } from './identity.js';
 import { createDraft } from './draft.js';
-import { createDraftOnline } from './draft-online.js';
+import { createDraftOnline, resultOf, championSeat } from './draft-online.js';
 
 const QUESTION_COUNT = 15;
 const TIME_LIMIT = 10_000; // 10 segundos por pregunta
@@ -728,9 +728,9 @@ async function fillPeriodRanking(el, year, month, highlight = '', onlyVerified =
 async function renderRanking(board, sub) {
   if (board === 'clasico') board = 'semanal';
   const online = store.online();
-  if (!online && ['semanal', 'mensual', 'anual'].includes(board)) board = 'aleatorio';
+  if (!online && ['semanal', 'mensual', 'anual', 'copas'].includes(board)) board = 'aleatorio';
   const tabs = [
-    ...(online ? [['semanal', 'Semanal'], ['mensual', 'Mensual'], ['anual', 'Anual']] : []),
+    ...(online ? [['semanal', 'Semanal'], ['mensual', 'Mensual'], ['anual', 'Anual'], ['copas', 'Copas']] : []),
     ['aleatorio', 'Aleatorio'],
   ];
   app.innerHTML = `
@@ -817,8 +817,31 @@ async function renderRanking(board, sub) {
       periodSelect(years, value, (v) => go(`#/ranking/anual/${v}`));
       verifiedFilter(() => fillPeriodRanking(rank, value, null, me, onlyVerified));
     }
+  } else if (board === 'copas') {
+    box.innerHTML = '<p class="muted small">Copas de la sala oficial semanal de Draft Worlds: el campeón de cada semana gana una.</p>';
+    verifiedFilter(() => fillCupRanking(rank, me, onlyVerified));
   } else {
     fillRanking(rank, board, nameKey(playerName()));
+  }
+}
+
+async function fillCupRanking(el, highlight = '', onlyVerified = false) {
+  try {
+    let rows = await store.draftCupRanking();
+    if (onlyVerified) rows = rows.filter((r) => r.verified);
+    if (!rows.length) {
+      el.innerHTML = onlyVerified ? NO_VERIFIED_MSG : `<p class="muted">Todavía nadie ha ganado una copa. <a href="#/draft/oficial">Ir a la sala oficial</a></p>`;
+      return;
+    }
+    el.innerHTML = rankTable(['Nombre', 'Copas'], rows.map((r, i) => `
+      <tr class="${nameKey(r.name) === highlight ? 'me' : ''}">
+        <td class="pos pos-${i + 1}">${i + 1}</td>
+        <td>${nameWithBadge(r.name, r.verified)}</td>
+        <td><b>${r.cups}</b></td>
+      </tr>`));
+  } catch (e) {
+    console.error(e);
+    el.innerHTML = `<p class="error-text">No se pudo cargar el ranking de copas.</p>`;
   }
 }
 
@@ -1217,10 +1240,11 @@ async function renderAdmin() {
     return;
   }
   app.innerHTML = `<p class="loading">Cargando panel…</p>`;
-  let users, week, current, next;
+  let users, week, current, next, dw;
   try {
     week = await store.getWeek();
-    [users, current, next] = await Promise.all([store.adminUsers(), store.adminWeek(week.id), store.adminWeek(week.id + 1)]);
+    [users, current, next, dw] = await Promise.all([store.adminUsers(), store.adminWeek(week.id), store.adminWeek(week.id + 1),
+      store.draftAdmin().catch((e) => ({ error: e.message }))]);
   } catch (e) {
     console.error(e);
     app.innerHTML = `<a class="back" href="#/">← Volver</a><section class="card"><p class="error-text">No se pudo cargar el panel: ${esc(e.message)}</p></section>`;
@@ -1313,7 +1337,8 @@ async function renderAdmin() {
       </table></div>
     </section>
     ${weekForm(current, 'Semana en curso')}
-    ${weekForm(next, 'Próxima semana')}`;
+    ${weekForm(next, 'Próxima semana')}
+    ${draftAdminCard(dw)}`;
 
   const reload = () => renderAdmin();
   app.onclick = async (e) => {
@@ -1322,7 +1347,16 @@ async function renderAdmin() {
     const pass = e.target.closest('[data-pass]');
     const del = e.target.closest('[data-del-play]');
     const clearExtra = e.target.closest('[data-clear-extra]');
+    const cup = e.target.closest('[data-cup]');
     try {
+      if (cup) {
+        cup.disabled = true;
+        const st = await store.draftState(cup.dataset.cup);
+        const seat = championSeat(resultOf(st));
+        await store.draftAward(st.code, seat);
+        toast(seat ? `Copa entregada a ${st.seats.find((x) => x.seat === seat)?.name}.` : 'Ganó un bot: esa semana no hay copa.');
+        return reload();
+      }
       if (verify) {
         await store.adminSetVerified(verify.dataset.id, verify.dataset.verify === '1');
         toast(verify.dataset.verify === '1' ? 'Cuenta verificada.' : 'Verificado quitado.');
@@ -1357,6 +1391,14 @@ async function renderAdmin() {
       toast(err.message, 'error');
     }
   };
+  document.getElementById('dwLevel')?.addEventListener('change', async (e) => {
+    try {
+      await store.draftSetLevel(e.target.value);
+      toast('Dificultad de los bots guardada.');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
   app.querySelectorAll('.week-form').forEach((form) => {
     form.onsubmit = async (e) => {
       e.preventDefault();
@@ -1380,6 +1422,34 @@ async function renderAdmin() {
     };
   });
 }
+
+// Draft Worlds en el panel: dificultad de los bots de la sala oficial y salas de las últimas semanas.
+function draftAdminCard(dw) {
+  if (!dw || dw.error) {
+    return `<section class="card"><h3>Draft Worlds</h3><p class="error-text">No se pudo cargar: ${esc(dw?.error || '')}. ¿Ejecutaste el setup.sql nuevo en Supabase?</p></section>`;
+  }
+  const LEVELS = [['facil', 'Fácil (eligen al azar)'], ['medio', 'Media (entre sus 3 mejores opciones)'], ['imposible', 'Imposible (siempre la mejor)']];
+  const status = (l) => (l.status === 'drafting' ? 'Abierta' : l.championSeat == null ? '<span class="warn-text">Jugada, copa sin asignar</span>' : l.championSeat > 0 ? 'Copa entregada' : 'Ganó un bot');
+  return `
+    <section class="card">
+      <h3>Draft Worlds</h3>
+      <label class="field"><span>Dificultad de los bots en la sala oficial</span>
+        <select id="dwLevel">${LEVELS.map(([v, t]) => `<option value="${v}" ${dw.level === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <p class="muted small">La sala oficial se abre cada sábado a las 8pm. Entran los 16 primeros verificados; tú la inicias desde la propia sala. La copa se entrega sola al terminar la simulación en tu pantalla; si cerraste antes, usa "Asignar copa".</p>
+      <a class="btn sm" href="#/draft/oficial">Ir a la sala oficial</a>
+      ${dw.official.length ? `<div class="table-wrap"><table class="table">
+        <thead><tr><th>Semana</th><th>Jugadores</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${dw.official.map((l) => `
+          <tr>
+            <td>${fmtDay(weekStartMs(l.weekId))}</td>
+            <td>${l.players}</td>
+            <td>${status(l)}</td>
+            <td class="actions"><a class="btn ghost sm" href="#/draft/sala/${esc(l.code)}">Ver</a>${l.status === 'simulating' && l.championSeat == null ? ` <button class="btn sm" data-cup="${esc(l.code)}">Asignar copa</button>` : ''}</td>
+          </tr>`).join('')}</tbody></table></div>` : ''}
+    </section>`;
+}
+// Inicio de una semana (misma cuenta que week_start en Supabase).
+const weekStartMs = (id) => (259200 + id * 604800) * 1000;
 
 // ---------------- registro (log) ----------------
 // "Abandonó en la 5/15" = salió mientras estaba en la pregunta 5 (había respondido 4).
