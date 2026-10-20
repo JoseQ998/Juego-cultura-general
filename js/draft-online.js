@@ -205,6 +205,7 @@ export function createDraftOnline(ctx, ui) {
       if (st.official) {
         const p = ctx.profile?.();
         body = !p ? '<p class="muted">Para jugar la sala oficial necesitas una cuenta verificada. <a href="#/cuenta">Entrar o crear cuenta</a>. Cuando empiece, podrás mirar el Worlds desde aquí.</p>'
+          : !p.verified && ctx.isAdmin?.() ? '<p class="muted">Para jugar tú también, ponte la insignia de verificado en el <a href="#/admin">panel de administrador</a>. Para empezar la sala, usa el botón de arriba.</p>'
           : !p.verified ? '<p class="muted">La sala oficial es solo para cuentas verificadas: pídele al administrador que verifique la tuya. Cuando empiece, podrás mirar el Worlds desde aquí.</p>'
           : full ? '<p class="muted">Ya entraron los 16 jugadores de esta semana. Cuando empiece, podrás mirar el Worlds desde aquí.</p>'
           : `<p class="muted">Entran los 16 primeros. Al entrar armas tu equipo y esperas a que el administrador inicie la sala.</p><button class="btn big" id="dwJoinGo">Entrar y armar mi equipo</button>`;

@@ -208,7 +208,8 @@ export function createDraft(ctx) {
         <div class="dw-vsplayers">${p.players.map((x) => `<div class="dw-vsp">${avatar(x)}<b>${esc(x.name)}</b><small>${x.year} · ${esc(x.tag)}</small><span>${x.rating}</span>${traitTag(x)}</div>`).join('')}</div>
         <p class="dw-vsval">Valor <b>${fmt1(p.value)}</b> <small>(media ${fmt1(p.avg)}, química ${signed(p.chem)})</small></p>
       </div>`;
-    return `${card(m.a)}<div class="dw-vs">VS</div>${card(m.b)}`;
+    const [l, r] = m.b.id === me ? [m.b, m.a] : [m.a, m.b]; // tu equipo siempre a la izquierda
+    return `${card(l)}<div class="dw-vs">VS</div>${card(r)}`;
   }
 
   function gameView(round, m, gi, t, me) {

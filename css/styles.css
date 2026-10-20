@@ -539,7 +539,9 @@ h2 .verified { width: .95em; height: .95em; }
 .dw-vsp { display: grid; justify-items: center; gap: 2px; text-align: center; font-size: .72rem; min-width: 0; }
 .dw-vsp b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dw-vsp small { color: var(--muted); font-size: .62rem; }
-.dw-vsp > span:not(.dw-av) { font-family: 'Press Start 2P', monospace; color: var(--yellow); font-size: .65rem; }
+.dw-vsp > span:not(.dw-av):not(.dw-trait) { font-family: 'Press Start 2P', monospace; color: var(--yellow); font-size: .65rem; }
+.dw-vsp { align-content: start; }
+.dw-vsp .dw-trait { justify-self: center; max-width: 100%; font-size: .42rem; padding: 2px 3px; line-height: 1.4; white-space: normal; }
 .dw-vsval { margin: 10px 0 0; font-size: .9rem; }
 .dw-vsval b { font-family: 'Press Start 2P', monospace; color: var(--yellow); font-size: .8rem; }
 
@@ -611,3 +613,4 @@ h2 .verified { width: .95em; height: .95em; }
 .dw-ok { color: var(--ok); font-weight: 700; }
 .dw-countdown { color: var(--yellow); }
 .dw-countdown b { font-family: 'Press Start 2P', monospace; }
+.dw-seats .verified { margin-left: 4px; }
