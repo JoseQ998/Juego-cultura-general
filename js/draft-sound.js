@@ -1,9 +1,11 @@
 // Música de los momentos CLUTCH y PECHO FRÍO de Draft Worlds.
-// Los archivos van en audio/, ya recortados al trozo que debe sonar, y se apuntan aquí.
+// Los archivos van en audio/, ya recortados al trozo que debe sonar (13 s), y se apuntan aquí.
 // Un momento sin archivo no suena; si no hay ninguno, no sale el botón de sonido.
+import { duck, unduck } from './draft-player.js';
+
 const FILES = {
   clutch: 'audio/clutch.mp3', // Legends Never Die (Worlds 2017) desde el 0:59: explota a los 3,3 s, con "Decide la partida"
-  choke: 'audio/pecho-frio.mp3', // efectos de caricaturas antiguas: los primeros 9 s
+  choke: 'audio/pecho-frio.mp3', // efectos de caricaturas antiguas, desde el principio
 };
 const KEY = 'dw-sound';
 const VOLUME = 0.8;
@@ -35,6 +37,8 @@ function unlock() {
   if (ac.state === 'suspended') ac.resume().catch(() => {});
 }
 for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, unlock, { capture: true, passive: true });
+// En iPhone, que suene aunque el teléfono esté en silencio, como un vídeo (Safari 16.4 o más nuevo).
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* no disponible */ }
 
 function load(kind) {
   if (!ac || !FILES[kind]) return Promise.resolve(null);
@@ -51,13 +55,18 @@ export function preloadMusic() {
 }
 
 // Suena la música de ese momento desde atMs (por si se llega a mitad) hasta totalMs, con entrada y salida suaves.
+// El punto de la canción se calcula al empezar a sonar, así que si tarda en cargar sigue cuadrando con la animación,
+// y se adelanta lo que tarda el altavoz del aparato en sacar el sonido (outputLatency).
 export async function playMusic(kind, atMs, totalMs) {
   const my = ++seq;
   if (!soundOn() || !ac) return;
+  const t0 = performance.now() - atMs; // cuándo empezó la animación
+  duck(totalMs - atMs);
   const buf = await load(kind);
   if (my !== seq || !buf) return;
   stopMusic(false);
-  const off = atMs / 1000;
+  const lat = ac.outputLatency || ac.baseLatency || 0;
+  const off = (performance.now() - t0) / 1000 + lat;
   const left = Math.min(totalMs / 1000, buf.duration) - off;
   if (left < 0.5) return;
   const src = ac.createBufferSource();
@@ -76,7 +85,7 @@ export async function playMusic(kind, atMs, totalMs) {
 }
 
 export function stopMusic(cancelLoading = true) {
-  if (cancelLoading) seq++;
+  if (cancelLoading) { seq++; unduck(); }
   if (!current || !ac) return;
   const { src, gain } = current;
   current = null;

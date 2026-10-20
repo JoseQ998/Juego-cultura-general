@@ -16,7 +16,6 @@ const VERDICT = 1600; // tras el último mensaje, sale Victoria o Derrota
 const OUTRO = 4200; // y se queda a la vista antes de pasar a lo siguiente
 export const CINE = 6200; // animación del jugador CLUTCH o PECHO FRÍO que decide la partida
 const AFTER_CINE = 2400; // después, la jugada se sigue viendo en el mapa
-export const CINE_TOTAL = CINE + AFTER_CINE; // lo que dura la música de ese momento
 const isSwing = (e) => e.kind === 'clutch' || e.kind === 'choke';
 // Momento (ms desde que empieza la partida) en que sale cada mensaje.
 export function eventTimes(events) {
@@ -28,6 +27,8 @@ export const gameDuration = (events) => lastAt(events) + VERDICT + OUTRO;
 export const shownEvents = (t, events) => eventTimes(events).filter((at) => t >= at).length;
 export const gameFinished = (t, events) => t >= lastAt(events) + VERDICT;
 export const gameHold = (events) => lastAt(events) + VERDICT + 1200; // donde se para si hay que pulsar Continuar
+// La música de CLUTCH o PECHO FRÍO sigue hasta que cae el Nexo y sale Victoria o Derrota (esa jugada siempre es la última).
+export const CINE_MUSIC = CINE + AFTER_CINE + VERDICT + 2000;
 // Jugada en curso: empieza MOVE ms antes de su mensaje, cuando los jugadores van hacia ella (-1 antes de la primera).
 export const stepAt = (t, events) => eventTimes(events).filter((at) => t >= at - MOVE).length - 1;
 // Si en el instante t se está viendo la animación de CLUTCH o PECHO FRÍO: { step, ev, el } (el = ms desde que empezó).

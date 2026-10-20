@@ -263,6 +263,7 @@ async function route() {
   window.scrollTo(0, 0);
   document.body.classList.toggle('wide', page === 'registro' || page === 'admin');
   document.body.classList.toggle('dw', page === 'draft'); // Draft Worlds tiene su propio estilo (css/draft.css)
+  if (page !== 'draft') draft.leave(); // los himnos de Draft Worlds solo suenan dentro del modo
   if (page === 'sala' && arg) return renderLobby(arg);
   if (page === 'crear') return renderCreateLobby();
   if (page === 'ranking') return renderRanking(arg ? decodeURIComponent(arg) : 'semanal', arg2 ? decodeURIComponent(arg2) : '');

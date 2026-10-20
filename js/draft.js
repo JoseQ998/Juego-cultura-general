@@ -5,6 +5,7 @@
 import * as E from './draft-engine.js';
 import * as MAP from './draft-map.js';
 import { soundOn, setSound, hasMusic, preloadMusic, playMusic, stopMusic } from './draft-sound.js';
+import * as PLAYER from './draft-player.js';
 
 // Imágenes de Leaguepedia (sin "referrer": su servidor rechaza las imágenes pedidas desde otras webs).
 // Las rutas que empiezan por img/ son imágenes guardadas en el propio juego.
@@ -99,12 +100,54 @@ export function createDraft(ctx) {
         <header class="cl-top">
           <a class="brand" href="#/draft">${EMBLEM}<span><b>Draft Worlds</b><small>Mundiales 2011 – 2025</small></span></a>
           ${phase === 'menu' ? '' : `<nav class="nav" aria-label="Fase">${steps.map(([k, l]) => `<span class="${k === phase ? 'on' : ''}">${l}</span>`).join('')}</nav>`}
+          ${playerHtml()}
           <div class="top-right">${chip ? `<span class="chip">${esc(chip)}</span>` : ''}${SOUND_BTN}<a class="exit" href="${phase === 'menu' ? '#/' : '#/draft'}">${phase === 'menu' ? 'Inicio' : 'Salir'}</a></div>
         </header>
         ${inner}
       </div>`;
   }
-  const page = (inner, opts) => { app.innerHTML = shell(inner, opts); bindSound(); };
+  const page = (inner, opts) => { app.innerHTML = shell(inner, opts); bindSound(); bindPlayer(); PLAYER.enter(); };
+
+  // Minirreproductor de himnos (ver draft-player.js).
+  const MP_ICON = {
+    prev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.4v14H6zM19 5v14L9.5 12z"/></svg>',
+    next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 5H18v14h-2.4zM5 5v14l9.5-7z"/></svg>',
+    play: '<svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+    pause: '<svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>',
+  };
+  function playerHtml() {
+    const { song } = PLAYER.state();
+    return `<div class="mp" role="group" aria-label="Música">
+      <span class="mp-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="mp-txt"><b class="mp-title">${esc(song.title)}</b><small class="mp-sub">${esc(song.artist)} · Worlds ${song.year}</small></span>
+      <span class="mp-ctl">
+        <button type="button" class="mp-btn" data-mp="prev" aria-label="Canción anterior" title="Canción anterior">${MP_ICON.prev}</button>
+        <button type="button" class="mp-btn mp-play" data-mp="play">${MP_ICON.play}${MP_ICON.pause}</button>
+        <button type="button" class="mp-btn" data-mp="next" aria-label="Siguiente canción" title="Siguiente canción">${MP_ICON.next}</button>
+      </span>
+      <span class="mp-bar" aria-hidden="true"><i></i></span>
+    </div>`;
+  }
+  function paintPlayer() {
+    const mp = app.querySelector('.mp');
+    if (!mp) return;
+    const { song, playing, progress } = PLAYER.state();
+    mp.classList.toggle('on', playing);
+    mp.querySelector('.mp-title').textContent = song.title;
+    mp.querySelector('.mp-sub').textContent = `${song.artist} · Worlds ${song.year}`;
+    const b = mp.querySelector('.mp-play');
+    b.setAttribute('aria-label', playing ? 'Pausar' : 'Reproducir');
+    b.title = playing ? 'Pausar' : 'Reproducir';
+    mp.querySelector('.mp-bar i').style.transform = `scaleX(${progress.toFixed(4)})`;
+  }
+  PLAYER.onChange(paintPlayer);
+  function bindPlayer() {
+    const mp = app.querySelector('.mp');
+    if (!mp) return;
+    const act = { prev: PLAYER.prev, play: PLAYER.toggle, next: PLAYER.next };
+    mp.querySelectorAll('[data-mp]').forEach((b) => (b.onclick = () => act[b.dataset.mp]()));
+    paintPlayer();
+  }
   // Botón de música: solo sale si hay alguna música (ver draft-sound.js).
   const SOUND_BTN = `<button class="snd" type="button" hidden aria-label="Música" title="Música">
     <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -114,7 +157,7 @@ export function createDraft(ctx) {
     if (!b) return;
     const paint = () => { b.classList.toggle('off', !soundOn()); b.setAttribute('aria-pressed', String(soundOn())); };
     paint();
-    b.onclick = () => { setSound(!soundOn()); paint(); if (soundOn()) preloadMusic(); };
+    b.onclick = () => { setSound(!soundOn()); paint(); PLAYER.soundChanged(); if (soundOn()) preloadMusic(); };
     b.hidden = !hasMusic();
   }
   const head = (kicker, title, done = null) => `
@@ -512,7 +555,7 @@ export function createDraft(ctx) {
     const cracks = clutch ? '' : `<svg class="cine-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       <path d="M52 48 L40 30 L44 18 L36 2"/><path d="M52 48 L70 38 L78 22 L96 14"/><path d="M52 48 L62 66 L58 82 L66 98"/>
       <path d="M52 48 L32 58 L20 54 L4 66"/><path d="M40 30 L28 26"/><path d="M70 38 L84 44"/><path d="M62 66 L76 72"/></svg>`;
-    playMusic(ev.kind, c.el, MAP.CINE_TOTAL);
+    playMusic(ev.kind, c.el, MAP.CINE_MUSIC);
     const box = document.createElement('div');
     box.className = `cine ${ev.kind}`;
     box.dataset.key = key;
@@ -785,5 +828,5 @@ export function createDraft(ctx) {
     return renderMenu();
   }
 
-  return { route, stop, page, shell, head, draftBoard, playTournament, sizeAndLevel, avatar, logo, later, every, finalCard, teamSummary, chemPanel, miniMap };
+  return { route, stop, leave: PLAYER.leave, page, shell, head, draftBoard, playTournament, sizeAndLevel, avatar, logo, later, every, finalCard, teamSummary, chemPanel, miniMap };
 }

@@ -85,6 +85,28 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .chip { border: 1px solid var(--gold5); padding: 5px 12px; font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--gold2); background: rgba(1, 10, 19, .6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; border-radius: 0; }
 .hx .exit { font-family: var(--serif); font-weight: 700; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold1); padding: 7px 14px; border: 1px solid var(--gold4); background: rgba(1, 10, 19, .6); white-space: nowrap; }
 .hx .exit:hover { border-color: var(--gold2); }
+/* minirreproductor de himnos */
+.hx .mp { position: relative; flex: 0 1 340px; min-width: 0; margin-left: auto; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 6px 0 12px; border: 1px solid var(--gold5); background: rgba(1, 10, 19, .6); }
+.hx .mp + .top-right { margin-left: 0; }
+.hx .mp-eq { flex: none; display: flex; align-items: flex-end; gap: 2px; width: 17px; height: 14px; }
+.hx .mp-eq i { flex: 1; height: 25%; background: var(--hex2); box-shadow: 0 0 6px rgba(10, 200, 185, .5); }
+.hx .mp.on .mp-eq i { animation: mp-eq .9s ease-in-out infinite; }
+.hx .mp.on .mp-eq i:nth-child(2) { animation-delay: -.45s; }
+.hx .mp.on .mp-eq i:nth-child(3) { animation-delay: -.2s; }
+.hx .mp.on .mp-eq i:nth-child(4) { animation-delay: -.65s; }
+@keyframes mp-eq { 0%, 100% { height: 25%; } 50% { height: 100%; } }
+.hx .mp-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.hx .mp-title { font-family: var(--serif); font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--gold1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hx .mp-sub { font-size: 10px; letter-spacing: .04em; color: var(--grey1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hx .mp-ctl { flex: none; display: flex; align-items: center; gap: 2px; }
+.hx .mp-btn { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--gold2); cursor: pointer; }
+.hx .mp-btn:hover { color: var(--gold1); }
+.hx .mp-btn svg { width: 15px; height: 15px; fill: currentColor; }
+.hx .mp-play { border: 1px solid var(--gold4); color: var(--gold1); }
+.hx .mp-play .i-pause, .hx .mp.on .mp-play .i-play { display: none; }
+.hx .mp.on .mp-play .i-pause { display: block; }
+.hx .mp-bar { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: rgba(120, 90, 40, .35); }
+.hx .mp-bar i { display: block; height: 100%; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, var(--hex2), var(--gold2)); transition: transform .25s linear; }
 .hx .snd { flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--gold4); background: rgba(1, 10, 19, .6); color: var(--gold1); cursor: pointer; }
 .hx .snd[hidden] { display: none; }
 .hx .snd:hover { border-color: var(--gold2); }
@@ -661,7 +683,15 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .sum { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 
 /* ---------- móvil ---------- */
+@media (max-width: 1280px) {
+  .hx .cl-top .chip { display: none; }
+}
 @media (max-width: 1100px) {
+  /* el reproductor pasa a una segunda fila de la barra de arriba */
+  .cl-top { position: relative; flex-wrap: wrap; height: auto; min-height: 56px; row-gap: 0; padding-bottom: 10px; }
+  .cl-top > .brand, .cl-top > .top-right { height: 56px; }
+  .hx .mp { order: 5; flex: 1 1 100%; margin-left: 0; }
+  .hx .mp + .top-right { margin-left: auto; }
   /* tablet: tu equipo pasa a una fila encima de los equipos */
   .hx .cs-body { grid-template-columns: minmax(0, 1fr); row-gap: 16px; }
   .hx .slots { flex-direction: row; gap: 8px; }
@@ -698,7 +728,10 @@ body.dw #app.container { max-width: none; padding: 0; }
 }
 @media (max-width: 760px) {
   .hx { font-size: 13px; }
-  .cl-top { height: 52px; gap: 10px; padding: 0 14px; }
+  .cl-top { min-height: 52px; gap: 10px; padding: 0 14px 10px; }
+  .cl-top > .brand, .cl-top > .top-right { height: 52px; }
+  .hx .mp { height: 42px; padding-left: 10px; }
+  .hx .mp-btn { width: 34px; height: 34px; }
   .cl-top .nav, .brand small { display: none; }
   .hx .chip { padding: 4px 9px; font-size: 9.5px; max-width: 150px; }
   .hx .exit { padding: 6px 10px; font-size: 10.5px; }
