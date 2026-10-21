@@ -1,7 +1,8 @@
 # Ilustraciones de CLUTCH y PECHO FRÍO
 
 Ya están hechas y en el juego (`img/ilustraciones/<id>.webp`, tabla `ART` de `js/draft.js`), como montajes
-sin IA: ver "Cómo se hicieron" al final. Las opciones A y B (Gemini) quedan por si se quieren sustituir por
+sin IA: ver "Cómo se hicieron" al final. La de Faker 2024 como Azir no es un montaje: es una ilustración de internet
+(de autor desconocido) que eligió el dueño del juego, con el mismo tono dorado que las demás. Las opciones A y B (Gemini) quedan por si se quieren sustituir por
 ilustraciones pintadas de verdad.
 
 Idea: en la animación de Draft Worlds, en lugar de la foto del jugador, sale una ilustración pintada
@@ -86,7 +87,7 @@ oscuros y la parte de arriba de la foto que se usa (para fotos de cuerpo entero)
 | caps-2019 | Ryze | clutch | 0.68 | 0.40 | 1.35 | 1.15 |  |
 | tian-2019 | Lee Sin | clutch | 0.55 | 0.40 | 1.2 |  |  |
 | deft-2022 | Miss Fortune | clutch | 0.75 | 0.42 | 1.4 |  |  |
-| faker-2024 | Azir | clutch | 0.68 | 0.35 | 1.4 |  |  |
+| faker-2024 | Azir | clutch | 0.68 | 0.35 | 1.4 |  |  | (ya no se usa: ver arriba)
 | gumayusi-2025 | Varus | clutch | 0.55 | 0.38 | 1.4 |  |  |
 | deft-2015 | Kalista | choke | 0.72 | 0.38 | 1.4 | 1.1 | 0.62 |
 | faker-2017 | Galio | choke | 0.49 | 0.33 | 1.55 |  |  |
