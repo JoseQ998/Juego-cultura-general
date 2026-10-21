@@ -7,6 +7,7 @@ export const SONGS = [
   { title: 'Heavy Is The Crown', artist: 'Linkin Park', year: 2024, file: 'audio/himnos/heavy-is-the-crown.mp3' },
   { title: 'Burn It All Down', artist: 'PVRIS', year: 2021, file: 'audio/himnos/burn-it-all-down.mp3' },
   { title: 'Phoenix', artist: 'Cailin Russo y Chrissy Costanza', year: 2019, file: 'audio/himnos/phoenix.mp3' },
+  { title: 'Legends Never Die', artist: 'Against The Current', year: 2017, file: 'audio/himnos/legends-never-die.mp3' },
   { title: 'Ignite', artist: 'Zedd', year: 2016, file: 'audio/himnos/ignite.mp3' },
 ];
 const KEY = 'dw-player'; // { i, paused } de esta persona en este navegador
