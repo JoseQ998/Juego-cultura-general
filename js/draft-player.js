@@ -1,6 +1,7 @@
 // Minirreproductor de Draft Worlds: los himnos de los Mundiales mientras juegas.
 // Empieza al entrar en el modo (salvo que lo hayas pausado), pasa sola a la siguiente canción,
 // se para durante la animación de CLUTCH y PECHO FRÍO (y luego sigue donde iba) y se calla al salir del modo.
+// El volumen se elige con la barra del reproductor y se recuerda.
 import { soundOn } from './draft-sound.js';
 
 export const SONGS = [
@@ -10,12 +11,12 @@ export const SONGS = [
   { title: 'Legends Never Die', artist: 'Against The Current', year: 2017, file: 'audio/himnos/legends-never-die.mp3' },
   { title: 'Ignite', artist: 'Zedd', year: 2016, file: 'audio/himnos/ignite.mp3' },
 ];
-const KEY = 'dw-player'; // { i, paused } de esta persona en este navegador
-const VOLUME = 0.5; // de fondo
+const KEY = 'dw-player'; // { i, paused, vol } de esta persona en este navegador
 
 let audio = null;
 let index = 0;
 let paused = false; // la persona lo pausó (se recuerda)
+let level = null; // volumen elegido, de 0 a 1 (se recuerda)
 let inMode = false; // estamos en Draft Worlds
 let waiting = false; // el navegador no dejó sonar todavía: se espera al primer toque
 let holdTimer = 0;
@@ -27,18 +28,38 @@ try {
   const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
   if (Number.isInteger(saved.i) && SONGS[saved.i]) index = saved.i;
   paused = !!saved.paused;
+  if (typeof saved.vol === 'number' && saved.vol >= 0 && saved.vol <= 1) level = saved.vol;
 } catch { /* sin almacenamiento */ }
 
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ i: index, paused })); } catch { /* sin almacenamiento */ } };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ i: index, paused, vol: level })); } catch { /* sin almacenamiento */ } };
 const notify = () => listeners.forEach((fn) => fn());
-// En iPhone el volumen de un <audio> no se puede cambiar desde la página.
+// En iPhone el volumen de un <audio> no se puede cambiar desde la página: ahí la canción pasa por Web Audio
+// (una ganancia) en cuanto se elige un volumen que no es el máximo, y mientras tanto suena al volumen del teléfono.
 const canVolume = (() => { try { const a = new Audio(); a.volume = 0.5; return a.volume === 0.5; } catch { return false; } })();
+if (level == null) level = canVolume ? 0.5 : 1;
+let ac = null;
+let gain = null;
+function route() {
+  if (canVolume || gain || !audio) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  try {
+    ac = new AC();
+    gain = ac.createGain();
+    ac.createMediaElementSource(audio).connect(gain).connect(ac.destination);
+  } catch { gain = null; }
+}
+function applyLevel() {
+  if (canVolume) { if (audio && !held) audio.volume = level; return; }
+  if (level < 1) route();
+  if (gain) { gain.gain.value = level; ac.resume().catch(() => {}); }
+}
 
 function el() {
   if (audio) return audio;
   audio = new Audio();
   audio.preload = 'auto';
-  audio.volume = VOLUME;
+  if (canVolume) audio.volume = level;
   audio.src = SONGS[index].file;
   audio.addEventListener('ended', () => next());
   for (const ev of ['play', 'pause', 'timeupdate', 'loadedmetadata']) audio.addEventListener(ev, notify);
@@ -48,13 +69,17 @@ function el() {
 function start() {
   const a = el();
   if (!inMode || paused || !soundOn() || held) return;
+  if (!canVolume) applyLevel();
   a.play().then(() => { waiting = false; }).catch(() => { waiting = true; });
   media();
 }
 
 // Primer toque en la página: si el navegador no dejó sonar al entrar, ahora sí.
 for (const ev of ['pointerdown', 'keydown']) {
-  addEventListener(ev, () => { if (waiting && inMode) start(); }, { capture: true, passive: true });
+  addEventListener(ev, () => {
+    if (ac?.state === 'suspended') ac.resume().catch(() => {});
+    if (waiting && inMode) start();
+  }, { capture: true, passive: true });
 }
 
 export function enter() {
@@ -111,7 +136,16 @@ function fadeTo(v, ms) {
 
 function restoreVolume() {
   clearInterval(fadeTimer);
-  if (audio && canVolume) audio.volume = VOLUME;
+  if (audio && canVolume) audio.volume = level;
+}
+
+export const volume = () => level;
+export function setVolume(v) {
+  level = Math.min(1, Math.max(0, Math.round(v * 100) / 100));
+  save();
+  if (canVolume && !held) clearInterval(fadeTimer);
+  applyLevel();
+  notify();
 }
 
 // Mientras suena la música de CLUTCH o PECHO FRÍO, la canción se para (bajando un momento antes si se puede)
@@ -133,7 +167,7 @@ export function release() {
   clearTimeout(holdTimer);
   if (!held) return;
   held = false;
-  if (canVolume) { clearInterval(fadeTimer); audio.volume = 0; fadeTo(VOLUME, 900); }
+  if (canVolume) { clearInterval(fadeTimer); audio.volume = 0; fadeTo(level, 900); }
   start();
 }
 

@@ -114,7 +114,9 @@ export function createDraft(ctx) {
     next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 5H18v14h-2.4zM5 5v14l9.5-7z"/></svg>',
     play: '<svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
     pause: '<svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>',
+    vol: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   };
+  const volPct = () => Math.round(PLAYER.volume() * 100);
   function playerHtml() {
     const { song } = PLAYER.state();
     return `<div class="mp" role="group" aria-label="Música">
@@ -125,6 +127,7 @@ export function createDraft(ctx) {
         <button type="button" class="mp-btn mp-play" data-mp="play">${MP_ICON.play}${MP_ICON.pause}</button>
         <button type="button" class="mp-btn" data-mp="next" aria-label="Siguiente canción" title="Siguiente canción">${MP_ICON.next}</button>
       </span>
+      <label class="mp-vol" title="Volumen">${MP_ICON.vol}<input type="range" min="0" max="100" step="5" value="${volPct()}" style="--v:${volPct()}%" aria-label="Volumen"></label>
       <span class="mp-bar" aria-hidden="true"><i></i></span>
     </div>`;
   }
@@ -139,6 +142,9 @@ export function createDraft(ctx) {
     b.setAttribute('aria-label', playing ? 'Pausar' : 'Reproducir');
     b.title = playing ? 'Pausar' : 'Reproducir';
     mp.querySelector('.mp-bar i').style.transform = `scaleX(${progress.toFixed(4)})`;
+    const vol = mp.querySelector('.mp-vol input');
+    if (document.activeElement !== vol) vol.value = volPct();
+    vol.style.setProperty('--v', `${vol.value}%`);
   }
   PLAYER.onChange(paintPlayer);
   function bindPlayer() {
@@ -146,6 +152,8 @@ export function createDraft(ctx) {
     if (!mp) return;
     const act = { prev: PLAYER.prev, play: PLAYER.toggle, next: PLAYER.next };
     mp.querySelectorAll('[data-mp]').forEach((b) => (b.onclick = () => act[b.dataset.mp]()));
+    const vol = mp.querySelector('.mp-vol input');
+    vol.oninput = () => { vol.style.setProperty('--v', `${vol.value}%`); PLAYER.setVolume(vol.value / 100); };
     paintPlayer();
   }
   // Botón de música: solo sale si hay alguna música (ver draft-sound.js).
@@ -369,16 +377,20 @@ export function createDraft(ctx) {
     return scenes;
   }
 
+  // Cuadro hasta la ronda upto (incluida). Sin spoilers: de la ronda siguiente solo se ven los cruces y de las demás nada.
   function bracketView(result, upto, me) {
-    const match = (m, shown) => {
-      const row = (p, s) => `<div class="bm-row ${shown && m.winner === s ? 'win' : ''} ${p.id === me ? 'mine-row' : ''}"><span>${esc(short(p, me))}</span><b>${shown ? m.score[s === 'a' ? 0 : 1] : ''}</b></div>`;
-      return `<div class="bm ${m.a.id === me || m.b.id === me ? 'mine' : ''}">${row(m.a, 'a')}${row(m.b, 'b')}</div>`;
+    const match = (m, shown, known) => {
+      const row = (p, s) => (known
+        ? `<div class="bm-row ${shown && m.winner === s ? 'win' : ''} ${p.id === me ? 'mine-row' : ''}"><span>${esc(short(p, me))}</span><b>${shown ? m.score[s === 'a' ? 0 : 1] : ''}</b></div>`
+        : '<div class="bm-row tbd"><span>?</span><b></b></div>');
+      return `<div class="bm ${known && (m.a.id === me || m.b.id === me) ? 'mine' : ''}">${row(m.a, 'a')}${row(m.b, 'b')}</div>`;
     };
     const cols = result.rounds.map((r, ri) => {
       const shown = ri <= upto;
+      const known = ri <= upto + 1;
       const pairs = [];
-      if (r.matches.length > 1) for (let i = 0; i < r.matches.length; i += 2) pairs.push(`<div class="pair">${match(r.matches[i], shown)}${match(r.matches[i + 1], shown)}</div>`);
-      else pairs.push(`<div class="pair single">${match(r.matches[0], shown)}</div>`);
+      if (r.matches.length > 1) for (let i = 0; i < r.matches.length; i += 2) pairs.push(`<div class="pair">${match(r.matches[i], shown, known)}${match(r.matches[i + 1], shown, known)}</div>`);
+      else pairs.push(`<div class="pair single">${match(r.matches[0], shown, known)}</div>`);
       return `<div class="br-col"><h4>${r.name} <small>Bo${r.bestOf}</small></h4><div class="br-list">${pairs.join('')}</div></div>`;
     });
     const champ = upto >= result.rounds.length - 1 ? result.champion : null;
