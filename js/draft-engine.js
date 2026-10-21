@@ -163,23 +163,28 @@ const BEST_OF = { 16: 3, 8: 3, 4: 5, 2: 5 };
 // lo que suman los PECHO FRÍO crece menos con cada uno (CHOKE_LIFT), porque ahora un equipo puede llevar hasta 5:
 // con la misma nota, llevar 1, 3 o 5 PECHO FRÍO da lo mismo que llevar 1, 3 o 5 CLUTCH (simulado: 15 %, 20 % y 24 %
 // de ser campeón entre 8 equipos, frente a 12 % sin rasgo).
+// Reglas 4: CLUTCH sube al 20 % y el bonus de los PECHO FRÍO se reajusta (CHOKE_LIFT_V4) para seguir igualados
+// (simulado: 1 / 3 / 5 CLUTCH → 15,5 / 21,8 / 26,1 %; 1 / 3 / 5 PECHO FRÍO → 15,3 / 22 / 26,3 %; sin rasgo, 12,4 %).
 const CLUTCH_CHANCE = 0.15;
+const CLUTCH_CHANCE_V4 = 0.20;
 const CHOKE_CHANCE = 0.30;
 const CHOKE_BONUS = 4; // reglas 2: cada PECHO FRÍO suma 4
 const CHOKE_LIFT = [0, 3.5, 5.75, 7.75, 9, 10]; // reglas 3: lo que suman entre todos, según cuántos son
+const CHOKE_LIFT_V4 = [0, 3.5, 6.25, 8.25, 9.75, 10.75];
 // Las salas que empezaron antes del cambio se siguen viendo con las reglas de entonces (mismo resultado y copa).
 export const RULES_V2_FROM = Date.parse('2026-10-21T00:30:00Z');
 export const RULES_V3_FROM = Date.parse('2026-10-21T03:00:00Z');
+export const RULES_V4_FROM = Date.parse('2026-10-21T22:30:00Z');
 export const rulesFor = (startedAt) => {
   const t = typeof startedAt === 'number' ? startedAt : Date.parse(startedAt); // llega en milisegundos o como fecha
-  return !t ? 3 : t < RULES_V2_FROM ? 1 : t < RULES_V3_FROM ? 2 : 3;
+  return !t ? 4 : t < RULES_V2_FROM ? 1 : t < RULES_V3_FROM ? 2 : t < RULES_V4_FROM ? 3 : 4;
 };
 // Los que tienen rasgo desde las reglas 3: con reglas anteriores juegan sin él.
 const TRAITS_V3 = new Set(['2022-drx:top', '2023-t1:top', '2014-ssw:support', '2021-edg:support', '2017-lz:top', '2024-blg:top', '2018-rng:support', '2022-gen:support']);
 const withRules = (p, rules) => (p && rules < 3 && TRAITS_V3.has(p.key) ? { ...p, trait: null } : p);
 
 // participants: [{ id, name, bot, roster }]; size 8 o 16
-export function simulateTournament(participants, seed, { rules = 3 } = {}) {
+export function simulateTournament(participants, seed, { rules = 4 } = {}) {
   const r = rng(`worlds:${seed}`);
   const entrants = participants.map((x) => {
     const players = rosterPlayers(x.roster).map((p) => withRules(p, rules));
@@ -212,7 +217,7 @@ function simulateSeries(a, b, bestOf, r, rules) {
 }
 
 function simulateGame(a, b, decisive, r, used, rules) {
-  const chanceOf = (p) => (rules === 1 ? (decisive ? 0.08 : 0.04) : !decisive ? 0 : p.trait === 'clutch' ? CLUTCH_CHANCE : CHOKE_CHANCE);
+  const chanceOf = (p) => (rules === 1 ? (decisive ? 0.08 : 0.04) : !decisive ? 0 : p.trait === 'clutch' ? (rules >= 4 ? CLUTCH_CHANCE_V4 : CLUTCH_CHANCE) : CHOKE_CHANCE);
   const swings = [];
   for (const [side, team] of [['a', a], ['b', b]]) {
     for (const p of team.players) {
@@ -224,7 +229,7 @@ function simulateGame(a, b, decisive, r, used, rules) {
   const lift = (t) => {
     if (rules === 1 || decisive) return 0;
     const n = t.players.filter((p) => p.trait === 'choke').length;
-    return rules === 2 ? n * CHOKE_BONUS : CHOKE_LIFT[n];
+    return rules === 2 ? n * CHOKE_BONUS : rules === 3 ? CHOKE_LIFT[n] : CHOKE_LIFT_V4[n];
   };
   const sides = new Set(swings.map((s) => s.winner));
   let winner, swing = null;
@@ -366,7 +371,7 @@ function fill(tpl, us, them) {
   });
 }
 
-function gameEvents(a, b, winner, swing, r, used = new Set(), rules = 3) {
+function gameEvents(a, b, winner, swing, r, used = new Set(), rules = 4) {
   const teams = { a, b };
   const other = (s) => (s === 'a' ? 'b' : 'a');
   const loser = other(winner);

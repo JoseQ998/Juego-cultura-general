@@ -36,6 +36,10 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
 
 - Probabilidad de ganar una partida según la diferencia de valor `d`: `p = 1 / (1 + e^(-0.0847·d))`
   (5 puntos → 60 %, 10 → 70 %, 20 → 85 %).
+- **Rasgos (reglas 4, desde el 21/10/2026 22:30 UTC):** como las 3, pero cada CLUTCH tiene un 20 % (antes 15 %) de ganar
+  la partida decisiva, y lo que suman los PECHO FRÍO fuera de ella es 3,5 / 6,25 / 8,25 / 9,75 / 10,75 con 1 / 2 / 3 / 4 / 5.
+  Simulado entre 8 equipos con la misma nota: 1, 3 o 5 CLUTCH → 15,5 %, 21,8 % y 26,1 % de ser campeón; 1, 3 o 5 PECHO FRÍO
+  → 15,3 %, 22 % y 26,3 %; sin rasgo, 12,4 %. Las salas que empezaron antes siguen con sus reglas.
 - **Rasgos (reglas 3, desde el 21/10/2026 03:00 UTC):** 12 CLUTCH y 12 PECHO FRÍO, con 2 tops y 2 supports de cada uno.
   Solo deciden en la partida decisiva (la 3.ª de un Bo3 o la 5.ª de un Bo5): cada CLUTCH tiene un 15 % de ganarla para su
   equipo pase lo que pase y cada PECHO FRÍO un 30 % de perderla. En las demás partidas los PECHO FRÍO suman al valor de su

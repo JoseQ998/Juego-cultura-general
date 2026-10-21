@@ -27,16 +27,24 @@ export function setSound(on) {
 // ¿Hay alguna música? (para enseñar el botón de sonido o no)
 export const hasMusic = () => Object.keys(FILES).length > 0;
 
-function unlock() {
+// Crea el AudioContext (o lo reanuda si el navegador lo paró: suspendido, interrumpido en iPhone, pestaña en segundo
+// plano). Funciona tras cualquier toque en la página, también si fue antes de entrar en Draft Worlds.
+function wake() {
   if (!hasMusic() || !document.body.classList.contains('dw')) return;
   if (!ac) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     ac = new AC();
   }
-  if (ac.state === 'suspended') ac.resume().catch(() => {});
+  if (ac.state !== 'running') ac.resume().catch(() => {});
 }
-for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, unlock, { capture: true, passive: true });
+for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, wake, { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
+const running = () => new Promise((res) => {
+  if (ac.state === 'running') return res(true);
+  ac.resume().catch(() => {});
+  setTimeout(() => res(ac.state === 'running'), 400);
+});
 // En iPhone, que suene aunque el teléfono esté en silencio, como un vídeo (Safari 16.4 o más nuevo).
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* no disponible */ }
 
@@ -51,24 +59,30 @@ function load(kind) {
 
 // Deja la música cargada antes de que haga falta.
 export function preloadMusic() {
-  if (soundOn()) Object.keys(FILES).forEach(load);
+  if (!soundOn()) return;
+  wake();
+  Object.keys(FILES).forEach(load);
 }
 
 // Suena la música de ese momento desde atMs (por si se llega a mitad) hasta totalMs, con entrada y salida suaves.
 // El punto de la canción se calcula al empezar a sonar, así que si tarda en cargar sigue cuadrando con la animación,
 // y se adelanta lo que tarda el altavoz del aparato en sacar el sonido (outputLatency).
+// Los himnos del reproductor solo se paran si esta música llega a sonar; si no puede (sin cargar, o el navegador no
+// deja sonar todavía), los himnos siguen.
 export async function playMusic(kind, atMs, totalMs) {
   const my = ++seq;
-  if (!soundOn() || !ac) return;
+  if (!soundOn()) return;
+  wake();
+  if (!ac) return;
   const t0 = performance.now() - atMs; // cuándo empezó la animación
-  hold(totalMs - atMs);
   const buf = await load(kind);
-  if (my !== seq || !buf) return;
+  if (my !== seq || !buf || !(await running()) || my !== seq) return;
   stopMusic(false);
   const lat = ac.outputLatency || ac.baseLatency || 0;
   const off = (performance.now() - t0) / 1000 + lat;
   const left = Math.min(totalMs / 1000, buf.duration) - off;
   if (left < 0.5) return;
+  hold(totalMs - (performance.now() - t0));
   const src = ac.createBufferSource();
   const gain = ac.createGain();
   src.buffer = buf;

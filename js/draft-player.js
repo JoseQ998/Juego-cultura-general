@@ -81,6 +81,12 @@ for (const ev of ['pointerdown', 'keydown']) {
     if (waiting && inMode) start();
   }, { capture: true, passive: true });
 }
+// Al volver a la pestaña, si la canción tenía que estar sonando y el navegador la paró, sigue.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (ac?.state !== 'running') ac?.resume().catch(() => {});
+  if (inMode && audio?.paused) start();
+});
 
 export function enter() {
   if (inMode) return;
@@ -169,6 +175,8 @@ export function release() {
   held = false;
   if (canVolume) { clearInterval(fadeTimer); audio.volume = 0; fadeTo(level, 900); }
   start();
+  // por si el navegador no la deja seguir a la primera (sigue con el siguiente toque o al reintentar)
+  setTimeout(() => { if (inMode && !held && audio?.paused) start(); }, 1500);
 }
 
 export function state() {
