@@ -1633,6 +1633,44 @@ async function boot() {
   });
   route();
   recoverPending();
+  watchVersion();
+}
+
+// ---------------- versión nueva ----------------
+// Una pestaña abierta mucho rato (sobre todo en el móvil) sigue con la versión del juego con la que se abrió.
+// Al volver a ella o al cambiar de pantalla se mira si se ha publicado otra (en cada publicación cambian la fecha
+// y la etiqueta de index.html) y, si es así, se ofrece actualizar.
+let version = null;
+let versionCheckedAt = 0;
+async function publishedVersion() {
+  try {
+    const r = await fetch('./', { method: 'HEAD', cache: 'no-store' });
+    return r.ok ? `${r.headers.get('last-modified') || ''}|${r.headers.get('etag') || ''}` : null;
+  } catch { return null; }
+}
+async function checkVersion() {
+  if (document.hidden || document.querySelector('.update-bar') || Date.now() - versionCheckedAt < 30000) return;
+  versionCheckedAt = Date.now();
+  const v = await publishedVersion();
+  if (!v || v === '|') return;
+  if (!version) { version = v; return; }
+  if (v === version) return;
+  const bar = document.createElement('div');
+  bar.className = 'update-bar';
+  bar.setAttribute('role', 'status');
+  bar.innerHTML = '<span>Hay una versión nueva del juego.</span><button class="btn sm" type="button" data-up="go">Actualizar</button><button class="btn sm ghost" type="button" data-up="later">Más tarde</button>';
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-up]');
+    if (b?.dataset.up === 'go') location.reload();
+    else if (b) { version = v; bar.remove(); } // no vuelve a avisar hasta la siguiente versión
+  });
+  document.body.appendChild(bar);
+}
+function watchVersion() {
+  versionCheckedAt = Date.now();
+  publishedVersion().then((v) => { if (v && v !== '|') version = v; });
+  document.addEventListener('visibilitychange', checkVersion);
+  window.addEventListener('hashchange', checkVersion);
 }
 
 boot();

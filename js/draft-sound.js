@@ -1,7 +1,7 @@
 // Música de los momentos CLUTCH y PECHO FRÍO de Draft Worlds.
 // Los archivos van en audio/, ya recortados al trozo que debe sonar (13 s), y se apuntan aquí.
 // Un momento sin archivo no suena; si no hay ninguno, no sale el botón de sonido.
-import { duck, unduck } from './draft-player.js';
+import { hold, release } from './draft-player.js';
 
 const FILES = {
   clutch: 'audio/clutch.mp3', // Legends Never Die (Worlds 2017) desde el 0:59: explota a los 3,3 s, con "Decide la partida"
@@ -61,7 +61,7 @@ export async function playMusic(kind, atMs, totalMs) {
   const my = ++seq;
   if (!soundOn() || !ac) return;
   const t0 = performance.now() - atMs; // cuándo empezó la animación
-  duck(totalMs - atMs);
+  hold(totalMs - atMs);
   const buf = await load(kind);
   if (my !== seq || !buf) return;
   stopMusic(false);
@@ -85,7 +85,7 @@ export async function playMusic(kind, atMs, totalMs) {
 }
 
 export function stopMusic(cancelLoading = true) {
-  if (cancelLoading) { seq++; unduck(); }
+  if (cancelLoading) { seq++; release(); }
   if (!current || !ac) return;
   const { src, gain } = current;
   current = null;

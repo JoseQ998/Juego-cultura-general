@@ -1,6 +1,6 @@
 // Minirreproductor de Draft Worlds: los himnos de los Mundiales mientras juegas.
 // Empieza al entrar en el modo (salvo que lo hayas pausado), pasa sola a la siguiente canción,
-// baja durante la música de CLUTCH y PECHO FRÍO y se calla al salir del modo.
+// se para durante la animación de CLUTCH y PECHO FRÍO (y luego sigue donde iba) y se calla al salir del modo.
 import { soundOn } from './draft-sound.js';
 
 export const SONGS = [
@@ -11,16 +11,15 @@ export const SONGS = [
   { title: 'Ignite', artist: 'Zedd', year: 2016, file: 'audio/himnos/ignite.mp3' },
 ];
 const KEY = 'dw-player'; // { i, paused } de esta persona en este navegador
-const VOLUME = 0.5; // de fondo: la música de CLUTCH y PECHO FRÍO suena por encima
-const DUCKED = 0.08;
+const VOLUME = 0.5; // de fondo
 
 let audio = null;
 let index = 0;
 let paused = false; // la persona lo pausó (se recuerda)
 let inMode = false; // estamos en Draft Worlds
 let waiting = false; // el navegador no dejó sonar todavía: se espera al primer toque
-let duckTimer = 0;
-let duckPaused = false; // sin control de volumen (iPhone) se pausa mientras suena el momento
+let holdTimer = 0;
+let held = false; // parada mientras suena la música de un CLUTCH o PECHO FRÍO
 let fadeTimer = 0;
 const listeners = new Set();
 
@@ -48,7 +47,7 @@ function el() {
 
 function start() {
   const a = el();
-  if (!inMode || paused || !soundOn() || duckPaused) return;
+  if (!inMode || paused || !soundOn() || held) return;
   a.play().then(() => { waiting = false; }).catch(() => { waiting = true; });
   media();
 }
@@ -68,14 +67,15 @@ export function enter() {
 export function leave() {
   if (!inMode) return;
   inMode = false;
-  clearTimeout(duckTimer);
-  duckPaused = false;
+  clearTimeout(holdTimer);
+  held = false;
   audio?.pause();
+  restoreVolume();
   notify();
 }
 
 export function toggle() {
-  if (audio && !audio.paused) { paused = true; audio.pause(); } else { paused = false; duckPaused = false; start(); }
+  if (audio && !audio.paused) { paused = true; audio.pause(); } else { paused = false; held = false; restoreVolume(); start(); }
   save();
   notify();
 }
@@ -109,19 +109,32 @@ function fadeTo(v, ms) {
   }, 40);
 }
 
-// Mientras suena la música de CLUTCH o PECHO FRÍO, la canción baja (o se pausa si no se puede bajar).
-export function duck(ms) {
-  if (!audio || (audio.paused && !duckPaused)) return;
-  clearTimeout(duckTimer);
-  if (canVolume) fadeTo(DUCKED, 300);
-  else if (!audio.paused) { duckPaused = true; audio.pause(); }
-  duckTimer = setTimeout(unduck, ms);
+function restoreVolume() {
+  clearInterval(fadeTimer);
+  if (audio && canVolume) audio.volume = VOLUME;
 }
 
-export function unduck() {
-  clearTimeout(duckTimer);
-  if (canVolume) fadeTo(VOLUME, 900);
-  if (duckPaused) { duckPaused = false; start(); }
+// Mientras suena la música de CLUTCH o PECHO FRÍO, la canción se para (bajando un momento antes si se puede)
+// y después sigue donde iba, subiendo poco a poco.
+export function hold(ms) {
+  if (!audio || (audio.paused && !held)) return;
+  clearTimeout(holdTimer);
+  if (!held) {
+    held = true;
+    if (canVolume) {
+      fadeTo(0, 250);
+      setTimeout(() => { if (held) audio.pause(); }, 260);
+    } else audio.pause();
+  }
+  holdTimer = setTimeout(release, ms);
+}
+
+export function release() {
+  clearTimeout(holdTimer);
+  if (!held) return;
+  held = false;
+  if (canVolume) { clearInterval(fadeTimer); audio.volume = 0; fadeTo(VOLUME, 900); }
+  start();
 }
 
 export function state() {

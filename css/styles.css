@@ -214,6 +214,16 @@ select.tab { padding-right: 10px; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast.error { border-left: 4px solid var(--bad); }
 
+/* ---------- aviso de versión nueva ---------- */
+.update-bar {
+  position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 90;
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 10px; width: max-content; max-width: calc(100% - 32px);
+  background: rgba(12, 10, 26, .96); color: #f3f1ff; padding: 10px 10px 10px 16px; border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, .2); box-shadow: 0 10px 30px rgba(0, 0, 0, .55); font-size: .9rem;
+}
+.update-bar span { flex: 1 1 auto; text-align: center; }
+.update-bar .btn { flex: none; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }

@@ -164,7 +164,10 @@ const CHOKE_CHANCE = 0.30;
 const CHOKE_BONUS = 4;
 // Las salas que empezaron antes del cambio se siguen viendo con las reglas de entonces (mismo resultado y copa).
 export const RULES_V2_FROM = Date.parse('2026-10-21T00:30:00Z');
-export const rulesFor = (startedAt) => (startedAt && Date.parse(startedAt) < RULES_V2_FROM ? 1 : 2);
+export const rulesFor = (startedAt) => {
+  const t = typeof startedAt === 'number' ? startedAt : Date.parse(startedAt); // llega en milisegundos o como fecha
+  return t && t < RULES_V2_FROM ? 1 : 2;
+};
 
 // participants: [{ id, name, bot, roster }]; size 8 o 16
 export function simulateTournament(participants, seed, { rules = 2 } = {}) {
