@@ -478,6 +478,7 @@ export function createDraft(ctx) {
               <img class="bg" src="${MAP.MAP_IMG}" alt="Grieta del Invocador" draggable="false">
               <span class="ping"></span>
               ${home.players.map((p) => tok('home', p)).join('')}${away.players.map((p) => tok('away', p)).join('')}
+              ${m.games[gi].decisive ? `<div class="decider" style="--el:${-Math.round(t)}ms"><span>Partida decisiva</span><small>${esc(round.name)} · Todo o nada</small></div>` : ''}
               <div class="verdict ${won ? 'win' : 'lose'}"><span>${mine ? (won ? 'Victoria' : 'Derrota') : `Gana ${esc(short(won ? home : away, me))}`}</span></div>
             </div>
             <div class="hud"><span>Partida ${gi + 1}</span><b class="clock">${clockAt(t, MAP.gameDuration(m.games[gi].events))}</b></div>
@@ -493,7 +494,7 @@ export function createDraft(ctx) {
   }
 
   // Mueve a los jugadores, el destello de la jugada y destaca a su protagonista.
-  function moveTokens(mapEl, m, gi, t, me) {
+  function moveTokens(mapEl, m, gi, t, me, roundName = '') {
     if (!mapEl) return;
     const L = MAP.gameLayout(m, gi, t, me);
     const focus = new Set(L.focus?.keys || []);
@@ -530,19 +531,26 @@ export function createDraft(ctx) {
       delete ping.dataset.step;
     }
     mapEl.classList.toggle('finished', MAP.gameFinished(t, m.games[gi].events));
-    cinema(mapEl, m, gi, t, me, L);
+    cinema(mapEl, m, gi, t, me, L, roundName);
   }
 
-  // CLUTCH o PECHO FRÍO: el jugador sale en grande sobre el mapa con su jugada y cómo decide la partida.
+  // CLUTCH o PECHO FRÍO: en la partida decisiva, el jugador sale de su ficha del mapa y llena la pantalla con su jugada
+  // y cómo decide la partida (el clímax, a los 3,3 s, coincide con la explosión de la música). Al final vuelve a su ficha.
   // Todo va con retrasos negativos (--el), así que quien llega a mitad la ve en el mismo punto.
-  function cinema(mapEl, m, gi, t, me, L) {
+  const SHARDS = ['0 0,45% 0,52% 48%', '45% 0,100% 0,100% 30%,52% 48%', '100% 30%,100% 100%,70% 100%,52% 48%', '70% 100%,25% 100%,52% 48%', '25% 100%,0 100%,0 60%,52% 48%', '0 60%,0 0,52% 48%'];
+  const SHARD_DIR = [[-60, -70, -25], [55, -75, 30], [80, 20, 35], [10, 85, -20], [-70, 60, -35], [-85, -10, 25]];
+  const fxSpecks = (n, seed) => Array.from({ length: n }, (_, i) => {
+    const u = (k) => (E.hashStr(`${seed}${i}${k}`) % 1000) / 1000;
+    return `<i style="--x:${(u('x') * 100).toFixed(1)}%;--d:${Math.round(u('d') * 2600)}ms;--s:${(0.5 + u('s')).toFixed(2)};--w:${Math.round((u('w') - 0.5) * 80)}px;--t:${(2.2 + u('t') * 2.2).toFixed(2)}s"></i>`;
+  }).join('');
+  function cinema(mapEl, m, gi, t, me, L, roundName) {
     const c = MAP.cineAt(t, m.games[gi].events);
     const key = c ? `${gi}:${c.step}` : '';
     mapEl.classList.toggle('cine-on', !!c);
-    const old = mapEl.querySelector('.cine');
+    const root = mapEl.closest('.live')?.parentElement || mapEl;
+    const old = root.querySelector('.cine');
     if (old && old.dataset.key === key) return;
     old?.remove();
-    mapEl.querySelector('.cine-wave')?.remove();
     if (!c) return;
     const { ev } = c;
     const p = E.PLAYER_BY_KEY[ev.key];
@@ -552,33 +560,54 @@ export function createDraft(ctx) {
     const team = label(pSide === 'a' ? m.a : m.b, me);
     const txt = ev.text.replaceAll('{eq}', label(ev.side === 'a' ? m.a : m.b, me));
     const decide = clutch ? 'Decide la partida' : `Le cuesta la partida a ${team === 'Tu equipo' ? 'tu equipo' : esc(team)}`;
-    const cracks = clutch ? '' : `<svg class="cine-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M52 48 L40 30 L44 18 L36 2"/><path d="M52 48 L70 38 L78 22 L96 14"/><path d="M52 48 L62 66 L58 82 L66 98"/>
-      <path d="M52 48 L32 58 L20 54 L4 66"/><path d="M40 30 L28 26"/><path d="M70 38 L84 44"/><path d="M62 66 L76 72"/></svg>`;
+    const tokKey = `${pSide === (m.b.id === me ? 'b' : 'a') ? 'home' : 'away'}:${p.role}`;
+    const pos = L.pos[tokKey] || { x: 50, y: 50 };
+    const face = `${p.photo ? img(p.photo, PHOTO_W) : ''}<b>${initials(p.name)}</b>`;
+    const photo = clutch
+      ? `<span class="cine-in">${face}</span>`
+      : `<span class="cine-in"><span class="whole">${face}</span>${SHARDS.map((poly, i) => `<span class="sh" style="clip-path:polygon(${poly});--dx:${SHARD_DIR[i][0]}%;--dy:${SHARD_DIR[i][1]}%;--rot:${SHARD_DIR[i][2]}deg">${face}</span>`).join('')}</span>
+         <svg class="cine-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+           <path d="M52 48 L45 24 L45 0"/><path d="M52 48 L78 34 L100 30"/><path d="M52 48 L64 76 L70 100"/>
+           <path d="M52 48 L36 78 L25 100"/><path d="M52 48 L22 56 L0 60"/><path d="M52 48 L26 20 L0 0"/><path d="M52 48 L80 8 L100 0"/></svg>`;
+    const name = [...p.name].map((ch, i) => `<span style="--i:${i}">${esc(ch)}</span>`).join('');
+    const tm = E.TEAM_BY_ID[p.teamId];
     playMusic(ev.kind, c.el, MAP.CINE_MUSIC);
     const box = document.createElement('div');
     box.className = `cine ${ev.kind}`;
     box.dataset.key = key;
+    box.setAttribute('aria-hidden', 'true');
     box.style.setProperty('--el', `${-c.el}ms`);
     box.innerHTML = `
+      <div class="cine-bgwrap"><img class="cine-bg" src="${MAP.MAP_IMG}" alt="" style="transform-origin:${pos.x}% ${pos.y}%"></div>
+      <div class="cine-shade"></div>
+      <div class="cine-fx">${fxSpecks(clutch ? 30 : 36, key + ev.kind)}</div>
+      <div class="cine-bar top"></div><div class="cine-bar bot"></div>
+      <div class="cine-burst"></div>
+      <div class="cine-stage">
+        <div class="cine-hero">
+          <div class="cine-photo"><span class="cine-rays"></span><span class="cine-ring"></span><span class="cine-face">${photo}</span></div>
+          <div class="cine-txt">
+            <p class="cine-kicker">Partida decisiva${roundName ? ` · ${esc(roundName)}` : ''}</p>
+            <p class="cine-stamp"><span>${clutch ? 'Clutch' : 'Pecho frío'}</span></p>
+            <p class="cine-name">${name}</p>
+            <p class="cine-team">${tm ? logo(tm, 'cine-logo') : ''}<span>${E.ROLE_NAMES[p.role]} · ${esc(p.team)} ${p.year}</span></p>
+            <p class="cine-msg">${esc(txt)}</p>
+          </div>
+        </div>
+      </div>
+      <div class="cine-ribbon"><span>${decide}</span></div>
       <div class="cine-flash"></div>
-      <div class="cine-band"><span class="cine-lines"></span></div>
-      <div class="cine-photo"><span class="cine-rays"></span><span class="cine-face"><span class="cine-in">${p.photo ? img(p.photo, PHOTO_W) : ''}<b>${initials(p.name)}</b></span></span>${cracks}</div>
-      <div class="cine-txt">
-        <p class="cine-stamp">${clutch ? 'Clutch' : 'Pecho frío'}</p>
-        <p class="cine-name">${esc(p.name)}<small>${E.ROLE_NAMES[p.role]} · ${esc(p.team)} ${p.year}</small></p>
-        <p class="cine-msg">${esc(txt)}</p>
-        <p class="cine-decide"><span>${decide}</span></p>
-      </div>`;
-    mapEl.appendChild(box);
-    // onda sobre el jugador en el mapa cuando la jugada se resuelve
-    const pos = L.pos[`${pSide === (m.b.id === me ? 'b' : 'a') ? 'home' : 'away'}:${p.role}`];
-    if (pos) {
-      const wave = document.createElement('span');
-      wave.className = `cine-wave ${ev.kind}`;
-      wave.style.cssText = `left:${pos.x}%;top:${pos.y}%;--el:${-c.el}ms`;
-      mapEl.appendChild(wave);
-    }
+      <div class="cine-flash drop"></div>`;
+    root.appendChild(box);
+    // el jugador sale de su ficha en el mapa y vuelve a ella al final
+    const tok = mapEl.querySelector(`[data-tok="${tokKey}"]`)?.getBoundingClientRect();
+    const hero = box.querySelector('.cine-photo').getBoundingClientRect();
+    const tx = tok ? Math.min(innerWidth, Math.max(0, tok.left + tok.width / 2)) : innerWidth / 2;
+    const ty = tok ? Math.min(innerHeight, Math.max(0, tok.top + tok.height / 2)) : innerHeight / 2;
+    box.style.setProperty('--tx', `${tx}px`);
+    box.style.setProperty('--ty', `${ty}px`);
+    box.style.setProperty('--dx', `${tx - (hero.left + hero.width / 2)}px`);
+    box.style.setProperty('--dy', `${ty - (hero.top + hero.height / 2)}px`);
   }
 
   // ---------- resultado final ----------
@@ -693,7 +722,7 @@ export function createDraft(ctx) {
         const score = scoreHtml(round, s.m, s.gi, t, me);
         if (score !== lastScore) { lastScore = score; el.querySelector('.sb-mid').innerHTML = score; }
         el.querySelector('.clock').textContent = clockAt(t, MAP.gameDuration(s.m.games[s.gi].events));
-        moveTokens(el.querySelector('.mapin'), s.m, s.gi, t, me);
+        moveTokens(el.querySelector('.mapin'), s.m, s.gi, t, me, round.name);
         return;
       }
       if (lastKey === String(i)) return;
@@ -722,7 +751,7 @@ export function createDraft(ctx) {
       }
       el.innerHTML = `${html}${skipRow()}`;
       markPaused(paused);
-      if (s.type === 'game') moveTokens(el.querySelector('.mapin'), s.m, s.gi, t, me);
+      if (s.type === 'game') moveTokens(el.querySelector('.mapin'), s.m, s.gi, t, me, round.name);
       el.querySelector('#dwSkip')?.addEventListener('click', () => { const c = locate(); passed = c.i + 1; offset += Math.max(0, scenes[c.i].dur - c.t) + 1; lastKey = ''; tick(); });
       el.querySelector('#dwEnd')?.addEventListener('click', () => { passed = scenes.length - 1; offset += 1e9; lastKey = ''; tick(); });
     };

@@ -14,7 +14,7 @@ export const MOVE = 1400; // se mueven hacia la jugada antes de que salga el men
 const WANDER = 900; // pequeños movimientos mientras tanto
 const VERDICT = 1600; // tras el último mensaje, sale Victoria o Derrota
 const OUTRO = 4200; // y se queda a la vista antes de pasar a lo siguiente
-export const CINE = 6200; // animación del jugador CLUTCH o PECHO FRÍO que decide la partida
+export const CINE = 7000; // animación del jugador CLUTCH o PECHO FRÍO que decide la partida (pantalla completa)
 const AFTER_CINE = 2400; // después, la jugada se sigue viendo en el mapa
 const isSwing = (e) => e.kind === 'clutch' || e.kind === 'choke';
 // Momento (ms desde que empieza la partida) en que sale cada mensaje.
