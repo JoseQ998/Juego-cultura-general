@@ -547,7 +547,26 @@ body.dw #app.container { max-width: none; padding: 0; }
 /* el clímax: coincide con la explosión de la música */
 .hx .cine-ribbon { position: absolute; z-index: 4; left: -6%; right: -6%; bottom: 16vh; display: grid; place-items: center; padding: clamp(10px, 1.5vw, 18px) 0; transform: skewY(-3deg); background: linear-gradient(90deg, transparent, var(--cB) 12%, var(--cA) 50%, var(--cB) 88%, transparent); box-shadow: 0 0 46px var(--glow); animation: cine-ribbon .45s cubic-bezier(.2, 1.2, .4, 1) calc(var(--el) + 3300ms) both, cine-pulse .9s ease-in-out calc(var(--el) + 3800ms) 2; }
 .hx .cine-ribbon span { font-family: var(--serif); font-weight: 800; font-size: clamp(16px, 3.2vw, 40px); letter-spacing: .24em; text-transform: uppercase; color: var(--ink); text-align: center; padding: 0 4vw; }
+/* con ilustración: el jugador como su campeón ocupa la mitad izquierda y sale desde su ficha del mapa */
+.hx .cine-art { position: absolute; z-index: 3; left: 0; top: 11vh; bottom: 11vh; width: min(62vw, 78vh); --ax: 50%; --ay: 50%; animation: cine-artin 1s cubic-bezier(.2, .8, .2, 1) calc(var(--el) + 250ms) both, cine-artout .7s ease-in calc(var(--el) + 5900ms) forwards; }
+.hx .cine-art-in { position: absolute; inset: 0; -webkit-mask-image: linear-gradient(90deg, #000 56%, transparent 97%); mask-image: linear-gradient(90deg, #000 56%, transparent 97%); }
+.hx .cine-art-in > span { position: absolute; inset: 0; background-position: 50% 40%; background-size: cover; background-repeat: no-repeat; animation: cine-kb 7s linear var(--el) both; }
+.hx .cine.choke .cine-art-in .whole { animation: cine-kb 7s linear var(--el) both, cine-freeze 1s ease-out calc(var(--el) + 3300ms) both, cine-gone 1ms linear calc(var(--el) + 3900ms) forwards; }
+.hx .cine-art-in .sh { opacity: 0; filter: grayscale(.75) brightness(.85) contrast(1.15); animation: cine-shard 1s cubic-bezier(.2, .6, .3, 1) calc(var(--el) + 3900ms) forwards; }
+.hx .cine.choke .cine-art-in > span::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(228, 248, 255, .1), rgba(143, 216, 245, .5)); mix-blend-mode: screen; opacity: 0; animation: cine-fade-to 1s ease-out calc(var(--el) + 3300ms) forwards; }
+.hx .cine-art .cine-crack { inset: 14% 24% 16% 14%; width: auto; height: auto; }
+.hx .cine.has-art .cine-stage { place-items: center end; }
+.hx .cine.has-art .cine-hero { max-width: 44vw; padding: 0 5vw 0 0; }
+.hx .cine.has-art .cine-txt { flex: 1 1 auto; }
+.hx .cine-txt .cine-as { margin-top: 8px; font-family: var(--serif); font-weight: 700; font-size: clamp(13px, 1.7vw, 22px); letter-spacing: .22em; text-transform: uppercase; color: var(--cA); animation: cine-up .5s ease-out calc(var(--el) + 1900ms) both; }
+.hx .cine-as b { color: #fff; }
+@keyframes cine-artin { from { clip-path: circle(0% at var(--ax) var(--ay)); } to { clip-path: circle(150% at var(--ax) var(--ay)); } }
+@keyframes cine-artout { to { opacity: 0; transform: scale(1.04); } }
 @media (max-width: 760px), (max-aspect-ratio: 4/5) {
+  .hx .cine-art { top: 8vh; bottom: auto; right: 0; width: auto; height: 54vh; }
+  .hx .cine-art-in { -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 99%); mask-image: linear-gradient(180deg, #000 60%, transparent 99%); }
+  .hx .cine.has-art .cine-stage { place-items: end center; }
+  .hx .cine.has-art .cine-hero { max-width: none; padding: 0 6vw; }
   .hx .cine-bar { height: 8vh; }
   .hx .cine-stage { inset: 8vh 0 17vh; }
   .hx .cine-hero { flex-direction: column; gap: 14px; text-align: center; }

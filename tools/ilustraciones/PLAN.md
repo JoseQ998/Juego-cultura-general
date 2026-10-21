@@ -1,5 +1,9 @@
 # Ilustraciones de CLUTCH y PECHO FRÍO
 
+Ya están hechas y en el juego (`img/ilustraciones/<id>.webp`, tabla `ART` de `js/draft.js`), como montajes
+sin IA: ver "Cómo se hicieron" al final. Las opciones A y B (Gemini) quedan por si se quieren sustituir por
+ilustraciones pintadas de verdad.
+
 Idea: en la animación de Draft Worlds, en lugar de la foto del jugador, sale una ilustración pintada
 del jugador como su campeón (al estilo de las presentaciones de los Mundiales). Los CLUTCH en luz dorada
 y los PECHO FRÍO en hielo. El campeón de cada uno es el que más jugó en ese Mundial (Leaguepedia).
@@ -12,14 +16,14 @@ y los PECHO FRÍO en hielo. El campeón de cada uno es el que más jugó en ese 
 | caps-2019 | Caps · G2 Esports 2019 | Ryze | CLUTCH |
 | tian-2019 | Tian · FunPlus Phoenix 2019 | Lee Sin | CLUTCH |
 | deft-2022 | Deft · DRX 2022 | Miss Fortune | CLUTCH |
-| faker-2024 | Faker · T1 2024 | Sylas | CLUTCH |
+| faker-2024 | Faker · T1 2024 | Azir | CLUTCH |
 | gumayusi-2025 | Gumayusi · T1 2025 | Varus | CLUTCH |
 | deft-2015 | Deft · EDG 2015 | Kalista | PECHO FRÍO |
 | faker-2017 | Faker · SKT T1 2017 | Galio | PECHO FRÍO |
-| uzi-2018 | Uzi · RNG 2018 | por confirmar | PECHO FRÍO |
+| uzi-2018 | Uzi · RNG 2018 | Vayne | PECHO FRÍO |
 | score-2018 | Score · KT Rolster 2018 | Xin Zhao | PECHO FRÍO |
 | ruler-2022 | Ruler · Gen.G 2022 | Lucian | PECHO FRÍO |
-| knight-2023 | knight · JD Gaming 2023 | por confirmar | PECHO FRÍO |
+| knight-2023 | knight · JD Gaming 2023 | Ahri | PECHO FRÍO |
 | canyon-2024 | Canyon · Gen.G 2024 | Nocturne | PECHO FRÍO |
 | chovy-2025 | Chovy · Gen.G 2025 | Orianna | PECHO FRÍO |
 
@@ -50,7 +54,8 @@ Para Claude en esa sesión:
   Enséñasela al usuario antes de generar el resto (`node tools/ilustraciones/gemini.mjs todos`).
 - Si Gemini rechaza la imagen (filtros de personas reales) o no se parece, prueba a reformular el texto; si no hay
   forma, díselo al usuario.
-- Antes, confirma el campeón de Uzi 2018 y knight 2023 en Leaguepedia (tabla ScoreboardPlayers del Mundial de ese año).
+- Uzi 2018 y knight 2023 no se pudieron confirmar en Leaguepedia; se eligieron Vayne y Ahri. Si quieres, confírmalos
+  (tabla ScoreboardPlayers del Mundial de ese año) y cámbialos aquí y en la tabla `ART` de `js/draft.js`.
 
 ## Integración en la animación (cuando estén aprobadas)
 
@@ -60,3 +65,34 @@ Para Claude en esa sesión:
   Los jugadores sin ilustración siguen con su foto.
 - Maquetas de referencia: la ilustración ocupa la mitad izquierda (ordenador) o la parte de arriba (móvil),
   fundida con el fondo, y el texto al lado o debajo.
+
+## Cómo se hicieron
+
+`montaje.py` (Python con pillow, numpy y opencv-python-headless): la foto oficial del jugador de Leaguepedia (ya viene
+con el fondo transparente) delante del arte oficial del campeón (`<Campeón>_OriginalSkin.jpg` de la wiki de League of
+Legends), pintada con filtros de OpenCV, con luz dorada (CLUTCH) o de hielo (PECHO FRÍO), halo y partículas. Después
+se pasa a WebP de 1024 px, calidad 80.
+
+    python3 tools/ilustraciones/montaje.py foto.png Orianna.jpg faker-2016.png clutch 0.68 0.38 1.4
+
+Los números son el centro del recorte del arte del campeón (x, y de 0 a 1) y el zoom; opcionales, más luz para artes
+oscuros y la parte de arriba de la foto que se usa (para fotos de cuerpo entero). Los que se usaron:
+
+| id | campeón | rasgo | x | y | zoom | luz | alto |
+|---|---|---|---|---|---|---|---|
+| faker-2016 | Orianna | clutch | 0.68 | 0.38 | 1.4 |  |  |
+| ruler-2017 | Varus | clutch | 0.55 | 0.38 | 1.4 |  |  |
+| rookie-2018 | LeBlanc | clutch | 0.60 | 0.38 | 1.4 |  |  |
+| caps-2019 | Ryze | clutch | 0.68 | 0.40 | 1.35 | 1.15 |  |
+| tian-2019 | Lee Sin | clutch | 0.55 | 0.40 | 1.2 |  |  |
+| deft-2022 | Miss Fortune | clutch | 0.75 | 0.42 | 1.4 |  |  |
+| faker-2024 | Azir | clutch | 0.68 | 0.35 | 1.4 |  |  |
+| gumayusi-2025 | Varus | clutch | 0.55 | 0.38 | 1.4 |  |  |
+| deft-2015 | Kalista | choke | 0.72 | 0.38 | 1.4 | 1.1 | 0.62 |
+| faker-2017 | Galio | choke | 0.49 | 0.33 | 1.55 |  |  |
+| uzi-2018 | Vayne | choke | 0.55 | 0.42 | 1.3 |  |  |
+| score-2018 | Xin Zhao | choke | 0.50 | 0.40 | 1.4 |  |  |
+| ruler-2022 | Lucian | choke | 0.68 | 0.40 | 1.35 | 1.9 |  |
+| knight-2023 | Ahri | choke | 0.60 | 0.35 | 1.4 |  |  |
+| canyon-2024 | Nocturne | choke | 0.62 | 0.40 | 1.25 | 1.9 | 0.85 |
+| chovy-2025 | Orianna | choke | 0.68 | 0.38 | 1.4 |  |  |

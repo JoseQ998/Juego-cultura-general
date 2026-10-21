@@ -537,6 +537,20 @@ export function createDraft(ctx) {
   // CLUTCH o PECHO FRÍO: en la partida decisiva, el jugador sale de su ficha del mapa y llena la pantalla con su jugada
   // y cómo decide la partida (el clímax, a los 3,3 s, coincide con la explosión de la música). Al final vuelve a su ficha.
   // Todo va con retrasos negativos (--el), así que quien llega a mitad la ve en el mismo punto.
+  // Ilustraciones de los jugadores CLUTCH y PECHO FRÍO como su campeón (img/ilustraciones; ver tools/ilustraciones).
+  const ART = {
+    '2016-skt:mid': ['faker-2016', 'Orianna'], '2017-ssg:bot': ['ruler-2017', 'Varus'], '2018-ig:mid': ['rookie-2018', 'LeBlanc'],
+    '2019-g2:mid': ['caps-2019', 'Ryze'], '2019-fpx:jungle': ['tian-2019', 'Lee Sin'], '2022-drx:bot': ['deft-2022', 'Miss Fortune'],
+    '2024-t1:mid': ['faker-2024', 'Azir'], '2025-t1:bot': ['gumayusi-2025', 'Varus'], '2015-edg:bot': ['deft-2015', 'Kalista'],
+    '2017-skt:mid': ['faker-2017', 'Galio'], '2018-rng:bot': ['uzi-2018', 'Vayne'], '2018-kt:jungle': ['score-2018', 'Xin Zhao'],
+    '2022-gen:bot': ['ruler-2022', 'Lucian'], '2023-jdg:mid': ['knight-2023', 'Ahri'], '2024-gen:jungle': ['canyon-2024', 'Nocturne'],
+    '2025-gen:mid': ['chovy-2025', 'Orianna'],
+  };
+  const artOf = (p) => (ART[p.key] ? { src: `img/ilustraciones/${ART[p.key][0]}.webp`, champ: ART[p.key][1] } : null);
+  const CRACK = `<svg class="cine-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M52 48 L45 24 L45 0"/><path d="M52 48 L78 34 L100 30"/><path d="M52 48 L64 76 L70 100"/>
+    <path d="M52 48 L36 78 L25 100"/><path d="M52 48 L22 56 L0 60"/><path d="M52 48 L26 20 L0 0"/><path d="M52 48 L80 8 L100 0"/></svg>`;
+  const shardStyle = (i) => `clip-path:polygon(${SHARDS[i]});--dx:${SHARD_DIR[i][0]}%;--dy:${SHARD_DIR[i][1]}%;--rot:${SHARD_DIR[i][2]}deg`;
   const SHARDS = ['0 0,45% 0,52% 48%', '45% 0,100% 0,100% 30%,52% 48%', '100% 30%,100% 100%,70% 100%,52% 48%', '70% 100%,25% 100%,52% 48%', '25% 100%,0 100%,0 60%,52% 48%', '0 60%,0 0,52% 48%'];
   const SHARD_DIR = [[-60, -70, -25], [55, -75, 30], [80, 20, 35], [10, 85, -20], [-70, 60, -35], [-85, -10, 25]];
   const fxSpecks = (n, seed) => Array.from({ length: n }, (_, i) => {
@@ -562,18 +576,19 @@ export function createDraft(ctx) {
     const decide = clutch ? 'Decide la partida' : `Le cuesta la partida a ${team === 'Tu equipo' ? 'tu equipo' : esc(team)}`;
     const tokKey = `${pSide === (m.b.id === me ? 'b' : 'a') ? 'home' : 'away'}:${p.role}`;
     const pos = L.pos[tokKey] || { x: 50, y: 50 };
+    const art = artOf(p);
     const face = `${p.photo ? img(p.photo, PHOTO_W) : ''}<b>${initials(p.name)}</b>`;
     const photo = clutch
       ? `<span class="cine-in">${face}</span>`
-      : `<span class="cine-in"><span class="whole">${face}</span>${SHARDS.map((poly, i) => `<span class="sh" style="clip-path:polygon(${poly});--dx:${SHARD_DIR[i][0]}%;--dy:${SHARD_DIR[i][1]}%;--rot:${SHARD_DIR[i][2]}deg">${face}</span>`).join('')}</span>
-         <svg class="cine-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-           <path d="M52 48 L45 24 L45 0"/><path d="M52 48 L78 34 L100 30"/><path d="M52 48 L64 76 L70 100"/>
-           <path d="M52 48 L36 78 L25 100"/><path d="M52 48 L22 56 L0 60"/><path d="M52 48 L26 20 L0 0"/><path d="M52 48 L80 8 L100 0"/></svg>`;
+      : `<span class="cine-in"><span class="whole">${face}</span>${SHARDS.map((_, i) => `<span class="sh" style="${shardStyle(i)}">${face}</span>`).join('')}</span>${CRACK}`;
+    // con ilustración, el jugador como su campeón ocupa media pantalla (arriba en el móvil) y sale desde su ficha
+    const bgArt = art && `background-image:url(${art.src})`;
+    const artBox = art ? `<div class="cine-art"><div class="cine-art-in"><span class="whole" style="${bgArt}"></span>${clutch ? '' : SHARDS.map((_, i) => `<span class="sh" style="${bgArt};${shardStyle(i)}"></span>`).join('')}</div>${clutch ? '' : CRACK}</div>` : '';
     const name = [...p.name].map((ch, i) => `<span style="--i:${i}">${esc(ch)}</span>`).join('');
     const tm = E.TEAM_BY_ID[p.teamId];
     playMusic(ev.kind, c.el, MAP.CINE_MUSIC);
     const box = document.createElement('div');
-    box.className = `cine ${ev.kind}`;
+    box.className = `cine ${ev.kind}${art ? ' has-art' : ''}`;
     box.dataset.key = key;
     box.setAttribute('aria-hidden', 'true');
     box.style.setProperty('--el', `${-c.el}ms`);
@@ -583,13 +598,15 @@ export function createDraft(ctx) {
       <div class="cine-fx">${fxSpecks(clutch ? 30 : 36, key + ev.kind)}</div>
       <div class="cine-bar top"></div><div class="cine-bar bot"></div>
       <div class="cine-burst"></div>
+      ${artBox}
       <div class="cine-stage">
         <div class="cine-hero">
-          <div class="cine-photo"><span class="cine-rays"></span><span class="cine-ring"></span><span class="cine-face">${photo}</span></div>
+          ${art ? '' : `<div class="cine-photo"><span class="cine-rays"></span><span class="cine-ring"></span><span class="cine-face">${photo}</span></div>`}
           <div class="cine-txt">
             <p class="cine-kicker">Partida decisiva${roundName ? ` · ${esc(roundName)}` : ''}</p>
             <p class="cine-stamp"><span>${clutch ? 'Clutch' : 'Pecho frío'}</span></p>
             <p class="cine-name">${name}</p>
+            ${art ? `<p class="cine-as">como <b>${esc(art.champ)}</b></p>` : ''}
             <p class="cine-team">${tm ? logo(tm, 'cine-logo') : ''}<span>${E.ROLE_NAMES[p.role]} · ${esc(p.team)} ${p.year}</span></p>
             <p class="cine-msg">${esc(txt)}</p>
           </div>
@@ -601,13 +618,20 @@ export function createDraft(ctx) {
     root.appendChild(box);
     // el jugador sale de su ficha en el mapa y vuelve a ella al final
     const tok = mapEl.querySelector(`[data-tok="${tokKey}"]`)?.getBoundingClientRect();
-    const hero = box.querySelector('.cine-photo').getBoundingClientRect();
     const tx = tok ? Math.min(innerWidth, Math.max(0, tok.left + tok.width / 2)) : innerWidth / 2;
     const ty = tok ? Math.min(innerHeight, Math.max(0, tok.top + tok.height / 2)) : innerHeight / 2;
     box.style.setProperty('--tx', `${tx}px`);
     box.style.setProperty('--ty', `${ty}px`);
-    box.style.setProperty('--dx', `${tx - (hero.left + hero.width / 2)}px`);
-    box.style.setProperty('--dy', `${ty - (hero.top + hero.height / 2)}px`);
+    if (art) {
+      const artEl = box.querySelector('.cine-art');
+      const a = artEl.getBoundingClientRect();
+      artEl.style.setProperty('--ax', `${tx - a.left}px`);
+      artEl.style.setProperty('--ay', `${ty - a.top}px`);
+    } else {
+      const hero = box.querySelector('.cine-photo').getBoundingClientRect();
+      box.style.setProperty('--dx', `${tx - (hero.left + hero.width / 2)}px`);
+      box.style.setProperty('--dy', `${ty - (hero.top + hero.height / 2)}px`);
+    }
   }
 
   // ---------- resultado final ----------
@@ -689,6 +713,8 @@ export function createDraft(ctx) {
     let lastFeed = '', lastScore = '';
     const holdOf = (s) => (s.type === 'game' ? MAP.gameHold(s.m.games[s.gi].events) : 0);
     preloadMusic();
+    // las ilustraciones de los CLUTCH y PECHO FRÍO del torneo, ya cargadas para cuando salgan
+    for (const x of result.entrants) for (const pl of x.players) { const a = pl?.trait && artOf(pl); if (a) new Image().src = a.src; }
     // escena actual y tiempo dentro de ella
     const locate = () => {
       let t = Date.now() - startAt + offset;

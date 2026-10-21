@@ -22,14 +22,14 @@ export const ILUSTRACIONES = {
   'caps-2019': { key: '2019-g2:mid', champ: 'Ryze', look: "Ryze's glowing blue arcane runes orbiting him and the rune scroll on his back" },
   'tian-2019': { key: '2019-fpx:jungle', champ: 'Lee Sin', look: "Lee Sin's monk hand wraps and a golden dragon of energy coiling around him" },
   'deft-2022': { key: '2022-drx:bot', champ: 'Miss Fortune', look: "Miss Fortune's twin pirate pistols, long captain coat and flying bullets" },
-  'faker-2024': { key: '2024-t1:mid', champ: 'Sylas', look: "Sylas' broken chains crackling with blue-violet stolen magic and petricite shackles" },
+  'faker-2024': { key: '2024-t1:mid', champ: 'Azir', look: "Azir's golden Shuriman emperor armor, falcon helmet and sand soldiers rising behind him" },
   'gumayusi-2025': { key: '2025-t1:bot', champ: 'Varus', look: "Varus' corrupted bow with glowing pink-purple energy and dark armor with glowing veins" },
   'deft-2015': { key: '2015-edg:bot', champ: 'Kalista', look: "Kalista's spectral spears and a ghostly cyan shroud" },
   'faker-2017': { key: '2017-skt:mid', champ: 'Galio', look: "a stone and gold gargoyle armor inspired by Galio and huge stone wings behind him" },
-  'uzi-2018': { key: '2018-rng:bot', champ: null, look: '' }, // campeón por confirmar
+  'uzi-2018': { key: '2018-rng:bot', champ: 'Vayne', look: "Vayne's dark hunter coat, sunglasses and silver crossbow bolts" },
   'score-2018': { key: '2018-kt:jungle', champ: 'Xin Zhao', look: "Xin Zhao's Demacian spear and blue-gold armor" },
   'ruler-2022': { key: '2022-gen:bot', champ: 'Lucian', look: "Lucian's twin relic pistols shooting beams of white light" },
-  'knight-2023': { key: '2023-jdg:mid', champ: null, look: '' }, // campeón por confirmar
+  'knight-2023': { key: '2023-jdg:mid', champ: 'Ahri', look: "Ahri's nine glowing fox tails and spirit orb" },
   'canyon-2024': { key: '2024-gen:jungle', champ: 'Nocturne', look: "Nocturne's shadow blades and nightmare darkness swirling around him" },
   'chovy-2025': { key: '2025-gen:mid', champ: 'Orianna', look: "Orianna's golden clockwork Ball floating at his side and brass clockwork armor" },
 };
