@@ -27,6 +27,14 @@ y los PECHO FRÍO en hielo. El campeón de cada uno es el que más jugó en ese 
 | knight-2023 | knight · JD Gaming 2023 | Ahri | PECHO FRÍO |
 | canyon-2024 | Canyon · Gen.G 2024 | Nocturne | PECHO FRÍO |
 | chovy-2025 | Chovy · Gen.G 2025 | Orianna | PECHO FRÍO |
+| kingen-2022 | Kingen · DRX 2022 | Gnar (su más jugado en 2022; el del Mundial no se pudo confirmar) | CLUTCH |
+| zeus-2023 | Zeus · T1 2023 | Aatrox | CLUTCH |
+| mata-2014 | Mata · Samsung White 2014 | Janna | CLUTCH |
+| meiko-2021 | Meiko · EDward Gaming 2021 | Nami (empatado con Lulu y Yuumi) | CLUTCH |
+| khan-2017 | Khan · Longzhu Gaming 2017 | Jayce (su campeón emblemático; el del Mundial no se pudo confirmar) | PECHO FRÍO |
+| bin-2024 | Bin · Bilibili Gaming 2024 | Jax | PECHO FRÍO |
+| ming-2018 | Ming · RNG 2018 | Tahm Kench (su más jugado en 2018; el del Mundial no se pudo confirmar) | PECHO FRÍO |
+| lehends-2022 | Lehends · Gen.G 2022 | Yuumi (su más jugado en 2022; el del Mundial no se pudo confirmar) | PECHO FRÍO |
 
 ## Opción A: con la app de Gemini (sin clave)
 
@@ -97,3 +105,11 @@ oscuros y la parte de arriba de la foto que se usa (para fotos de cuerpo entero)
 | knight-2023 | Ahri | choke | 0.60 | 0.35 | 1.4 |  |  |
 | canyon-2024 | Nocturne | choke | 0.62 | 0.40 | 1.25 | 1.9 | 0.85 |
 | chovy-2025 | Orianna | choke | 0.68 | 0.38 | 1.4 |  |  |
+| kingen-2022 | Gnar | clutch | 0.61 | 0.75 | 1.6 | 1.2 |  |
+| zeus-2023 | Aatrox | clutch | 0.66 | 0.38 | 1.3 | 1.7 |  |
+| mata-2014 | Janna | clutch | 0.60 | 0.38 | 1.3 |  |  |
+| meiko-2021 | Nami | clutch | 0.62 | 0.35 | 1.3 |  |  |
+| khan-2017 | Jayce | choke | 0.62 | 0.38 | 1.25 |  |  |
+| bin-2024 | Jax | choke | 0.68 | 0.40 | 1.3 | 1.3 |  |
+| ming-2018 | Tahm Kench | choke | 0.60 | 0.45 | 1.15 | 1.4 |  |
+| lehends-2022 | Yuumi | choke | 0.45 | 0.40 | 1.3 |  |  |

@@ -159,21 +159,30 @@ const BEST_OF = { 16: 3, 8: 3, 4: 5, 2: 5 };
 // en las demás partidas cada PECHO FRÍO suma 4 al valor de su equipo (rinde por encima de su nivel).
 // Así ninguno de los dos es mejor que el otro en promedio. Reglas 1 (hasta el 21/10/2026): 4 % por partida
 // (8 % en la decisiva) de decidirla, a favor si es CLUTCH y en contra si es PECHO FRÍO.
+// Reglas 3: como las 2, con 2 tops y 2 supports más de cada rasgo (antes solo había junglas, mids y tiradores), y
+// lo que suman los PECHO FRÍO crece menos con cada uno (CHOKE_LIFT), porque ahora un equipo puede llevar hasta 5:
+// con la misma nota, llevar 1, 3 o 5 PECHO FRÍO da lo mismo que llevar 1, 3 o 5 CLUTCH (simulado: 15 %, 20 % y 24 %
+// de ser campeón entre 8 equipos, frente a 12 % sin rasgo).
 const CLUTCH_CHANCE = 0.15;
 const CHOKE_CHANCE = 0.30;
-const CHOKE_BONUS = 4;
+const CHOKE_BONUS = 4; // reglas 2: cada PECHO FRÍO suma 4
+const CHOKE_LIFT = [0, 3.5, 5.75, 7.75, 9, 10]; // reglas 3: lo que suman entre todos, según cuántos son
 // Las salas que empezaron antes del cambio se siguen viendo con las reglas de entonces (mismo resultado y copa).
 export const RULES_V2_FROM = Date.parse('2026-10-21T00:30:00Z');
+export const RULES_V3_FROM = Date.parse('2026-10-21T03:00:00Z');
 export const rulesFor = (startedAt) => {
   const t = typeof startedAt === 'number' ? startedAt : Date.parse(startedAt); // llega en milisegundos o como fecha
-  return t && t < RULES_V2_FROM ? 1 : 2;
+  return !t ? 3 : t < RULES_V2_FROM ? 1 : t < RULES_V3_FROM ? 2 : 3;
 };
+// Los que tienen rasgo desde las reglas 3: con reglas anteriores juegan sin él.
+const TRAITS_V3 = new Set(['2022-drx:top', '2023-t1:top', '2014-ssw:support', '2021-edg:support', '2017-lz:top', '2024-blg:top', '2018-rng:support', '2022-gen:support']);
+const withRules = (p, rules) => (p && rules < 3 && TRAITS_V3.has(p.key) ? { ...p, trait: null } : p);
 
 // participants: [{ id, name, bot, roster }]; size 8 o 16
-export function simulateTournament(participants, seed, { rules = 2 } = {}) {
+export function simulateTournament(participants, seed, { rules = 3 } = {}) {
   const r = rng(`worlds:${seed}`);
   const entrants = participants.map((x) => {
-    const players = rosterPlayers(x.roster);
+    const players = rosterPlayers(x.roster).map((p) => withRules(p, rules));
     return { ...x, players, ...teamValue(players) };
   });
   let alive = shuffle(entrants, r);
@@ -212,12 +221,16 @@ function simulateGame(a, b, decisive, r, used, rules) {
     }
   }
   // PECHO FRÍO rinde por encima de su nivel fuera de la partida decisiva
-  const lift = (t) => (rules === 1 || decisive ? 0 : t.players.filter((p) => p.trait === 'choke').length * CHOKE_BONUS);
+  const lift = (t) => {
+    if (rules === 1 || decisive) return 0;
+    const n = t.players.filter((p) => p.trait === 'choke').length;
+    return rules === 2 ? n * CHOKE_BONUS : CHOKE_LIFT[n];
+  };
   const sides = new Set(swings.map((s) => s.winner));
   let winner, swing = null;
   if (sides.size === 1) { winner = swings[0].winner; swing = swings[0]; }
   else winner = r() < winProb(a.value + lift(a) - b.value - lift(b)) ? 'a' : 'b';
-  return { winner, decisive, events: gameEvents(a, b, winner, swing, r, used) };
+  return { winner, decisive, events: gameEvents(a, b, winner, swing, r, used, rules) };
 }
 
 // ---------------- mensajes ----------------
@@ -317,7 +330,7 @@ const CHOKE_ROLE = {
   bot: ['{jugador} se posiciona demasiado adelante y cae antes de hacer daño', '{jugador} falla sus golpes con la torre del Nexo casi caída y el rival defiende'],
   support: ['{jugador} falla el gancho decisivo y deja a su equipo sin iniciación', '{jugador} pierde la visión del Barón y el rival lo asegura sin oposición'],
 };
-// Frases propias de los 16 jugadores con rasgo (clave: nombre + año).
+// Frases propias de los 24 jugadores con rasgo (clave: nombre + año).
 const OWN = {
   'Faker 2016': ['{jugador} hace una jugada imposible en la línea central y el rival no sabe qué pasó', '{jugador} dicta el ritmo de la partida como el mejor del mundo'],
   'Ruler 2017': ['{jugador} no deja de disparar en la pelea final y barre al equipo rival', '{jugador} se coloca perfecto y el rival no consigue tocarlo'],
@@ -329,12 +342,20 @@ const OWN = {
   'Gumayusi 2025': ['{jugador} sale vivo de una pelea imposible y gana la partida', '{jugador} remata a los rivales uno por uno en la pelea final'],
   'Uzi 2018': ['{jugador} queda aislado en la pelea del Barón y su equipo se derrumba', '{jugador} fuerza una pelea que no tocaba y su equipo la pierde'],
   'Chovy 2025': ['{jugador} no aparece en la pelea decisiva y el rival lo aprovecha', '{jugador} se queda atrás farmeando mientras su equipo pierde la pelea'],
-  'Knight 2023': ['{jugador} lanza la definitiva al vacío y el rival gana la pelea', '{jugador} entra tarde a la pelea y su equipo ya no puede hacer nada'],
+  'knight 2023': ['{jugador} lanza la definitiva al vacío y el rival gana la pelea', '{jugador} entra tarde a la pelea y su equipo ya no puede hacer nada'],
   'Faker 2017': ['{jugador} no encuentra la manera de abrir la partida y su equipo se queda sin ideas', '{jugador} cae primero en la pelea final y su equipo se queda sin daño'],
   'Deft 2015': ['{jugador} cae antes de poder hacer daño y la pelea se pierde', '{jugador} se queda sin flash en el peor momento'],
   'Score 2018': ['{jugador} pierde el Barón contra el castigo rival y la partida cambia de dueño', '{jugador} se mete en la jungla rival sin visión y lo atrapan'],
   'Ruler 2022': ['{jugador} se queda fuera de la pelea final y el rival lo aprovecha', '{jugador} falla en la pelea más importante del año'],
   'Canyon 2024': ['{jugador} pierde el duelo de castigos por el Barón', '{jugador} se adelanta solo y su equipo pierde el control del mapa'],
+  'Kingen 2022': ['{jugador} aguanta solo en la línea superior y gana la pelea que nadie esperaba', '{jugador} hace un teleport perfecto y le da la vuelta a la serie'],
+  'Zeus 2023': ['{jugador} sale de la línea superior con ventaja y destroza la pelea final', '{jugador} encuentra un flanco perfecto y elimina a los carries rivales'],
+  'Mata 2014': ['{jugador} lee la pelea antes que nadie y su gancho la decide', '{jugador} controla la visión de todo el mapa y el rival no sabe por dónde ir'],
+  'Meiko 2021': ['{jugador} protege a su tirador en la pelea final y su equipo la gana', '{jugador} encuentra la iniciación justa con la serie en juego'],
+  'Khan 2017': ['{jugador} se queda aislado en la línea superior y su equipo pelea 4 contra 5', '{jugador} no consigue frenar al top rival y la base cae'],
+  'Bin 2024': ['{jugador} se lanza solo contra los 5 rivales y su equipo pierde la pelea', '{jugador} pierde el duelo en la línea superior cuando más importaba'],
+  'Ming 2018': ['{jugador} falla la iniciación y deja a su tirador expuesto', '{jugador} pierde la visión del río y el rival los sorprende'],
+  'Lehends 2022': ['{jugador} prueba una jugada arriesgada y le sale mal', '{jugador} se adelanta a buscar el gancho y cae primero en la pelea final'],
 };
 
 function fill(tpl, us, them) {
@@ -345,7 +366,7 @@ function fill(tpl, us, them) {
   });
 }
 
-function gameEvents(a, b, winner, swing, r, used = new Set()) {
+function gameEvents(a, b, winner, swing, r, used = new Set(), rules = 3) {
   const teams = { a, b };
   const other = (s) => (s === 'a' ? 'b' : 'a');
   const loser = other(winner);
@@ -371,7 +392,8 @@ function gameEvents(a, b, winner, swing, r, used = new Set()) {
   if (r() < 0.5) add(MID, winner);
   if (swing) {
     const { p } = swing;
-    const own = OWN[`${p.name} ${p.year}`] || [];
+    // (hasta las reglas 3 las frases de knight no salían porque su clave estaba mal escrita; así se siguen viendo igual)
+    const own = rules < 3 && p.name === 'knight' ? [] : OWN[`${p.name} ${p.year}`] || [];
     const pool = p.trait === 'clutch' ? [...CLUTCH_ANY, ...CLUTCH_ROLE[p.role], ...own, ...own] : [...CHOKE_ANY, ...CHOKE_ROLE[p.role], ...own, ...own];
     const tpl = choose(pool);
     ev.push({ side: winner, kind: p.trait, key: p.key, tpl, text: tpl.replace('{jugador}', p.name) });

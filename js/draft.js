@@ -544,7 +544,9 @@ export function createDraft(ctx) {
     '2024-t1:mid': ['faker-2024', 'Azir'], '2025-t1:bot': ['gumayusi-2025', 'Varus'], '2015-edg:bot': ['deft-2015', 'Kalista'],
     '2017-skt:mid': ['faker-2017', 'Galio'], '2018-rng:bot': ['uzi-2018', 'Vayne'], '2018-kt:jungle': ['score-2018', 'Xin Zhao'],
     '2022-gen:bot': ['ruler-2022', 'Lucian'], '2023-jdg:mid': ['knight-2023', 'Ahri'], '2024-gen:jungle': ['canyon-2024', 'Nocturne'],
-    '2025-gen:mid': ['chovy-2025', 'Orianna'],
+    '2025-gen:mid': ['chovy-2025', 'Orianna'], '2022-drx:top': ['kingen-2022', 'Gnar'], '2023-t1:top': ['zeus-2023', 'Aatrox'],
+    '2014-ssw:support': ['mata-2014', 'Janna'], '2021-edg:support': ['meiko-2021', 'Nami'], '2017-lz:top': ['khan-2017', 'Jayce'],
+    '2024-blg:top': ['bin-2024', 'Jax'], '2018-rng:support': ['ming-2018', 'Tahm Kench'], '2022-gen:support': ['lehends-2022', 'Yuumi'],
   };
   const artOf = (p) => (ART[p.key] ? { src: `img/ilustraciones/${ART[p.key][0]}.webp`, champ: ART[p.key][1] } : null);
   const CRACK = `<svg class="cine-crack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

@@ -76,8 +76,10 @@ const FINALS_MVP = {
   2014: 'Mata', 2015: 'MaRin', 2016: 'Faker', 2017: 'Ruler', 2018: 'Ning', 2019: 'Tian', 2020: 'Canyon',
   2021: 'Scout', 2022: 'Kingen', 2023: 'Zeus', 2024: 'Faker', 2025: 'Gumayusi',
 };
-const CLUTCH = ['Faker 2016', 'Ruler 2017', 'Rookie 2018', 'Caps 2019', 'Tian 2019', 'Deft 2022', 'Faker 2024', 'Gumayusi 2025'];
-const CHOKE = ['Uzi 2018', 'Chovy 2025', 'Knight 2023', 'Faker 2017', 'Deft 2015', 'Score 2018', 'Ruler 2022', 'Canyon 2024'];
+const CLUTCH = ['Faker 2016', 'Ruler 2017', 'Rookie 2018', 'Caps 2019', 'Tian 2019', 'Deft 2022', 'Faker 2024', 'Gumayusi 2025',
+  'Kingen 2022', 'Zeus 2023', 'Mata 2014', 'Meiko 2021']; // tops y supports añadidos el 21/10/2026
+const CHOKE = ['Uzi 2018', 'Chovy 2025', 'Knight 2023', 'Faker 2017', 'Deft 2015', 'Score 2018', 'Ruler 2022', 'Canyon 2024',
+  'Khan 2017', 'Bin 2024', 'Ming 2018', 'Lehends 2022'];
 const BASE = { 1: 80, 2: 72, 3: 64, 5: 56 };
 const ROLES = ['top', 'jungle', 'mid', 'bot', 'support'];
 

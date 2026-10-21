@@ -36,11 +36,18 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
 
 - Probabilidad de ganar una partida según la diferencia de valor `d`: `p = 1 / (1 + e^(-0.0847·d))`
   (5 puntos → 60 %, 10 → 70 %, 20 → 85 %).
-- **Rasgos (reglas 2, desde el 21/10/2026):** solo deciden en la partida decisiva (la 3.ª de un Bo3 o la 5.ª de un Bo5):
-  cada CLUTCH tiene un 15 % de ganarla para su equipo pase lo que pase y cada PECHO FRÍO un 30 % de perderla. En las demás
-  partidas cada PECHO FRÍO suma 4 al valor de su equipo ("rey de la liga"). Simulado: con la misma nota, un CLUTCH y un
-  PECHO FRÍO dan casi la misma probabilidad de ser campeón (11,2 % y 11,5 % frente a 9,1 % sin rasgo).
-  Reglas 1 (salas anteriores): 4 % por partida (8 % en la decisiva) de ganarla (CLUTCH) o perderla (PECHO FRÍO).
+- **Rasgos (reglas 3, desde el 21/10/2026 03:00 UTC):** 12 CLUTCH y 12 PECHO FRÍO, con 2 tops y 2 supports de cada uno.
+  Solo deciden en la partida decisiva (la 3.ª de un Bo3 o la 5.ª de un Bo5): cada CLUTCH tiene un 15 % de ganarla para su
+  equipo pase lo que pase y cada PECHO FRÍO un 30 % de perderla. En las demás partidas los PECHO FRÍO suman al valor de su
+  equipo ("rey de la liga"): 3,5 / 5,75 / 7,75 / 9 / 10 en total con 1 / 2 / 3 / 4 / 5 PECHO FRÍO (cada uno suma menos que
+  el anterior, para que no compense acumularlos). Simulado entre 8 equipos con la misma nota: 1, 3 o 5 CLUTCH → 15 %, 20 %
+  y 23 % de ser campeón; 1, 3 o 5 PECHO FRÍO → 15 %, 20 % y 24 %; sin rasgo, 12 %.
+  Reglas 2 (salas que empezaron entre las 00:30 y las 03:00 UTC del 21/10/2026): como las 3, pero sin los tops y supports
+  nuevos y con 4 por cada PECHO FRÍO. Reglas 1 (salas anteriores): 4 % por partida (8 % en la decisiva) de ganarla (CLUTCH)
+  o perderla (PECHO FRÍO). `rulesFor(sim_started_at)` elige las reglas de cada sala, así su resultado y su copa no cambian.
+- **Por qué los PECHO FRÍO tienen notas más bajas:** la nota parte de lo lejos que llegó el equipo en ese Mundial
+  (campeón 80, finalista 72, semifinal 64, cuartos 56) y suma títulos, MVP de la final y rendimiento. Los PECHO FRÍO son,
+  por definición, jugadores cuyo equipo cayó antes de lo esperado, así que salen más bajos; el "rey de la liga" lo compensa.
   Si saltan efectos contrarios en la misma partida, se anulan y se juega normal.
 - **Formato:** octavos Bo3, cuartos Bo3, semifinal Bo5, final Bo5 (en todas las salas). Sorteo del cuadro al azar.
 - Presentación de cada partida: mapa con los 10 jugadores (tu equipo cian, rival rosa), marcador de la serie,
@@ -48,7 +55,7 @@ y los mensajes de la simulación en `mensajes.md` (aprobados; quitar la palabra 
   a tu equipo y en rojo si favorecen al rival, coherentes con el resultado. Cada partida dura unos 8-10 s.
 - Mensajes de rasgo: destacados (brillo amarillo para Clutch, azul hielo para Pecho frío) y **sin título**
   (no escribir "CLUTCH:"; se entiende por el texto). **Nunca poner el año del jugador en los mensajes.**
-  Además, cada uno de los 16 jugadores con rasgo tiene 1-2 frases propias (escribirlas; frases de juego,
+  Además, cada uno de los 24 jugadores con rasgo tiene 1-2 frases propias (escribirlas; frases de juego,
   no hechos históricos inventados).
 - Antes de cada serie, pantalla "TU EQUIPO vs RIVAL" con las 5 tarjetas de cada lado, valor y química.
 - Si te eliminan, puedes **seguir mirando** el resto del Worlds hasta la final.
