@@ -712,6 +712,7 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .res-row .chem { height: 100%; }
 .hx .bracket { display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr)); gap: 20px; }
 .hx .bracket.r3 { --cols: 4; }
+.hx .bracket.r1 { --cols: 2; max-width: 560px; }
 .hx .br-col { display: flex; flex-direction: column; min-width: 0; }
 .hx .br-col h4 { margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(120, 90, 40, .45); font-family: var(--serif); font-weight: 700; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold2); }
 .hx .br-col h4 small { font-family: var(--sans); font-size: 9.5px; font-weight: 600; color: var(--grey2); letter-spacing: .1em; margin-left: 4px; }
@@ -719,6 +720,7 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .pair { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: space-around; padding: 4px 0; }
 .hx .br-col:first-child .br-list { min-height: 420px; }
 .hx .bracket.r3 .br-col:first-child .br-list { min-height: 240px; }
+.hx .bracket.r1 .br-col:first-child .br-list { min-height: 0; }
 .hx .br-col:not(.champ) .pair:not(.single)::after { content: ''; position: absolute; right: -10px; top: 25%; bottom: 25%; width: 1px; background: var(--gold4); }
 .hx .bm { position: relative; border: 1px solid rgba(70, 55, 20, .95); background: rgba(1, 10, 19, .75); }
 .hx .br-col:not(.champ) .pair:not(.single) .bm::after { content: ''; position: absolute; right: -11px; top: 50%; width: 10px; height: 1px; background: var(--gold4); }

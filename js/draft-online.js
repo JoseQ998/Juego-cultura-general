@@ -151,7 +151,7 @@ export function createDraftOnline(ctx, ui) {
       const left = st.countdownEndsAt ? Math.max(0, Math.ceil((serverToLocal(st.countdownEndsAt) - Date.now()) / 1000)) : null;
       const info = st.official
         ? `Semana oficial · Octavos · Bots en dificultad ${LEVEL_NAMES[st.level] || st.level} · Solo cuentas verificadas`
-        : `${st.size === 16 ? 'Octavos (16 equipos)' : 'Cuartos (8 equipos)'} · Bots: ${LEVEL_NAMES[st.level] || st.level}`;
+        : `${st.size === 16 ? 'Octavos (16 equipos)' : st.size === 8 ? 'Cuartos (8 equipos)' : 'Solo la final (2 equipos)'} · Bots: ${LEVEL_NAMES[st.level] || st.level}`;
       const adminStart = st.official && st.status === 'drafting' && ctx.isAdmin?.()
         ? `<button class="btn" id="dwOffStart" ${humans() ? '' : 'disabled'}>Iniciar la sala oficial</button>` : '';
       return `

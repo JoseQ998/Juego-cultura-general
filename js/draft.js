@@ -697,7 +697,7 @@ export function createDraft(ctx) {
         <div class="banner">
           ${CUP}
           <p class="kicker">Mundial simulado · ${result.entrants.length} equipos</p>
-          <h1 class="res-title ${champion ? '' : 'lost'}">${champion ? 'Campeón del mundo' : `Hasta ${esc((j.reached || '').toLowerCase())}`}</h1>
+          <h1 class="res-title ${champion ? '' : 'lost'}">${champion ? 'Campeón del mundo' : result.rounds.length === 1 ? 'Subcampeón' : `Hasta ${esc((j.reached || '').toLowerCase())}`}</h1>
           <div class="flourish"><i></i><span></span><i></i></div>
           <p class="res-sub">${champion ? `Ganaste la final ${last.score} contra ${esc(label(lastOpp, me))}` : `Caíste en ${esc(last.round.toLowerCase())} ${last.score} contra ${esc(label(lastOpp, me))} · Campeón: ${esc(label(result.champion, me))}`}</p>
         </div>
@@ -809,9 +809,9 @@ export function createDraft(ctx) {
     page(`
       <div class="menu">
         ${head('League of Legends · Mundiales 2011 – 2025', 'Draft Worlds')}
-        <p class="intro">Arma tu equipo con jugadores de los Mundiales, cada uno en su versión de ese año, y juega un Mundial desde octavos o cuartos. En cada ronda eliges un equipo y uno de sus jugadores; la química entre ellos cuenta. Nadie te dice quién es mejor: eso lo sabes tú.</p>
+        <p class="intro">Arma tu equipo con jugadores de los Mundiales, cada uno en su versión de ese año, y juega un Mundial desde octavos o cuartos, o solo la final. En cada ronda eliges un equipo y uno de sus jugadores; la química entre ellos cuenta. Nadie te dice quién es mejor: eso lo sabes tú.</p>
         <div class="tiles">
-          ${tile('#/draft/solo', roleIcon('mid'), 'Contra bots', 'Tú solo contra bots. Elige octavos o cuartos y la dificultad.')}
+          ${tile('#/draft/solo', roleIcon('mid'), 'Contra bots', 'Tú solo contra bots. Elige octavos, cuartos o solo la final, y la dificultad.')}
           ${online ? tile('#/draft/crear', roleIcon('support'), 'Crear sala', 'Juega con tus amigos con un código. Los huecos se llenan con bots.') : ''}
           ${online ? tile('#/draft/oficial', CUP, 'Sala oficial', 'Una por semana, solo cuentas verificadas. El campeón gana una copa.') : ''}
         </div>
@@ -834,7 +834,7 @@ export function createDraft(ctx) {
   function sizeAndLevel(prefix) {
     return `
       <label class="field"><span>Empezar desde</span>
-        <select id="${prefix}Size"><option value="16">Octavos (16 equipos)</option><option value="8">Cuartos (8 equipos)</option></select></label>
+        <select id="${prefix}Size"><option value="16">Octavos (16 equipos)</option><option value="8">Cuartos (8 equipos)</option><option value="2">Solo la final (2 equipos)</option></select></label>
       <label class="field"><span>Dificultad de los bots</span>
         <select id="${prefix}Level"><option value="facil">Fácil</option><option value="medio" selected>Media</option><option value="imposible">Imposible</option></select></label>`;
   }

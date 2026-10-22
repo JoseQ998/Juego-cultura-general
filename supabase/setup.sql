@@ -810,11 +810,14 @@ create table if not exists public.draft_lobbies (
   created_at        timestamptz not null default now(),
   constraint draft_code   check (code ~ '^[0-9A-Z]{5,6}$'),
   constraint draft_name   check (char_length(name) between 1 and 40),
-  constraint draft_size   check (size in (8, 16)),
+  constraint draft_size   check (size in (2, 8, 16)),
   constraint draft_level  check (level in ('facil', 'medio', 'imposible')),
   constraint draft_status check (status in ('waiting', 'drafting', 'simulating'))
 );
 create index if not exists draft_lobbies_created_idx on public.draft_lobbies (created_at desc);
+-- salas de solo la final (2 equipos)
+alter table public.draft_lobbies drop constraint if exists draft_size;
+alter table public.draft_lobbies add constraint draft_size check (size in (2, 8, 16));
 
 create table if not exists public.draft_seats (
   lobby     text not null references public.draft_lobbies (code) on delete cascade,
@@ -1595,7 +1598,7 @@ declare
   v_chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 begin
   delete from public.draft_lobbies where not official and created_at < now() - interval '1 day';
-  if p_size not in (8, 16) or p_level not in ('facil', 'medio', 'imposible') then
+  if p_size not in (2, 8, 16) or p_level not in ('facil', 'medio', 'imposible') then
     raise exception 'Configuración de sala no válida';
   end if;
   loop
