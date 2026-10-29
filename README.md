@@ -10,7 +10,7 @@ Página web de preguntas de cultura general. Funciona sin servidor propio: se pu
 |---|---|
 | **Reto semanal** | 15 preguntas iguales para todos, una sola partida por semana y por cuenta. Se renueva cada **sábado a las 8pm (hora de Venezuela)**. Las preguntas de una semana nunca se repiten en otra. Necesita cuenta (se crea al momento, sin esperar aprobación). |
 | **Modo Aleatorio** | 15 preguntas distintas en cada partida, repartidas entre todas las categorías (evita repetir las que ya viste). Libre, sin cuenta. |
-| **Salas** | Eliges las categorías (videojuegos, música, deportes, arte, historia, geografía, ciencia, cine y TV, literatura, tecnología, League of Legends y fútbol) y se genera un código de 6 o 7 caracteres. Todos los que entran con ese código reciben las mismas preguntas. Libre, sin cuenta. |
+| **Salas** | Eliges las categorías (videojuegos, música, deportes, arte, historia, geografía, ciencia, cine y TV, literatura, tecnología, League of Legends, fútbol y anime) y se genera un código de 6 o 7 caracteres. Todos los que entran con ese código reciben las mismas preguntas. Libre, sin cuenta. |
 | **Draft Worlds** | Modo de League of Legends: armas un equipo con jugadores de los Worlds de 2011 a 2025 (cada uno en su versión de ese año) y juegas un Mundial simulado contra bots, en salas con tus amigos o en la **sala oficial semanal**, cuyo campeón gana una **copa**. |
 | **Rankings** | Semanal (en directo), mensual y anual del reto semanal, con el filtro **Todos / Solo verificados**; **Copas** del Draft Worlds; uno del Aleatorio y uno por cada sala. |
 | **10 segundos** | Límite por pregunta. Si se acaba el tiempo, cuenta como fallo. |
@@ -148,7 +148,7 @@ img/grieta.webp     Mapa de la Grieta del Invocador
 img/ilustraciones/  Los 24 jugadores CLUTCH y PECHO FRÍO con su campeón (tools/ilustraciones/)
 js/draft-data.js    Draft Worlds: equipos y jugadores (generado)
 tools/draft-data/   Datos de origen y scripts del Draft Worlds
-js/questions.js     Banco de preguntas (807 preguntas, 12 categorías)
+js/questions.js     Banco de preguntas (928 preguntas, 13 categorías)
 js/storage.js       Guardado en Supabase o en el navegador
 js/identity.js      Identificación del dispositivo para el registro
 js/config.js        Configuración (Supabase, etc.)
