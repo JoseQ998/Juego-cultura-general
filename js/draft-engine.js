@@ -59,18 +59,27 @@ function shuffle(arr, r) {
 
 // ---------------- química y valor ----------------
 const DUOS = [['bot', 'support', 'Tirador y apoyo'], ['mid', 'jungle', 'Mid y jungla']];
+// Los del equipo Leyendas son como los iconos del FIFA: dan la máxima química con todos (cuentan como excompañeros
+// de cualquiera y como de la misma región que el resto del equipo).
+const isIcon = (p) => p.teamId === LEGENDS_ID;
 export function chemistry(players) {
   const ps = players.filter(Boolean);
   const items = [];
   for (let i = 0; i < ps.length; i++) {
     for (let j = i + 1; j < ps.length; j++) {
       const a = ps[i], b = ps[j];
-      if (exTeammates(a, b)) items.push({ pts: 2.5, text: `${a.name} y ${b.name} fueron compañeros` });
+      if (isIcon(a) || isIcon(b)) items.push({ pts: 2.5, text: `${a.name} y ${b.name}: química de leyenda` });
+      else if (exTeammates(a, b)) items.push({ pts: 2.5, text: `${a.name} y ${b.name} fueron compañeros` });
       else if (a.org === b.org) items.push({ pts: 1, text: `${a.name} y ${b.name}: misma organización` });
     }
   }
   const byRegion = {};
-  ps.forEach((p) => { byRegion[p.region] = (byRegion[p.region] || 0) + 1; });
+  ps.forEach((p) => { if (!isIcon(p)) byRegion[p.region] = (byRegion[p.region] || 0) + 1; });
+  const icons = ps.filter(isIcon).length;
+  if (icons) {
+    const top = Object.keys(byRegion).sort((x, y) => byRegion[y] - byRegion[x])[0] || LEGENDS.region;
+    byRegion[top] = (byRegion[top] || 0) + icons;
+  }
   for (const [region, n] of Object.entries(byRegion)) {
     const pts = n >= 5 ? 4 : n === 4 ? 2 : n === 3 ? 1 : 0;
     if (pts) items.push({ pts, text: `${n} jugadores de la ${region}` });
@@ -79,7 +88,7 @@ export function chemistry(players) {
   for (const [r1, r2, label] of DUOS) {
     const a = byRole[r1], b = byRole[r2];
     if (!a || !b) continue;
-    if (exTeammates(a, b)) items.push({ pts: 1.5, text: `${label} se conocen: ${a.name} y ${b.name}` });
+    if (isIcon(a) || isIcon(b) || exTeammates(a, b)) items.push({ pts: 1.5, text: `${label} se conocen: ${a.name} y ${b.name}` });
     else if (a.org !== b.org && a.region !== b.region) items.push({ pts: -3, text: `${label} sin ningún vínculo` });
   }
   const raw = items.reduce((s, x) => s + x.pts, 0);
