@@ -60,7 +60,7 @@ export const MSG = {
 // Cómo se ve cada habilidad en la animación: tono (clutch = dorado, choke = hielo y se rompe), sello y cinta.
 export const FX = {
   neeko: { tone: 'clutch', stamp: 'Sorpresa', kicker: 'Habilidad especial', ribbon: 'Era la Neeko de Perejil' },
-  ward: { tone: 'choke', stamp: 'Solo un ward', kicker: 'Habilidad especial', ribbon: 'Nota 10' },
+  ward: { tone: 'choke', stamp: 'Solo un ward', kicker: 'Habilidad especial', ribbon: 'Solo da visión' },
   'admin-give': { tone: 'clutch', stamp: 'Admin', kicker: 'Poder de administrador', ribbon: '/give' },
   'admin-summon': { tone: 'clutch', stamp: 'Admin', kicker: 'Poder de administrador', ribbon: '10 contra 5' },
   'admin-win': { tone: 'clutch', stamp: 'Admin', kicker: 'Poder de administrador', ribbon: '/win: gana la serie' },
