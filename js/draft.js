@@ -452,7 +452,7 @@ export function createDraft(ctx) {
       const good = e.side === side;
       const txt = e.text.replaceAll('{eq}', teamName(e.side)).replaceAll('{rival}', teamName(e.side === 'a' ? 'b' : 'a'));
       const tag = e.kind === 'clutch' ? '<span class="trait clutch sm">Clutch</span>' : e.kind === 'choke' ? '<span class="trait choke sm">Pecho frío</span>'
-        : e.cine || e.kind === 'forfeit' ? '<span class="trait legend sm">Leyenda</span>' : '';
+        : e.ley || e.cine ? '<span class="trait legend sm">Leyenda</span>' : '';
       const cls = mine ? (good ? 'good' : 'bad') : (e.side === 'a' ? 'good' : 'bad');
       const word = mine ? (good ? 'A favor' : 'En contra') : esc(teamName(e.side));
       return `<li class="ev ${cls} ${e.kind} ${j === k - 1 ? 'new' : ''}"><time>${clockAt(times[j], dur)}</time>

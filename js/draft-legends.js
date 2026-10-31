@@ -9,7 +9,7 @@ export const LEGENDS = {
   players: [
     { role: 'top', name: 'JoseQ998', rating: 87, photo: 'img/leyendas/joseq998.webp', power: 'admin' },
     { role: 'jungle', name: 'Elias', rating: 95, photo: 'img/leyendas/elias.webp', power: 'toxic' },
-    { role: 'mid', name: 'J0hnN1', rating: 85, photo: 'img/leyendas/j0hnn1.webp' },
+    { role: 'mid', name: 'J0hnN1', rating: 83, photo: 'img/leyendas/j0hnn1.webp', power: 'bleach' },
     { role: 'bot', name: 'Betancourt', rating: 82, photo: 'img/leyendas/betancourt.webp', power: 'coin' },
     { role: 'support', name: 'Pink Ward', rating: 40, photo: 'img/leyendas/ward.webp', power: 'ward' },
   ],
@@ -28,6 +28,13 @@ export const POWER = {
   summon: 0.04, // por partida: JoseQ998 invoca a 5 leyendas y gana la partida 10 contra 5
   win: 0.008, // por partida (≈ 2 % por serie): /win, gana la serie
   afk: 0.02, // por partida (≈ 5 % por serie): se le apaga la laptop y pierde la serie
+  // J0hnN1, fan de Bleach
+  shikai: 0.25, // por partida: libera su shikai (su equipo suma shikaiBonus en esa partida)
+  shikaiBonus: 8,
+  bankai: 0.35, // en la partida decisiva de una serie: bankai, gana la partida él solo
+  hollow: 0.08, // por partida: hollowficación, 50/50 arrasa (la gana solo) o se descontrola (la pierde solo)
+  mugetsu: 0.15, // en la final, por partida: Mugetsu, gana la partida… y pierde sus poderes el resto de la final
+  mugetsuRating: 60, // su nota después del Mugetsu
 };
 
 export const NEEKO = { name: 'Neeko de Perejil', photo: 'img/leyendas/neeko.webp' };
@@ -53,6 +60,26 @@ export const MSG = {
     'Betancourt se lanzó 1 contra 5 y se suicidó: perdieron la partida',
     'Betancourt vio que había un Nautilus en el otro equipo: perdieron la partida',
   ],
+  shikai: [
+    'J0hnN1 libera su shikai: ¡Getsuga Tenshō! Su equipo toma el control de la partida',
+    'J0hnN1 desenvaina su zanpakutō y libera el shikai: su equipo juega con ventaja',
+    'J0hnN1 grita el nombre de su zanpakutō y su shikai le da ventaja a su equipo',
+  ],
+  bankai: [
+    '¡BANKAI! J0hnN1 libera su Tensa Zangetsu en la partida decisiva y la gana él solo',
+    'J0hnN1 susurra "bankai" y desaparece de la vista de todos: cuando vuelve a aparecer, la partida ya es suya',
+  ],
+  'hollow-win': [
+    'A J0hnN1 le sale la máscara de hollow: arrasa con todo el equipo rival y gana la partida él solo',
+    'J0hnN1 se hollowfica y su Getsuga Tenshō negro barre la Grieta: partida ganada',
+  ],
+  'hollow-lose': [
+    'A J0hnN1 le sale la máscara de hollow y pierde el control: ataca a todo lo que se mueve y su equipo pierde la partida',
+    'J0hnN1 se hollowfica, no distingue amigos de enemigos y su equipo pierde la partida',
+  ],
+  mugetsu: [
+    'J0hnN1 se convierte en el Getsuga Tenshō y usa el Mugetsu: gana la partida… pero pierde sus poderes de shinigami',
+  ],
   forfeitWin: 'JoseQ998 sigue con el /win: partida ganada sin jugar',
   forfeitAfk: 'JoseQ998 sigue sin conexión: partida perdida por AFK',
 };
@@ -69,4 +96,8 @@ export const FX = {
   'toxic-luz': { tone: 'choke', stamp: 'Sin luz', kicker: 'Tóxico', ribbon: 'Pierden la partida' },
   'coin-win': { tone: 'clutch', stamp: 'Héroe', kicker: 'O la gana solo…', ribbon: 'La gana él solo' },
   'coin-lose': { tone: 'choke', stamp: 'Villano', kicker: '…o la pierde solo', ribbon: 'La pierde él solo' },
+  bankai: { tone: 'clutch', stamp: 'Bankai', kicker: 'Partida decisiva', ribbon: 'Tensa Zangetsu' },
+  'hollow-win': { tone: 'clutch', stamp: 'Hollow', kicker: 'Hollowficación', ribbon: 'La gana él solo' },
+  'hollow-lose': { tone: 'choke', stamp: 'Hollow', kicker: 'Hollowficación', ribbon: 'Pierde el control' },
+  mugetsu: { tone: 'clutch', stamp: 'Mugetsu', kicker: 'La técnica definitiva', ribbon: 'Pierde sus poderes' },
 };

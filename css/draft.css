@@ -504,6 +504,12 @@ body.dw #app.container { max-width: none; padding: 0; }
 /* el momento: pantalla completa con el mapa de fondo */
 .hx .cine { --cA: #ffe39a; --cB: #e2b04a; --cC: #785a28; --glow: rgba(255, 210, 120, .6); --ink: #1b1307; --tx: 50vw; --ty: 50vh; --dx: 0px; --dy: 0px; position: fixed; inset: 0; z-index: 60; overflow: hidden; pointer-events: none; background: #010a13; animation: cine-fade .35s ease-out var(--el) both, cine-out .7s ease-in calc(var(--el) + 6300ms) both; }
 .hx .cine.choke { --cA: #e4f8ff; --cB: #8fd8f5; --cC: #1d6f8f; --glow: rgba(143, 216, 245, .6); --ink: #03222e; }
+/* J0hnN1 (Bleach): Bankai y Mugetsu en negro y rojo; la máscara de hollow en blanco y negro */
+.hx .cine.ley.bankai, .hx .cine.ley.mugetsu { --cA: #ff8a8a; --cB: #d3122a; --cC: #3b0008; --glow: rgba(220, 20, 45, .7); --ink: #160004; }
+.hx .cine.ley.bankai .cine-bg, .hx .cine.ley.mugetsu .cine-bg { filter: grayscale(1) brightness(.3) contrast(1.3); }
+.hx .cine.ley.mugetsu { --cA: #b9a7ff; --cB: #5b2bd6; --cC: #12002e; --glow: rgba(110, 60, 255, .65); }
+.hx .cine.ley.hollow-win, .hx .cine.ley.hollow-lose { --cA: #ffffff; --cB: #cfcfcf; --cC: #2a2a2a; --glow: rgba(255, 255, 255, .55); --ink: #0a0a0a; }
+.hx .cine.ley.hollow-win .cine-bg, .hx .cine.ley.hollow-lose .cine-bg { filter: grayscale(1) brightness(.45); }
 .hx .cine-bgwrap { position: absolute; inset: 0; overflow: hidden; }
 .hx .cine-bg { width: 100%; height: 100%; object-fit: cover; filter: saturate(.55) brightness(.42) blur(1.5px); animation: cine-bgzoom 7s cubic-bezier(.3, 0, .3, 1) var(--el) both; }
 .hx .cine.choke .cine-bg { animation: cine-bgzoom 7s cubic-bezier(.3, 0, .3, 1) var(--el) both, cine-cold 1.4s ease-out calc(var(--el) + 3300ms) both; }

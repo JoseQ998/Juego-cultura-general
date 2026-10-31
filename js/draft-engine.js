@@ -219,24 +219,25 @@ export function simulateTournament(participants, seed, { rules = 5 } = {}) {
   while (alive.length > 1) {
     const n = alive.length;
     const matches = [];
-    for (let i = 0; i < n; i += 2) matches.push(simulateSeries(alive[i], alive[i + 1], BEST_OF[n], r, rules, pr));
+    for (let i = 0; i < n; i += 2) matches.push(simulateSeries(alive[i], alive[i + 1], BEST_OF[n], r, rules, pr, n === 2));
     rounds.push({ name: ROUND_NAMES[n], size: n, bestOf: BEST_OF[n], matches });
     alive = matches.map((m) => (m.winner === 'a' ? m.a : m.b));
   }
   return { rounds, champion: alive[0], entrants };
 }
 
-function simulateSeries(a, b, bestOf, r, rules, pr) {
+function simulateSeries(a, b, bestOf, r, rules, pr, final = false) {
   const need = Math.ceil(bestOf / 2);
   const games = [];
   const used = new Set(); // frases ya salidas en la serie
-  // Habilidades del equipo Leyendas en esta serie: Elias sin luz (bot el resto de la serie) y /win o AFK (el resto de
-  // partidas ya están decididas). El baneo de Elias dura todo el torneo (se guarda en el equipo).
-  const ley = rules >= 5 && [a, b].some((t) => t.players.some((p) => p?.power)) ? { a: { out: false }, b: { out: false }, forfeit: null } : null;
+  // Habilidades del equipo Leyendas en esta serie: Elias sin luz (bot el resto de la serie), J0hnN1 sin poderes tras el
+  // Mugetsu y /win o AFK (el resto de partidas ya están decididas). El baneo de Elias dura todo el torneo (en el equipo).
+  const ley = rules >= 5 && [a, b].some((t) => t.players.some((p) => p?.power))
+    ? { a: { out: false, drained: false }, b: { out: false, drained: false }, forfeit: null, pr, final } : null;
   let wa = 0, wb = 0;
   while (wa < need && wb < need) {
     const decisive = wa === need - 1 && wb === need - 1;
-    const g = ley?.forfeit ? forfeitGame(ley.forfeit) : simulateGame(a, b, decisive, r, used, rules, ley && { ...ley, pr });
+    const g = ley?.forfeit ? forfeitGame(ley.forfeit, decisive) : simulateGame(a, b, decisive, r, used, rules, ley);
     games.push(g);
     if (g.winner === 'a') wa++; else wb++;
   }
@@ -244,31 +245,30 @@ function simulateSeries(a, b, bestOf, r, rules, pr) {
 }
 
 // Partidas que ya no se juegan tras un /win o un AFK de JoseQ998
-function forfeitGame({ winner, kind }) {
+function forfeitGame({ winner, kind }, decisive) {
   const text = kind === 'admin-win' ? MSG.forfeitWin : MSG.forfeitAfk;
-  return { winner, decisive: false, forfeit: true, events: [{ side: winner, kind: 'forfeit', tpl: text, text }, { side: winner, kind: 'end', tpl: END, text: END }] };
+  return { winner, decisive, forfeit: true, events: [{ side: winner, kind: 'forfeit', ley: true, tpl: text, text }, { side: winner, kind: 'end', tpl: END, text: END }] };
 }
 
-// Valor de un equipo con el bot en el sitio de Elias
-const SUB_KEY = `${LEGENDS_ID}:bot`;
-function benchElias(team) {
-  if (team.subValue == null) {
-    const players = team.players.map((p) => (p?.power === 'toxic' ? { ...p, name: SUB_BOT.name, rating: POWER.botRating, power: null } : p));
-    team.subValue = teamValue(players).value;
-  }
-  return team.subValue;
+// Valor de un equipo con el bot en el sitio de Elias y/o J0hnN1 sin poderes tras el Mugetsu
+function adjustedValue(team, bench, drained) {
+  if (!bench && !drained) return team.value;
+  const k = `v${+bench}${+drained}`;
+  team[k] ??= teamValue(team.players.map((p) => (bench && p?.power === 'toxic' ? { ...p, name: SUB_BOT.name, rating: POWER.botRating, power: null }
+    : drained && p?.power === 'bleach' ? { ...p, rating: POWER.mugetsuRating, power: null } : p))).value;
+  return team[k];
 }
 
 // Habilidades que saltan en una partida (reglas 5). Devuelve los mensajes especiales, el ganador si ya está decidido,
 // las jugadas que deciden la partida (Betancourt) y lo que suma cada equipo.
-function powersFor(a, b, ley) {
+function powersFor(a, b, ley, decisive) {
   const { pr } = ley;
   const out = { start: [], mid: [], forced: null, swings: [], bonus: { a: 0, b: 0 } };
   const other = (s) => (s === 'a' ? 'b' : 'a');
   const special = (side, kind, p, pside, vars = {}) => {
     let text = pick(MSG[kind], pr);
     for (const [k, v] of Object.entries(vars)) text = text.replace(`{${k}}`, v);
-    return { side, kind, key: p.key, pside, cine: true, tpl: text, text, ...(kind === 'neeko' ? { as: NEEKO } : {}) };
+    return { side, kind, key: p.key, pside, cine: true, ley: true, tpl: text, text, ...(kind === 'neeko' ? { as: NEEKO } : {}) };
   };
   for (const side of ['a', 'b']) {
     const t = side === 'a' ? a : b, o = other(side);
@@ -312,6 +312,25 @@ function powersFor(a, b, ley) {
       const win = pr() < 0.5;
       out.swings.push({ side, p: bet, winner: win ? side : o, kind: win ? 'coin-win' : 'coin-lose', pr });
     }
+    // J0hnN1: Mugetsu (solo en la final), Bankai (en la decisiva), hollowficación y shikai
+    const john = has('bleach');
+    if (john && !ley[side].drained) {
+      if (ley.final && !out.forced && pr() < POWER.mugetsu) {
+        out.forced = side;
+        ley[side].drained = true;
+        out.mid.push(special(side, 'mugetsu', john, side));
+      } else if (decisive && !out.forced && pr() < POWER.bankai) {
+        out.forced = side;
+        out.mid.push(special(side, 'bankai', john, side));
+      } else if (!out.forced && pr() < POWER.hollow) {
+        const win = pr() < 0.5;
+        out.swings.push({ side, p: john, winner: win ? side : o, kind: win ? 'hollow-win' : 'hollow-lose', pr });
+      }
+      if (!out.forced && !ley[side].drained && pr() < POWER.shikai) {
+        out.bonus[side] += POWER.shikaiBonus;
+        out.start.push({ ...special(side, 'shikai', john, side), cine: false });
+      }
+    }
   }
   return out;
 }
@@ -331,9 +350,9 @@ function simulateGame(a, b, decisive, r, used, rules, ley = null) {
     const n = t.players.filter((p) => p.trait === 'choke').length;
     return rules === 2 ? n * CHOKE_BONUS : rules === 3 ? CHOKE_LIFT[n] : CHOKE_LIFT_V4[n];
   };
-  const pw = ley ? powersFor(a, b, ley) : null;
+  const pw = ley ? powersFor(a, b, ley, decisive) : null;
   if (pw) swings.push(...pw.swings);
-  const valueOf = (t, side) => (ley && (t.eliasBanned || ley[side].out) ? benchElias(t) : t.value) + (pw ? pw.bonus[side] : 0);
+  const valueOf = (t, side) => (ley ? adjustedValue(t, t.eliasBanned || ley[side].out, ley[side].drained) : t.value) + (pw ? pw.bonus[side] : 0);
   const sides = new Set(swings.map((s) => s.winner));
   let winner, swing = null;
   if (pw?.forced) winner = pw.forced;
@@ -509,7 +528,7 @@ function gameEvents(a, b, winner, swing, r, used = new Set(), rules = 4) {
     // Betancourt: la gana o la pierde él solo
     const victims = teams[other(swing.side)].players.filter(Boolean);
     const text = pick(MSG[swing.kind], swing.pr).replace('{victima}', pick(victims, swing.pr).name);
-    ev.push({ side: winner, kind: swing.kind, key: swing.p.key, pside: swing.side, cine: true, tpl: text, text });
+    ev.push({ side: winner, kind: swing.kind, key: swing.p.key, pside: swing.side, cine: true, ley: true, tpl: text, text });
   } else if (swing) {
     const { p } = swing;
     // (hasta las reglas 3 las frases de knight no salían porque su clave estaba mal escrita; así se siguen viendo igual)
