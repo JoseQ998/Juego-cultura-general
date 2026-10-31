@@ -51,13 +51,6 @@ const TRAIT_INFO = {
   clutch: 'Aparece cuando importa: en la partida decisiva de una serie puede ganarla él solo.',
   choke: 'Rey de la liga: en las partidas normales juega por encima de su nivel, pero en la decisiva de una serie puede hundir a su equipo.',
 };
-// Lo que se cuenta de cada Leyenda en el draft (lo del Pink Ward es sorpresa)
-const POWER_INFO = {
-  admin: 'JoseQ998 es admin: a veces usa comandos (/give, /win o invocar a las leyendas)… y a veces se le apaga la laptop.',
-  toxic: 'Elias es de los mejores junglas, pero es tóxico: lo pueden banear o puede dejar sin luz a su urbanización, y entra un bot.',
-  coin: 'Betancourt nunca pasa desapercibido: o gana la partida él solo o la pierde él solo.',
-  ward: 'Un Pink Ward. Da visión. ¿Qué más se le puede pedir?',
-};
 const GAME_MIN = 33; // minutos de partida que se muestran en el reloj (solo decoración)
 
 // Si una imagen falla se reintenta un par de veces y, si no hay manera, quedan las iniciales.
@@ -309,8 +302,7 @@ export function createDraft(ctx) {
             <span class="tb-free">${free} de 5 disponibles</span>
           </div>
           <div class="pgrid">${t.players.map((pp) => { const p = E.PLAYER_BY_KEY[`${t.id}:${pp.role}`]; return playerCard(p, roster, p.key === busy); }).join('')}</div>
-          ${traits.length ? `<div class="trait-help">${traits.map((k) => `<p>${traitTag({ trait: k })} ${TRAIT_INFO[k]}</p>`).join('')}</div>` : ''}
-          ${t.id === LEGENDS_ID ? `<div class="trait-help">${t.players.filter((pp) => pp.power).map((pp) => `<p>${traitTag({ teamId: LEGENDS_ID })} ${POWER_INFO[pp.power]}</p>`).join('')}</div>` : ''}`;
+          ${traits.length ? `<div class="trait-help">${traits.map((k) => `<p>${traitTag({ trait: k })} ${TRAIT_INFO[k]}</p>`).join('')}</div>` : ''}`;
         foot = `
           <p class="foot-hint">Toca a un jugador para ficharlo. Los atenuados no se pueden elegir: su posición ya está ocupada o ya están en tu equipo.</p>
           <div class="foot-btns">
