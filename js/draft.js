@@ -751,7 +751,7 @@ export function createDraft(ctx) {
       }
       return { i, t, paused: false };
     };
-    const skipRow = () => (opts.allowSkip ? '<div class="skip-row"><button class="btn-ghost" type="button" id="dwSkip"><span>Continuar</span></button><button class="btn-ghost hex" type="button" id="dwEnd"><span>Ir al final</span></button></div>' : '');
+    const skipRow = () => (opts.allowSkip ? '<div class="skip-row"><button class="btn-ghost" type="button" id="dwSkip"><span>Continuar</span></button></div>' : ''); // sin atajo al resultado: el torneo se ve entero
     // cuando está parado, Continuar se ve dorado
     const markPaused = (paused) => {
       const b = el.querySelector('#dwSkip');
@@ -802,7 +802,6 @@ export function createDraft(ctx) {
       markPaused(paused);
       if (s.type === 'game') moveTokens(el.querySelector('.mapin'), s.m, s.gi, t, me, round.name);
       el.querySelector('#dwSkip')?.addEventListener('click', () => { const c = locate(); passed = c.i + 1; offset += Math.max(0, scenes[c.i].dur - c.t) + 1; lastKey = ''; tick(); });
-      el.querySelector('#dwEnd')?.addEventListener('click', () => { passed = scenes.length - 1; offset += 1e9; lastKey = ''; tick(); });
     };
     const timer = every(tick, 200);
     tick();
@@ -845,7 +844,9 @@ export function createDraft(ctx) {
       <label class="field"><span>Empezar desde</span>
         <select id="${prefix}Size"><option value="16">Octavos (16 equipos)</option><option value="8">Cuartos (8 equipos)</option><option value="2">Solo la final (2 equipos)</option></select></label>
       <label class="field"><span>Dificultad de los bots</span>
-        <select id="${prefix}Level"><option value="facil">Fácil</option><option value="medio" selected>Media</option><option value="imposible">Imposible</option></select></label>`;
+        <select id="${prefix}Level"><option value="facil">Fácil</option><option value="medio" selected>Media</option><option value="imposible">Imposible</option></select></label>
+      <label class="field"><span>Equipo Leyendas</span>
+        <select id="${prefix}Legends"><option value="1" selected>Sí, puede salir en el draft</option><option value="0">No</option></select></label>`;
   }
 
   function renderSoloSetup() {
@@ -861,13 +862,13 @@ export function createDraft(ctx) {
     document.getElementById('soloGo').onclick = () => {
       const size = +document.getElementById('soloSize').value;
       const level = document.getElementById('soloLevel').value;
-      startSolo(size, level);
+      startSolo(size, level, document.getElementById('soloLegends').value === '1');
     };
   }
 
   const LEVEL_NAMES = { facil: 'Fácil', medio: 'Media', imposible: 'Imposible' };
 
-  function startSolo(size, level) {
+  function startSolo(size, level, legends = true) {
     const seed = Math.random().toString(36).slice(2);
     const r = E.rng(`opts:${seed}`);
     let roster = E.emptyRoster();
@@ -877,8 +878,8 @@ export function createDraft(ctx) {
       title: 'Contra bots',
       roster,
       rerollsLeft: E.REROLLS,
-      options: async () => E.draftOptions(roster, r, [], { legends: true }),
-      reroll: async () => { used++; return E.draftOptions(roster, r, [], { legends: true }); },
+      options: async () => E.draftOptions(roster, r, [], { legends }),
+      reroll: async () => { used++; return E.draftOptions(roster, r, [], { legends }); },
       pick: async (key) => { const p = E.PLAYER_BY_KEY[key]; if (!E.canPick(roster, p)) throw new Error('No puedes elegir a ese jugador.'); roster = { ...roster, [p.role]: key }; return roster; },
       done: (final) => {
         const me = 'me';

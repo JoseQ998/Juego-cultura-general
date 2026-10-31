@@ -815,6 +815,8 @@ create table if not exists public.draft_lobbies (
   constraint draft_status check (status in ('waiting', 'drafting', 'simulating'))
 );
 create index if not exists draft_lobbies_created_idx on public.draft_lobbies (created_at desc);
+-- si en la sala puede salir el equipo Leyendas (lo elige quien la crea)
+alter table public.draft_lobbies add column if not exists legends boolean not null default true;
 -- salas de solo la final (2 equipos)
 alter table public.draft_lobbies drop constraint if exists draft_size;
 alter table public.draft_lobbies add constraint draft_size check (size in (2, 8, 16));
@@ -1593,7 +1595,8 @@ end;
 $$;
 
 -- ---------- salas ----------
-create or replace function public.draft_create(p_name text, p_size int, p_level text, p_token text, p_player text)
+drop function if exists public.draft_create(text, int, text, text, text);
+create or replace function public.draft_create(p_name text, p_size int, p_level text, p_token text, p_player text, p_legends boolean default true)
 returns text
 language plpgsql
 volatile
@@ -1612,8 +1615,8 @@ begin
     v_code := (select string_agg(substr(v_chars, 1 + floor(random() * length(v_chars))::int, 1), '') from generate_series(1, 6));
     exit when not exists (select 1 from public.draft_lobbies where code = v_code);
   end loop;
-  insert into public.draft_lobbies (code, name, size, level, host_token)
-  values (v_code, coalesce(nullif(left(trim(coalesce(p_name, '')), 40), ''), 'Sala ' || v_code), p_size, p_level, p_token);
+  insert into public.draft_lobbies (code, name, size, level, host_token, legends)
+  values (v_code, coalesce(nullif(left(trim(coalesce(p_name, '')), 40), ''), 'Sala ' || v_code), p_size, p_level, p_token, coalesce(p_legends, true));
   insert into public.draft_seats (lobby, seat, token, user_id, name)
   values (v_code, 1, p_token, auth.uid(), private.draft_player_name(p_player));
   return v_code;
@@ -1742,7 +1745,7 @@ begin
   if exists (select 1 from public.draft_seats where lobby = l.code and not ready) then
     raise exception 'Todavía hay jugadores sin pulsar "Listo"';
   end if;
-  update public.draft_seats set options = private.draft_new_options(roster, not l.official), active_at = now() where lobby = l.code;
+  update public.draft_seats set options = private.draft_new_options(roster, not l.official and l.legends), active_at = now() where lobby = l.code;
   update public.draft_lobbies set status = 'drafting', seed = md5(random()::text || clock_timestamp()::text)
    where code = l.code;
 end;
@@ -1777,7 +1780,7 @@ begin
   v_done := (select count(*) from jsonb_object_keys(v_roster)) = 5;
   update public.draft_seats
      set roster = v_roster, done = v_done, active_at = now(),
-         options = case when v_done then '{}' else private.draft_new_options(v_roster, not l.official) end
+         options = case when v_done then '{}' else private.draft_new_options(v_roster, not l.official and l.legends) end
    where lobby = s.lobby and seat = s.seat;
   perform private.draft_advance(s.lobby);
 end;
@@ -1797,7 +1800,7 @@ begin
     raise exception 'No te quedan rerolls';
   end if;
   update public.draft_seats set rerolls = rerolls + 1,
-         options = private.draft_new_options(roster, not (select official from public.draft_lobbies where code = s.lobby)), active_at = now()
+         options = private.draft_new_options(roster, (select not official and legends from public.draft_lobbies where code = s.lobby)), active_at = now()
    where lobby = s.lobby and seat = s.seat;
 end;
 $$;
@@ -1821,7 +1824,7 @@ begin
   end if;
   select * into me from public.draft_seats where lobby = l.code and token = p_token;
   return json_build_object(
-    'code', l.code, 'name', l.name, 'size', l.size, 'level', l.level, 'official', l.official, 'week_id', l.week_id,
+    'code', l.code, 'name', l.name, 'size', l.size, 'level', l.level, 'legends', l.legends, 'official', l.official, 'week_id', l.week_id,
     'status', l.status, 'seed', case when l.status = 'simulating' then l.seed end,
     'countdown_ends_at', l.countdown_ends_at, 'sim_started_at', l.sim_started_at, 'champion_seat', l.champion_seat,
     'now', now(), 'host', l.host_token is not null and l.host_token = p_token,
@@ -1973,7 +1976,7 @@ begin
     'public.admin_set_week(int, text, jsonb)',
     'public.get_logs(int)',
     'public.clear_logs()',
-    'public.draft_create(text, int, text, text, text)',
+    'public.draft_create(text, int, text, text, text, boolean)',
     'public.draft_join(text, text, text)',
     'public.draft_ready(text, text, boolean)',
     'public.draft_leave(text, text)',

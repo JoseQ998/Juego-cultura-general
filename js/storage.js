@@ -191,7 +191,7 @@ const cleanRoster = (r) => {
   return out;
 };
 const cleanDraft = (s) => ({
-  code: str(s.code), name: str(s.name), size: num(s.size), level: str(s.level), official: s.official === true,
+  code: str(s.code), name: str(s.name), size: num(s.size), level: str(s.level), legends: s.legends !== false, official: s.official === true,
   weekId: s.week_id == null ? null : num(s.week_id), status: str(s.status), seed: s.seed ? str(s.seed) : null,
   countdownEndsAt: s.countdown_ends_at ? time(s.countdown_ends_at) : null,
   simStartedAt: s.sim_started_at ? time(s.sim_started_at) : null,
@@ -393,8 +393,8 @@ async function supabaseImpl({ url, key }) {
     },
 
     // ----- Draft Worlds -----
-    async draftCreate(name, size, level, token, player) {
-      return str(await run(sb.rpc('draft_create', { p_name: cut(name, 40), p_size: size, p_level: level, p_token: token, p_player: cut(player, 20) })));
+    async draftCreate(name, size, level, token, player, legends = true) {
+      return str(await run(sb.rpc('draft_create', { p_name: cut(name, 40), p_size: size, p_level: level, p_token: token, p_player: cut(player, 20), p_legends: !!legends })));
     },
     async draftJoin(code, token, player) {
       return num(await run(sb.rpc('draft_join', { p_code: code, p_token: token, p_player: cut(player, 20) })));
