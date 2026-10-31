@@ -237,7 +237,7 @@ function simulateSeries(a, b, bestOf, r, rules, pr, final = false) {
   let wa = 0, wb = 0;
   while (wa < need && wb < need) {
     const decisive = wa === need - 1 && wb === need - 1;
-    const g = ley?.forfeit ? forfeitGame(ley.forfeit, decisive) : simulateGame(a, b, decisive, r, used, rules, ley);
+    const g = ley?.forfeit ? forfeitGame(ley.forfeit) : simulateGame(a, b, decisive, r, used, rules, ley);
     games.push(g);
     if (g.winner === 'a') wa++; else wb++;
   }
@@ -245,16 +245,16 @@ function simulateSeries(a, b, bestOf, r, rules, pr, final = false) {
 }
 
 // Partidas que ya no se juegan tras un /win o un AFK de JoseQ998
-function forfeitGame({ winner, kind }, decisive) {
+function forfeitGame({ winner, kind }) {
   const text = kind === 'admin-win' ? MSG.forfeitWin : MSG.forfeitAfk;
-  return { winner, decisive, forfeit: true, events: [{ side: winner, kind: 'forfeit', ley: true, tpl: text, text }, { side: winner, kind: 'end', tpl: END, text: END }] };
+  return { winner, decisive: false, forfeit: true, events: [{ side: winner, kind: 'forfeit', ley: true, tpl: text, text }, { side: winner, kind: 'end', tpl: END, text: END }] };
 }
 
 // Valor de un equipo con el bot en el sitio de Elias y/o J0hnN1 sin poderes tras el Mugetsu
 function adjustedValue(team, bench, drained) {
   if (!bench && !drained) return team.value;
   const k = `v${+bench}${+drained}`;
-  team[k] ??= teamValue(team.players.map((p) => (bench && p?.power === 'toxic' ? { ...p, name: SUB_BOT.name, rating: POWER.botRating, power: null }
+  team[k] ??= teamValue(team.players.map((p) => (bench && p?.power === 'toxic' ? { ...p, name: SUB_BOT.name, rating: POWER.botRating, power: null, teamId: 'bot' }
     : drained && p?.power === 'bleach' ? { ...p, rating: POWER.mugetsuRating, power: null } : p))).value;
   return team[k];
 }
@@ -358,7 +358,10 @@ function simulateGame(a, b, decisive, r, used, rules, ley = null) {
   if (pw?.forced) winner = pw.forced;
   else if (sides.size === 1) { winner = swings[0].winner; swing = swings[0]; }
   else winner = r() < winProb(valueOf(a, 'a') + lift(a) - valueOf(b, 'b') - lift(b)) ? 'a' : 'b';
-  const events = gameEvents(a, b, winner, swing, r, used, rules);
+  // en los mensajes, el bot sale con su nombre en lugar de Elias y la Neeko de Perejil ya revelada con el suyo
+  const named = (t, side) => (!ley ? t : { ...t, players: t.players.map((p) => (p?.power === 'toxic' && (t.eliasBanned || ley[side].out) ? { ...p, name: SUB_BOT.name }
+    : p?.reveal === 'neeko' && t.revealed ? { ...p, name: NEEKO.name } : p)) });
+  const events = gameEvents(named(a, 'a'), named(b, 'b'), winner, swing, r, used, rules);
   if (pw) {
     // los mensajes especiales: los del principio delante de todo y los demás justo antes de la jugada final
     events.splice(events.length - 2, 0, ...pw.mid);
