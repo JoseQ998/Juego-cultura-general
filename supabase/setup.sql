@@ -1457,7 +1457,12 @@ insert into public.draft_players (key, team_id, role, name) values
 ('2025-hle:jungle','2025-hle','jungle','Peanut'),
 ('2025-hle:mid','2025-hle','mid','Zeka'),
 ('2025-hle:bot','2025-hle','bot','Viper'),
-('2025-hle:support','2025-hle','support','Delight');
+('2025-hle:support','2025-hle','support','Delight'),
+('leyendas:top','leyendas','top','JoseQ998'),
+('leyendas:jungle','leyendas','jungle','Elias'),
+('leyendas:mid','leyendas','mid','J0hnN1'),
+('leyendas:bot','leyendas','bot','Betancourt'),
+('leyendas:support','leyendas','support','Pink Ward');
 -- DRAFT_PLAYERS_END
 
 -- ---------- funciones internas ----------
@@ -1474,8 +1479,9 @@ as $$
   where p.key in (select value from jsonb_each_text(p_roster));
 $$;
 
--- 3 equipos al azar con algún jugador elegible.
-create or replace function private.draft_new_options(p_roster jsonb)
+-- 3 equipos al azar con algún jugador elegible. El equipo Leyendas solo sale en las salas normales (p_legends).
+drop function if exists private.draft_new_options(jsonb);
+create or replace function private.draft_new_options(p_roster jsonb, p_legends boolean default false)
 returns text[]
 language sql
 volatile
@@ -1486,6 +1492,7 @@ as $$
     select team_id from (
       select distinct p.team_id from public.draft_players p
       where not (p_roster ? p.role) and lower(p.name) <> all (private.draft_names(p_roster))
+        and (p_legends or p.team_id <> 'leyendas')
     ) t order by random() limit 3
   ) x;
 $$;
@@ -1506,7 +1513,7 @@ begin
   foreach r in array array['top', 'jungle', 'mid', 'bot', 'support'] loop
     if not (v_roster ? r) then
       select p.key into k from public.draft_players p
-      where p.role = r and lower(p.name) <> all (private.draft_names(v_roster))
+      where p.role = r and lower(p.name) <> all (private.draft_names(v_roster)) and p.team_id <> 'leyendas'
       order by random() limit 1;
       v_roster := v_roster || jsonb_build_object(r, k);
     end if;
@@ -1735,7 +1742,7 @@ begin
   if exists (select 1 from public.draft_seats where lobby = l.code and not ready) then
     raise exception 'Todavía hay jugadores sin pulsar "Listo"';
   end if;
-  update public.draft_seats set options = private.draft_new_options(roster), active_at = now() where lobby = l.code;
+  update public.draft_seats set options = private.draft_new_options(roster, not l.official), active_at = now() where lobby = l.code;
   update public.draft_lobbies set status = 'drafting', seed = md5(random()::text || clock_timestamp()::text)
    where code = l.code;
 end;
@@ -1770,7 +1777,7 @@ begin
   v_done := (select count(*) from jsonb_object_keys(v_roster)) = 5;
   update public.draft_seats
      set roster = v_roster, done = v_done, active_at = now(),
-         options = case when v_done then '{}' else private.draft_new_options(v_roster) end
+         options = case when v_done then '{}' else private.draft_new_options(v_roster, not l.official) end
    where lobby = s.lobby and seat = s.seat;
   perform private.draft_advance(s.lobby);
 end;
@@ -1789,7 +1796,8 @@ begin
   if s.done or s.rerolls >= 2 or (select status from public.draft_lobbies where code = s.lobby) <> 'drafting' then
     raise exception 'No te quedan rerolls';
   end if;
-  update public.draft_seats set rerolls = rerolls + 1, options = private.draft_new_options(roster), active_at = now()
+  update public.draft_seats set rerolls = rerolls + 1,
+         options = private.draft_new_options(roster, not (select official from public.draft_lobbies where code = s.lobby)), active_at = now()
    where lobby = s.lobby and seat = s.seat;
 end;
 $$;

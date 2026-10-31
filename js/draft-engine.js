@@ -2,25 +2,28 @@
 // cuadro del torneo y simulación. Todo es determinista a partir de una semilla:
 // con la misma semilla y los mismos equipos, todos ven el mismo Worlds.
 import { DRAFT_TEAMS } from './draft-data.js';
+import { LEGENDS, LEGENDS_ID, POWER, NEEKO, SUB_BOT, MSG } from './draft-legends.js';
 
 export const ROLES = ['top', 'jungle', 'mid', 'bot', 'support'];
 export const ROLE_NAMES = { top: 'Top', jungle: 'Jungla', mid: 'Mid', bot: 'Tirador', support: 'Apoyo' };
 export const LEVELS = { facil: 'Fácil', medio: 'Media', imposible: 'Imposible' };
 export const REROLLS = 2;
 
-export const TEAMS = DRAFT_TEAMS;
-export const TEAM_BY_ID = Object.fromEntries(TEAMS.map((t) => [t.id, t]));
+export const TEAMS = DRAFT_TEAMS; // los equipos de los Mundiales (los que eligen los bots)
+export const TEAM_BY_ID = Object.fromEntries([...TEAMS, LEGENDS].map((t) => [t.id, t]));
 const keyName = (n) => String(n).toLowerCase();
 
 // Jugador-temporada enriquecido con los datos de su equipo. key = "equipo:posición".
-export const PLAYERS = TEAMS.flatMap((t) => t.players.map((p) => ({
+const withTeam = (t) => t.players.map((p) => ({
   ...p, key: `${t.id}:${p.role}`, teamId: t.id, year: t.year, team: t.name, tag: t.tag, org: t.org, region: t.region, logo: t.logo,
-})));
-export const PLAYER_BY_KEY = Object.fromEntries(PLAYERS.map((p) => [p.key, p]));
+}));
+export const PLAYERS = TEAMS.flatMap(withTeam);
+const LEGEND_PLAYERS = withTeam(LEGENDS);
+export const PLAYER_BY_KEY = Object.fromEntries([...PLAYERS, ...LEGEND_PLAYERS].map((p) => [p.key, p]));
 
 // Equipos-año en los que jugó cada persona (para saber quiénes fueron compañeros).
 const TEAMS_OF = new Map();
-for (const p of PLAYERS) {
+for (const p of [...PLAYERS, ...LEGEND_PLAYERS]) {
   const k = keyName(p.name);
   if (!TEAMS_OF.has(k)) TEAMS_OF.set(k, new Set());
   TEAMS_OF.get(k).add(p.teamId);
@@ -104,10 +107,12 @@ export function canPick(roster, p) {
 }
 const pickable = (roster, team) => team.players.some((p) => canPick(roster, { ...p, name: p.name }));
 
-// 3 equipos al azar que tengan al menos un jugador elegible.
-export function draftOptions(roster, r, avoid = []) {
-  const pool = TEAMS.filter((t) => pickable(roster, t) && !avoid.includes(t.id));
-  return shuffle(pool.length >= 3 ? pool : TEAMS.filter((t) => pickable(roster, t)), r).slice(0, 3).map((t) => t.id);
+// 3 equipos al azar que tengan al menos un jugador elegible. legends: también puede salir el equipo Leyendas
+// (personas en salas normales y contra bots; nunca los bots ni la sala oficial).
+export function draftOptions(roster, r, avoid = [], { legends = false } = {}) {
+  const all = legends ? [...TEAMS, LEGENDS] : TEAMS;
+  const pool = all.filter((t) => pickable(roster, t) && !avoid.includes(t.id));
+  return shuffle(pool.length >= 3 ? pool : all.filter((t) => pickable(roster, t)), r).slice(0, 3).map((t) => t.id);
 }
 
 // Lo que gana el equipo al fichar a p (nota + cambio de química), para los bots.
@@ -175,19 +180,29 @@ const CHOKE_LIFT_V4 = [0, 3.5, 6.25, 8.25, 9.75, 10.75];
 export const RULES_V2_FROM = Date.parse('2026-10-21T00:30:00Z');
 export const RULES_V3_FROM = Date.parse('2026-10-21T03:00:00Z');
 export const RULES_V4_FROM = Date.parse('2026-10-21T22:30:00Z');
+export const RULES_V5_FROM = Date.parse('2026-10-31T04:30:00Z'); // reglas 5: habilidades del equipo Leyendas
 export const rulesFor = (startedAt) => {
   const t = typeof startedAt === 'number' ? startedAt : Date.parse(startedAt); // llega en milisegundos o como fecha
-  return !t ? 4 : t < RULES_V2_FROM ? 1 : t < RULES_V3_FROM ? 2 : t < RULES_V4_FROM ? 3 : 4;
+  return !t ? 5 : t < RULES_V2_FROM ? 1 : t < RULES_V3_FROM ? 2 : t < RULES_V4_FROM ? 3 : t < RULES_V5_FROM ? 4 : 5;
 };
 // Los que tienen rasgo desde las reglas 3: con reglas anteriores juegan sin él.
 const TRAITS_V3 = new Set(['2022-drx:top', '2023-t1:top', '2014-ssw:support', '2021-edg:support', '2017-lz:top', '2024-blg:top', '2018-rng:support', '2022-gen:support']);
 const withRules = (p, rules) => (p && rules < 3 && TRAITS_V3.has(p.key) ? { ...p, trait: null } : p);
 
 // participants: [{ id, name, bot, roster }]; size 8 o 16
-export function simulateTournament(participants, seed, { rules = 4 } = {}) {
+export function simulateTournament(participants, seed, { rules = 5 } = {}) {
   const r = rng(`worlds:${seed}`);
+  const pr = rng(`leyendas:${seed}`); // azar aparte para las habilidades: el resto del torneo no cambia
   const entrants = participants.map((x) => {
-    const players = rosterPlayers(x.roster).map((p) => withRules(p, rules));
+    let players = rosterPlayers(x.roster).map((p) => withRules(p, rules));
+    // El Pink Ward se decide al empezar: casi siempre es la Neeko de Perejil (se revela en su primera partida)
+    if (rules >= 5) {
+      players = players.map((p) => {
+        if (p?.power !== 'ward') return p;
+        const ward = rng(`ward:${seed}:${x.id}`)() < POWER.wardIsWard;
+        return { ...p, reveal: ward ? 'ward' : 'neeko', rating: ward ? POWER.wardRating : POWER.neekoRating };
+      });
+    }
     return { ...x, players, ...teamValue(players) };
   });
   let alive = shuffle(entrants, r);
@@ -195,28 +210,104 @@ export function simulateTournament(participants, seed, { rules = 4 } = {}) {
   while (alive.length > 1) {
     const n = alive.length;
     const matches = [];
-    for (let i = 0; i < n; i += 2) matches.push(simulateSeries(alive[i], alive[i + 1], BEST_OF[n], r, rules));
+    for (let i = 0; i < n; i += 2) matches.push(simulateSeries(alive[i], alive[i + 1], BEST_OF[n], r, rules, pr));
     rounds.push({ name: ROUND_NAMES[n], size: n, bestOf: BEST_OF[n], matches });
     alive = matches.map((m) => (m.winner === 'a' ? m.a : m.b));
   }
   return { rounds, champion: alive[0], entrants };
 }
 
-function simulateSeries(a, b, bestOf, r, rules) {
+function simulateSeries(a, b, bestOf, r, rules, pr) {
   const need = Math.ceil(bestOf / 2);
   const games = [];
   const used = new Set(); // frases ya salidas en la serie
+  // Habilidades del equipo Leyendas en esta serie: Elias sin luz (bot el resto de la serie) y /win o AFK (el resto de
+  // partidas ya están decididas). El baneo de Elias dura todo el torneo (se guarda en el equipo).
+  const ley = rules >= 5 && [a, b].some((t) => t.players.some((p) => p?.power)) ? { a: { out: false }, b: { out: false }, forfeit: null } : null;
   let wa = 0, wb = 0;
   while (wa < need && wb < need) {
     const decisive = wa === need - 1 && wb === need - 1;
-    const g = simulateGame(a, b, decisive, r, used, rules);
+    const g = ley?.forfeit ? forfeitGame(ley.forfeit) : simulateGame(a, b, decisive, r, used, rules, ley && { ...ley, pr });
     games.push(g);
     if (g.winner === 'a') wa++; else wb++;
   }
   return { a, b, bestOf, games, score: [wa, wb], winner: wa > wb ? 'a' : 'b' };
 }
 
-function simulateGame(a, b, decisive, r, used, rules) {
+// Partidas que ya no se juegan tras un /win o un AFK de JoseQ998
+function forfeitGame({ winner, kind }) {
+  const text = kind === 'admin-win' ? MSG.forfeitWin : MSG.forfeitAfk;
+  return { winner, decisive: false, forfeit: true, events: [{ side: winner, kind: 'forfeit', tpl: text, text }, { side: winner, kind: 'end', tpl: END, text: END }] };
+}
+
+// Valor de un equipo con el bot en el sitio de Elias
+const SUB_KEY = `${LEGENDS_ID}:bot`;
+function benchElias(team) {
+  if (team.subValue == null) {
+    const players = team.players.map((p) => (p?.power === 'toxic' ? { ...p, name: SUB_BOT.name, rating: POWER.botRating, power: null } : p));
+    team.subValue = teamValue(players).value;
+  }
+  return team.subValue;
+}
+
+// Habilidades que saltan en una partida (reglas 5). Devuelve los mensajes especiales, el ganador si ya está decidido,
+// las jugadas que deciden la partida (Betancourt) y lo que suma cada equipo.
+function powersFor(a, b, ley) {
+  const { pr } = ley;
+  const out = { start: [], mid: [], forced: null, swings: [], bonus: { a: 0, b: 0 } };
+  const other = (s) => (s === 'a' ? 'b' : 'a');
+  const special = (side, kind, p, pside, vars = {}) => {
+    let text = pick(MSG[kind], pr);
+    for (const [k, v] of Object.entries(vars)) text = text.replace(`{${k}}`, v);
+    return { side, kind, key: p.key, pside, cine: true, tpl: text, text, ...(kind === 'neeko' ? { as: NEEKO } : {}) };
+  };
+  for (const side of ['a', 'b']) {
+    const t = side === 'a' ? a : b, o = other(side);
+    const has = (power) => t.players.find((p) => p?.power === power);
+    // Pink Ward: se revela en su primera partida
+    const w = t.players.find((p) => p?.reveal);
+    if (w && !t.revealed) {
+      t.revealed = true;
+      out.start.push(special(w.reveal === 'neeko' ? side : o, w.reveal, w, side));
+    }
+    const admin = has('admin');
+    if (admin && !out.forced) {
+      const x = pr();
+      if (x < POWER.win) { out.forced = side; ley.forfeit = { winner: side, kind: 'admin-win' }; out.start.push(special(side, 'admin-win', admin, side)); }
+      else if (x < POWER.win + POWER.afk) { out.forced = o; ley.forfeit = { winner: o, kind: 'afk' }; out.start.push(special(o, 'afk', admin, side)); }
+    }
+    const elias = has('toxic');
+    if (elias && !t.eliasBanned && !ley[side].out && !out.forced && pr() < POWER.toxic) {
+      if (pr() < 0.5) {
+        t.eliasBanned = true;
+        const victims = (side === 'a' ? b : a).players.filter(Boolean);
+        out.start.push(special(o, 'toxic-ban', elias, side, { victima: pick(victims, pr).name }));
+      } else {
+        ley[side].out = true;
+        out.forced = o;
+        out.mid.push(special(o, 'toxic-luz', elias, side));
+      }
+    }
+    if (admin && !out.forced && pr() < POWER.summon) {
+      const tops = [...PLAYERS].sort((x, y) => y.rating - x.rating).filter((p, i, arr) => arr.findIndex((q) => keyName(q.name) === keyName(p.name)) === i).slice(0, 30);
+      const five = shuffle(tops, pr).slice(0, 5).map((p) => p.name);
+      out.forced = side;
+      out.mid.push(special(side, 'admin-summon', admin, side, { lista: `${five.slice(0, 4).join(', ')} y ${five[4]}` }));
+    }
+    if (admin && !out.forced && pr() < POWER.give) {
+      out.bonus[side] += POWER.giveBonus;
+      out.start.push(special(side, 'admin-give', admin, side));
+    }
+    const bet = has('coin');
+    if (bet && !out.forced && pr() < POWER.coin) {
+      const win = pr() < 0.5;
+      out.swings.push({ side, p: bet, winner: win ? side : o, kind: win ? 'coin-win' : 'coin-lose', pr });
+    }
+  }
+  return out;
+}
+
+function simulateGame(a, b, decisive, r, used, rules, ley = null) {
   const chanceOf = (p) => (rules === 1 ? (decisive ? 0.08 : 0.04) : !decisive ? 0 : p.trait === 'clutch' ? (rules >= 4 ? CLUTCH_CHANCE_V4 : CLUTCH_CHANCE) : CHOKE_CHANCE);
   const swings = [];
   for (const [side, team] of [['a', a], ['b', b]]) {
@@ -231,11 +322,21 @@ function simulateGame(a, b, decisive, r, used, rules) {
     const n = t.players.filter((p) => p.trait === 'choke').length;
     return rules === 2 ? n * CHOKE_BONUS : rules === 3 ? CHOKE_LIFT[n] : CHOKE_LIFT_V4[n];
   };
+  const pw = ley ? powersFor(a, b, ley) : null;
+  if (pw) swings.push(...pw.swings);
+  const valueOf = (t, side) => (ley && (t.eliasBanned || ley[side].out) ? benchElias(t) : t.value) + (pw ? pw.bonus[side] : 0);
   const sides = new Set(swings.map((s) => s.winner));
   let winner, swing = null;
-  if (sides.size === 1) { winner = swings[0].winner; swing = swings[0]; }
-  else winner = r() < winProb(a.value + lift(a) - b.value - lift(b)) ? 'a' : 'b';
-  return { winner, decisive, events: gameEvents(a, b, winner, swing, r, used, rules) };
+  if (pw?.forced) winner = pw.forced;
+  else if (sides.size === 1) { winner = swings[0].winner; swing = swings[0]; }
+  else winner = r() < winProb(valueOf(a, 'a') + lift(a) - valueOf(b, 'b') - lift(b)) ? 'a' : 'b';
+  const events = gameEvents(a, b, winner, swing, r, used, rules);
+  if (pw) {
+    // los mensajes especiales: los del principio delante de todo y los demás justo antes de la jugada final
+    events.splice(events.length - 2, 0, ...pw.mid);
+    events.unshift(...pw.start);
+  }
+  return { winner, decisive, events };
 }
 
 // ---------------- mensajes ----------------
@@ -395,7 +496,12 @@ function gameEvents(a, b, winner, swing, r, used = new Set(), rules = 4) {
   if (r() < 0.5) add(EARLY, r() < 0.5 ? winner : loser);
   add(MID, r() < 0.65 ? winner : loser);
   if (r() < 0.5) add(MID, winner);
-  if (swing) {
+  if (swing?.kind) {
+    // Betancourt: la gana o la pierde él solo
+    const victims = teams[other(swing.side)].players.filter(Boolean);
+    const text = pick(MSG[swing.kind], swing.pr).replace('{victima}', pick(victims, swing.pr).name);
+    ev.push({ side: winner, kind: swing.kind, key: swing.p.key, pside: swing.side, cine: true, tpl: text, text });
+  } else if (swing) {
     const { p } = swing;
     // (hasta las reglas 3 las frases de knight no salían porque su clave estaba mal escrita; así se siguen viendo igual)
     const own = rules < 3 && p.name === 'knight' ? [] : OWN[`${p.name} ${p.year}`] || [];

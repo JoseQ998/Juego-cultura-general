@@ -150,6 +150,7 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .trait.sm { font-size: 9px; padding: 4px 8px 3px; clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
 .hx .trait.clutch { color: #241703; background: linear-gradient(180deg, var(--clutch1), var(--clutch2)); }
 .hx .trait.choke { color: #03222e; background: linear-gradient(180deg, var(--choke1), var(--choke2)); }
+.hx .trait.legend { color: #2a0624; background: linear-gradient(180deg, #ff9be3, #c94bb0); }
 .hx .lg { position: relative; display: grid; place-items: center; flex: none; }
 .hx .lg > b { font-family: var(--serif); font-weight: 700; color: var(--gold2); font-size: 14px; letter-spacing: .06em; }
 .hx .lg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -541,6 +542,12 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .cine-in .whole::after, .hx .cine-in .sh::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(228, 248, 255, .1), rgba(143, 216, 245, .55)); mix-blend-mode: screen; opacity: 0; animation: cine-fade-to 1s ease-out calc(var(--el) + 3300ms) forwards; }
 .hx .cine-in b { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--serif); font-weight: 800; font-size: min(13vh, 10vw); color: var(--cB); }
 .hx .cine-in img.ok + b { display: none; }
+.hx .cine-in .morph { position: absolute; inset: 0; z-index: 2; animation: cine-morph 1.2s ease-in calc(var(--el) + 700ms) both; }
+@keyframes cine-morph {
+  0%, 35% { opacity: 1; filter: none; transform: scale(1); }
+  75% { opacity: 1; filter: brightness(3.5) saturate(0) blur(2px); transform: scale(1.08) rotate(-3deg); }
+  100% { opacity: 0; filter: brightness(5) blur(8px); transform: scale(1.2) rotate(4deg); }
+}
 .hx .cine-in img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: cine-kb 7s linear var(--el) both; }
 .hx .cine.choke .cine-in img { animation: cine-kb 7s linear var(--el) both, cine-freeze 1s ease-out calc(var(--el) + 3300ms) both; }
 .hx .cine-crack { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); fill: none; stroke: #f4fdff; stroke-width: 1.4; stroke-linecap: round; filter: drop-shadow(0 0 4px #8fd8f5); animation: cine-gone .2s ease-out calc(var(--el) + 3900ms) forwards; }
@@ -554,6 +561,7 @@ body.dw #app.container { max-width: none; padding: 0; }
 .hx .cine.choke .cine-stamp span { font-size: clamp(32px, 5.6vw, 84px); animation: cine-stamp .55s cubic-bezier(.2, 1.5, .4, 1) calc(var(--el) + 1100ms) both, cine-shiver .09s linear calc(var(--el) + 3300ms) 12; }
 .hx .cine-txt .cine-name { margin-top: 12px; font-family: var(--serif); font-weight: 700; font-size: clamp(26px, 4vw, 58px); line-height: 1; letter-spacing: .1em; text-transform: uppercase; color: #f0e6d2; text-shadow: 0 0 18px rgba(0, 0, 0, .8); }
 .hx .cine-name span { display: inline-block; white-space: pre; animation: cine-letter .4s cubic-bezier(.2, 1.3, .4, 1) calc(var(--el) + 1500ms + var(--i) * 55ms) both; }
+.hx .cine-name span.w { white-space: nowrap; animation: none; }
 .hx .cine-txt .cine-team { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: clamp(11px, 1.3vw, 14px); font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--cB); animation: cine-up .5s ease-out calc(var(--el) + 2000ms) both; }
 .hx .cine-logo { width: 34px; height: 34px; flex: none; }
 .hx .cine-txt .cine-msg { margin-top: 14px; max-width: 540px; font-size: clamp(14px, 1.7vw, 21px); line-height: 1.4; color: #f0e6d2; text-shadow: 0 2px 10px rgba(0, 0, 0, .9); animation: cine-up .6s ease-out calc(var(--el) + 2400ms) both; }

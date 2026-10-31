@@ -3,6 +3,7 @@
 // Nunca se muestra nada que diga si un jugador es mejor o peor que otro (ni notas, ni medias, ni
 // valor del equipo, ni MVP, ni cómo quedó su equipo): solo la química, que sale de reglas conocidas.
 import * as E from './draft-engine.js';
+import { FX as LEG_FX, LEGENDS_ID } from './draft-legends.js';
 import * as MAP from './draft-map.js';
 import { soundOn, setSound, hasMusic, preloadMusic, playMusic, stopMusic } from './draft-sound.js';
 import * as PLAYER from './draft-player.js';
@@ -50,6 +51,13 @@ const TRAIT_INFO = {
   clutch: 'Aparece cuando importa: en la partida decisiva de una serie puede ganarla él solo.',
   choke: 'Rey de la liga: en las partidas normales juega por encima de su nivel, pero en la decisiva de una serie puede hundir a su equipo.',
 };
+// Lo que se cuenta de cada Leyenda en el draft (lo del Pink Ward es sorpresa)
+const POWER_INFO = {
+  admin: 'JoseQ998 es admin: a veces usa comandos (/give, /win o invocar a las leyendas)… y a veces se le apaga la laptop.',
+  toxic: 'Elias es de los mejores junglas, pero es tóxico: lo pueden banear o puede dejar sin luz a su urbanización, y entra un bot.',
+  coin: 'Betancourt nunca pasa desapercibido: o gana la partida él solo o la pierde él solo.',
+  ward: 'Un Pink Ward. Da visión. ¿Qué más se le puede pedir?',
+};
 const GAME_MIN = 33; // minutos de partida que se muestran en el reloj (solo decoración)
 
 // Si una imagen falla se reintenta un par de veces y, si no hay manera, quedan las iniciales.
@@ -86,7 +94,8 @@ export function createDraft(ctx) {
     return `<span class="lg ${cls}"><b>${esc(team.tag)}</b>${team.logo ? img(team.logo, LOGO_W) : ''}</span>`;
   }
   const traitTag = (p, sm = true) => (p.trait === 'clutch' ? `<span class="trait clutch${sm ? ' sm' : ''}">Clutch</span>`
-    : p.trait === 'choke' ? `<span class="trait choke${sm ? ' sm' : ''}">Pecho frío</span>` : '');
+    : p.trait === 'choke' ? `<span class="trait choke${sm ? ' sm' : ''}">Pecho frío</span>`
+    : p.teamId === LEGENDS_ID ? `<span class="trait legend${sm ? ' sm' : ''}">Leyenda</span>` : '');
   const fmt1 = (n) => (Math.round(n * 10) / 10).toString().replace('.', ',');
   const signed = (n) => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt1(Math.abs(n));
   const whyNot = (roster, p) => (roster[p.role] ? `Ya tienes ${E.ROLE_NAMES[p.role].toLowerCase()}` : E.canPick(roster, p) ? '' : 'Ya está en tu equipo');
@@ -300,7 +309,8 @@ export function createDraft(ctx) {
             <span class="tb-free">${free} de 5 disponibles</span>
           </div>
           <div class="pgrid">${t.players.map((pp) => { const p = E.PLAYER_BY_KEY[`${t.id}:${pp.role}`]; return playerCard(p, roster, p.key === busy); }).join('')}</div>
-          ${traits.length ? `<div class="trait-help">${traits.map((k) => `<p>${traitTag({ trait: k })} ${TRAIT_INFO[k]}</p>`).join('')}</div>` : ''}`;
+          ${traits.length ? `<div class="trait-help">${traits.map((k) => `<p>${traitTag({ trait: k })} ${TRAIT_INFO[k]}</p>`).join('')}</div>` : ''}
+          ${t.id === LEGENDS_ID ? `<div class="trait-help">${t.players.filter((pp) => pp.power).map((pp) => `<p>${traitTag({ teamId: LEGENDS_ID })} ${POWER_INFO[pp.power]}</p>`).join('')}</div>` : ''}`;
         foot = `
           <p class="foot-hint">Toca a un jugador para ficharlo. Los atenuados no se pueden elegir: su posición ya está ocupada o ya están en tu equipo.</p>
           <div class="foot-btns">
@@ -449,7 +459,8 @@ export function createDraft(ctx) {
     const items = g.events.slice(0, k).map((e, j) => {
       const good = e.side === side;
       const txt = e.text.replaceAll('{eq}', teamName(e.side)).replaceAll('{rival}', teamName(e.side === 'a' ? 'b' : 'a'));
-      const tag = e.kind === 'clutch' ? '<span class="trait clutch sm">Clutch</span>' : e.kind === 'choke' ? '<span class="trait choke sm">Pecho frío</span>' : '';
+      const tag = e.kind === 'clutch' ? '<span class="trait clutch sm">Clutch</span>' : e.kind === 'choke' ? '<span class="trait choke sm">Pecho frío</span>'
+        : e.cine || e.kind === 'forfeit' ? '<span class="trait legend sm">Leyenda</span>' : '';
       const cls = mine ? (good ? 'good' : 'bad') : (e.side === 'a' ? 'good' : 'bad');
       const word = mine ? (good ? 'A favor' : 'En contra') : esc(teamName(e.side));
       return `<li class="ev ${cls} ${e.kind} ${j === k - 1 ? 'new' : ''}"><time>${clockAt(times[j], dur)}</time>
@@ -581,28 +592,34 @@ export function createDraft(ctx) {
     old?.remove();
     if (!c) return;
     const { ev } = c;
-    const p = E.PLAYER_BY_KEY[ev.key];
-    if (!p) return;
-    const clutch = ev.kind === 'clutch';
-    const pSide = clutch ? ev.side : ev.side === 'a' ? 'b' : 'a';
+    if (!E.PLAYER_BY_KEY[ev.key]) return;
+    const p = { ...E.PLAYER_BY_KEY[ev.key], ...(ev.as || {}) }; // la Neeko de Perejil sale con su nombre y su foto
+    const fx = LEG_FX[ev.kind]; // habilidades del equipo Leyendas
+    const tone = fx ? fx.tone : ev.kind; // dorado (clutch) o hielo que se rompe (choke)
+    const clutch = tone === 'clutch';
+    const pSide = ev.pside || (ev.kind === 'clutch' ? ev.side : ev.side === 'a' ? 'b' : 'a');
     const team = label(pSide === 'a' ? m.a : m.b, me);
     const txt = ev.text.replaceAll('{eq}', label(ev.side === 'a' ? m.a : m.b, me));
-    const decide = clutch ? 'Decide la partida' : `Le cuesta la partida a ${team === 'Tu equipo' ? 'tu equipo' : esc(team)}`;
+    const decide = fx ? esc(fx.ribbon) : clutch ? 'Decide la partida' : `Le cuesta la partida a ${team === 'Tu equipo' ? 'tu equipo' : esc(team)}`;
     const tokKey = `${pSide === (m.b.id === me ? 'b' : 'a') ? 'home' : 'away'}:${p.role}`;
     const pos = L.pos[tokKey] || { x: 50, y: 50 };
     const art = artOf(p);
     const face = `${p.photo ? img(p.photo, PHOTO_W) : ''}<b>${initials(p.name)}</b>`;
+    // la Neeko de Perejil: la foto empieza siendo el Pink Ward y se transforma
+    const morph = ev.kind === 'neeko' ? `<span class="morph">${img(E.PLAYER_BY_KEY[ev.key].photo, PHOTO_W)}</span>` : '';
     const photo = clutch
-      ? `<span class="cine-in">${face}</span>`
+      ? `<span class="cine-in">${face}${morph}</span>`
       : `<span class="cine-in"><span class="whole">${face}</span>${SHARDS.map((_, i) => `<span class="sh" style="${shardStyle(i)}">${face}</span>`).join('')}</span>${CRACK}`;
     // con ilustración, el jugador como su campeón ocupa media pantalla (arriba en el móvil) y sale desde su ficha
     const bgArt = art && `background-image:url(${art.src})`;
     const artBox = art ? `<div class="cine-art"><div class="cine-art-in"><span class="whole" style="${bgArt}"></span>${clutch ? '' : SHARDS.map((_, i) => `<span class="sh" style="${bgArt};${shardStyle(i)}"></span>`).join('')}</div>${clutch ? '' : CRACK}</div>` : '';
-    const name = [...p.name].map((ch, i) => `<span style="--i:${i}">${esc(ch)}</span>`).join('');
+    // letra a letra, sin partir las palabras al saltar de línea
+    let li = 0;
+    const name = p.name.split(' ').map((w) => `<span class="w">${[...w].map((ch) => `<span style="--i:${li++}">${esc(ch)}</span>`).join('')}</span>`).join(' ');
     const tm = E.TEAM_BY_ID[p.teamId];
-    playMusic(ev.kind, c.el, MAP.CINE_MUSIC);
+    playMusic(tone, c.el, MAP.CINE_MUSIC);
     const box = document.createElement('div');
-    box.className = `cine ${ev.kind}${art ? ' has-art' : ''}`;
+    box.className = `cine ${tone}${fx ? ` ley ${ev.kind}` : ''}${art ? ' has-art' : ''}`;
     box.dataset.key = key;
     box.setAttribute('aria-hidden', 'true');
     box.style.setProperty('--el', `${-c.el}ms`);
@@ -617,8 +634,8 @@ export function createDraft(ctx) {
         <div class="cine-hero">
           ${art ? '' : `<div class="cine-photo"><span class="cine-rays"></span><span class="cine-ring"></span><span class="cine-face">${photo}</span></div>`}
           <div class="cine-txt">
-            <p class="cine-kicker">Partida decisiva${roundName ? ` · ${esc(roundName)}` : ''}</p>
-            <p class="cine-stamp"><span>${clutch ? 'Clutch' : 'Pecho frío'}</span></p>
+            <p class="cine-kicker">${fx ? esc(fx.kicker) : 'Partida decisiva'}${roundName ? ` · ${esc(roundName)}` : ''}</p>
+            <p class="cine-stamp"><span>${fx ? esc(fx.stamp) : clutch ? 'Clutch' : 'Pecho frío'}</span></p>
             <p class="cine-name">${name}</p>
             ${art ? `<p class="cine-as">como <b>${esc(art.champ)}</b></p>` : ''}
             <p class="cine-team">${tm ? logo(tm, 'cine-logo') : ''}<span>${E.ROLE_NAMES[p.role]} · ${esc(p.team)} ${p.year}</span></p>
@@ -868,8 +885,8 @@ export function createDraft(ctx) {
       title: 'Contra bots',
       roster,
       rerollsLeft: E.REROLLS,
-      options: async () => E.draftOptions(roster, r),
-      reroll: async () => { used++; return E.draftOptions(roster, r); },
+      options: async () => E.draftOptions(roster, r, [], { legends: true }),
+      reroll: async () => { used++; return E.draftOptions(roster, r, [], { legends: true }); },
       pick: async (key) => { const p = E.PLAYER_BY_KEY[key]; if (!E.canPick(roster, p)) throw new Error('No puedes elegir a ese jugador.'); roster = { ...roster, [p.role]: key }; return roster; },
       done: (final) => {
         const me = 'me';

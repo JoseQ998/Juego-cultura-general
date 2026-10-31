@@ -2,9 +2,10 @@
 // Uso: node tools/draft-data/sql.mjs   (después de build.mjs)
 import fs from 'node:fs';
 import { DRAFT_TEAMS } from '../../js/draft-data.js';
+import { LEGENDS } from '../../js/draft-legends.js';
 const FILE = new URL('../../supabase/setup.sql', import.meta.url).pathname;
 const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
-const rows = DRAFT_TEAMS.flatMap((t) => t.players.map((p) => `(${q(`${t.id}:${p.role}`)},${q(t.id)},${q(p.role)},${q(p.name)})`));
+const rows = [...DRAFT_TEAMS, LEGENDS].flatMap((t) => t.players.map((p) => `(${q(`${t.id}:${p.role}`)},${q(t.id)},${q(p.role)},${q(p.name)})`));
 const block = `-- DRAFT_PLAYERS_BEGIN (generado por tools/draft-data/sql.mjs; no editar a mano)
 delete from public.draft_players where true;
 insert into public.draft_players (key, team_id, role, name) values
