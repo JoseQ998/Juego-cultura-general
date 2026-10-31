@@ -67,6 +67,6 @@ export const FX = {
   afk: { tone: 'choke', stamp: 'AFK', kicker: 'Desconectado', ribbon: 'Pierden la serie' },
   'toxic-ban': { tone: 'choke', stamp: 'Baneado', kicker: 'Tóxico', ribbon: 'Remake' },
   'toxic-luz': { tone: 'choke', stamp: 'Sin luz', kicker: 'Tóxico', ribbon: 'Pierden la partida' },
-  'coin-win': { tone: 'clutch', stamp: 'Todo o nada', kicker: 'O la gana solo…', ribbon: 'La gana él solo' },
-  'coin-lose': { tone: 'choke', stamp: 'Todo o nada', kicker: '…o la pierde solo', ribbon: 'La pierde él solo' },
+  'coin-win': { tone: 'clutch', stamp: 'Héroe', kicker: 'O la gana solo…', ribbon: 'La gana él solo' },
+  'coin-lose': { tone: 'choke', stamp: 'Villano', kicker: '…o la pierde solo', ribbon: 'La pierde él solo' },
 };
