@@ -759,8 +759,18 @@ export function createDraft(ctx) {
       b.classList.toggle('btn-lock', paused);
       b.classList.toggle('btn-ghost', !paused);
     };
+    // Contra bots, si se cambia de pestaña o de ventana el torneo se queda parado (si no, al volver ya habrían pasado
+    // las jugadas y las animaciones). En las salas no: todos van al mismo ritmo.
+    let hiddenAt = 0;
+    const onVisibility = () => {
+      if (!el.isConnected) { document.removeEventListener('visibilitychange', onVisibility); return; }
+      if (document.hidden) { hiddenAt = Date.now(); stopMusic(); }
+      else if (hiddenAt) { offset -= Date.now() - hiddenAt; hiddenAt = 0; lastKey = ''; tick(); }
+    };
+    if (opts.pause) document.addEventListener('visibilitychange', onVisibility);
     const tick = () => {
       if (!el.isConnected) return;
+      if (hiddenAt) return;
       const { i, t, paused } = locate();
       markPaused(paused);
       const s = scenes[i];

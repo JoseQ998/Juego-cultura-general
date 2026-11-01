@@ -61,9 +61,9 @@ export const MSG = {
     'Betancourt vio que había un Nautilus en el otro equipo: perdieron la partida',
   ],
   shikai: [
-    'J0hnN1 libera su shikai: ¡Getsuga Tenshō! Su equipo toma el control de la partida',
+    'J0hnN1 libera su shikai: ¡Getsuga Tenshō! Su equipo gana fuerza en esta partida',
     'J0hnN1 desenvaina su zanpakutō y libera el shikai: su equipo juega con ventaja',
-    'J0hnN1 grita el nombre de su zanpakutō y su shikai le da ventaja a su equipo',
+    'J0hnN1 grita el nombre de su zanpakutō: el shikai le da ventaja a su equipo, aunque la partida sigue abierta',
   ],
   bankai: [
     '¡BANKAI! J0hnN1 libera su Tensa Zangetsu en la partida decisiva y la gana él solo',
