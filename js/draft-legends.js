@@ -17,7 +17,7 @@ export const LEGENDS = {
 
 // Probabilidades de las habilidades
 export const POWER = {
-  wardIsWard: 0.05, // el Pink Ward es de verdad un ward (nota 10); si no, es la Neeko de Perejil (nota 90)
+  wardIsWard: 0.15, // el Pink Ward es de verdad un ward (nota 10); si no (85 %), es la Neeko de Perejil (nota 90)
   neekoRating: 90,
   wardRating: 10,
   toxic: 0.30, // por partida: Elias la lía (mitad baneo, mitad apagón)
