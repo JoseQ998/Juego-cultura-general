@@ -142,7 +142,7 @@ async function resolveLobby(code) {
 // ---------------- construcción de partidas ----------------
 function prepare(q, rnd) {
   const order = shuffle([0, 1, 2, 3], rnd);
-  return { id: q.id, cat: q.cat, text: q.text, options: order.map((i) => q.options[i]), correct: order.indexOf(0) };
+  return { id: q.id, cat: q.cat, text: q.text, img: q.img, options: order.map((i) => q.options[i]), correct: order.indexOf(0) };
 }
 
 // Reparte las preguntas entre las categorías para que ninguna acapare la partida
@@ -858,6 +858,7 @@ function showQuestion() {
       </div>
       <div class="timer"><div class="track"><div class="timer-bar" id="bar"></div></div><span id="secs">10</span></div>
       <h2 class="question">${esc(q.text)}</h2>
+      ${q.img ? `<img class="q-img" src="${esc(q.img)}" alt="">` : ''}
       <div class="options${q.options.some((o) => o?.img) ? ' img-options' : ''}">
         ${q.options.map((o, i) => `<button class="option" data-i="${i}"><span class="letter">${'ABCD'[i]}</span>${optionHtml(o)}</button>`).join('')}
       </div>

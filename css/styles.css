@@ -448,3 +448,4 @@ h2 .verified { width: .95em; height: .95em; }
 .opt-img { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
 .opt-img img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; display: block; }
 .opt-img span { font-size: .85rem; text-align: center; }
+.q-img { display: block; max-width: 100%; max-height: 32vh; margin: 0 auto 16px; border-radius: 6px; }
