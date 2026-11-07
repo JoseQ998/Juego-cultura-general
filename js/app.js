@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { CATEGORIES, QUESTIONS, EXTRA_CATEGORY } from './questions.js';
+import { PRANK, prankPending, prankDone } from './prank.js';
 import * as store from './storage.js';
 import { getIdentity, rememberName } from './identity.js';
 import { createDraft } from './draft.js';
@@ -10,7 +11,7 @@ const TIME_LIMIT = 10_000; // 10 segundos por pregunta
 const REVEAL_MS = 1400;
 const TZ = 'America/Caracas'; // el semanal se reinicia los sábados a las 8pm de Venezuela
 
-const CAT = Object.fromEntries([...CATEGORIES, EXTRA_CATEGORY].map((c) => [c.id, c]));
+const CAT = Object.fromEntries([...CATEGORIES, EXTRA_CATEGORY, PRANK.category].map((c) => [c.id, c]));
 const BY_ID = Object.fromEntries(QUESTIONS.map((q) => [q.id, q]));
 const app = document.getElementById('app');
 
@@ -420,13 +421,16 @@ async function fillWeeklyCard() {
     return;
   }
   const offset = week.serverNow - Date.now();
-  const theme = `<span class="chip">${esc(catName(week.theme))}</span>`;
+  // En la semana de broma se anuncia como semana especial de Nintendo hasta que se juega.
+  const prank = !week.myPlay && prankPending(week.id);
+  const theme = `<span class="chip">${esc(prank ? PRANK.category.name : catName(week.theme))}</span>`;
+  const howMany = prank ? `Semana especial: ${PRANK.questions.length} preguntas` : '15 preguntas';
   const countdown = (label, target) => `<small class="countdown">${label} <b data-until="${target}">${fmtCountdown(target - (Date.now() + offset))}</b></small>`;
   const p = profileOf();
   if (!week.open) {
-    set(`<small>15 preguntas iguales para todos. Una sola partida por semana.</small>${theme}${countdown('Empieza en', week.startsAt)}`);
+    set(`<small>${howMany} iguales para todos. Una sola partida por semana.</small>${theme}${countdown('Empieza en', week.startsAt)}`);
   } else if (!p) {
-    set(`<small>15 preguntas iguales para todos. Una sola partida por semana. <a href="#/cuenta">Entra</a> o <a href="#/cuenta/crear">crea tu cuenta</a> para jugar.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`);
+    set(`<small>${howMany} iguales para todos. Una sola partida por semana. <a href="#/cuenta">Entra</a> o <a href="#/cuenta/crear">crea tu cuenta</a> para jugar.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`);
   } else if (p.status !== 'approved') {
     set(`<small>Tu cuenta está <b>${esc((STATUS_TEXT[p.status] || p.status).toLowerCase())}</b> y no puede jugar el reto semanal. Habla con el administrador.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`);
   } else if (week.myPlay) {
@@ -434,7 +438,7 @@ async function fillWeeklyCard() {
     set(`<small>Ya jugaste esta semana: <b>${mp.correct}/${mp.total}</b> aciertos en ${fmtTime(mp.timeMs)}${mp.finished ? '' : ' (abandonada)'}. Toca para ver el ranking.</small>${theme}${countdown('Nueva ronda en', week.endsAt)}`,
       () => go(`#/ranking/semanal/${week.id}`));
   } else {
-    set(`<small>15 preguntas iguales para todos. <b>Solo tienes una partida</b>: en cuanto empiece, cuenta. Toca para jugar.</small>${theme}${countdown('Termina en', week.endsAt)}`,
+    set(`<small>${howMany} iguales para todos. <b>Solo tienes una partida</b>: en cuanto empiece, cuenta. Toca para jugar.</small>${theme}${countdown('Termina en', week.endsAt)}`,
       () => startWeeklyGame());
   }
   ticker = setInterval(() => {
@@ -464,6 +468,13 @@ async function startWeeklyGame() {
   }
   const questions = buildWeekly(week);
   if (!questions.length) return toast('No se encontraron las preguntas de la semana. Recarga la página.', 'error');
+  if (prankPending(week.id)) {
+    // La broma no llama al servidor: el reto de verdad no empieza (ni cuenta) hasta después.
+    const n = PRANK.questions.length;
+    if (!confirm(`Reto semanal especial: ${n} preguntas de Nintendo.\n\nSolo tienes UNA partida esta semana y cuenta desde que empieza. Si sales a mitad, se guarda con lo que lleves.\n\n¿Empezar ahora?`)) return;
+    const prankQs = PRANK.questions.map((q) => prepare(q, seededRandom(hashStr(`broma:${week.id}:${q.id}`))));
+    return startGame({ mode: 'broma', board: 'broma', label: 'Semanal', weekId: week.id, theme: week.theme, questions: prankQs, name: p.displayName });
+  }
   if (!confirm(`Reto semanal: ${QUESTION_COUNT} preguntas de ${catName(week.theme).toLowerCase()}.\n\nSolo tienes UNA partida esta semana y cuenta desde que empieza. Si sales a mitad, se guarda con lo que lleves.\n\n¿Empezar ahora?`)) return;
   try {
     await store.startWeekly(getIdentity());
@@ -473,6 +484,29 @@ async function startWeeklyGame() {
     return renderHome();
   }
   startGame({ mode: 'semanal', board: 'semanal', label: 'Semanal', weekId: week.id, questions, name: p.displayName });
+}
+
+// Final de la broma: se descubre que no contaba y se pasa al reto de verdad.
+function revealPrank(g) {
+  g.locked = true;
+  g.done = true;
+  prankDone(g.weekId);
+  document.body.classList.remove('playing');
+  const n = g.questions.length;
+  app.innerHTML = `
+    <section class="card result">
+      <p class="eyebrow">Semanal</p>
+      <h2>¡Era broma!</h2>
+      <div class="big-score">${g.correct}<small> / ${n}</small></div>
+      <p class="muted small">aciertos que no valen nada</p>
+      <p>No hay semana de Nintendo: estas ${n} preguntas eran una broma y <b>no cuentan</b> para ningún ranking.</p>
+      <p>Ahora sí, el reto de verdad: <b>15 preguntas de ${esc(catName(g.theme).toLowerCase())}</b>. Tu partida de la semana sigue intacta.</p>
+      <div class="row center">
+        <button class="btn" id="realWeekly">Empezar el reto de verdad</button>
+        <a class="btn ghost" href="#/">Más tarde</a>
+      </div>
+    </section>`;
+  document.getElementById('realWeekly').addEventListener('click', () => startWeeklyGame());
 }
 
 // ---------------- salas ----------------
@@ -940,6 +974,7 @@ function sendAbandoned(s, id) {
 
 function saveAbandoned(g) {
   if (g.done) return;
+  if (g.mode === 'broma') { g.done = true; return; }
   g.done = true;
   clearPending(g.id);
   sendAbandoned(snapshot(g), getIdentity());
@@ -949,6 +984,7 @@ function saveAbandoned(g) {
 // (por ejemplo, el móvil la mata), se envía como abandonada en la siguiente visita.
 const PENDING_KEY = 'cg_pending';
 function savePending(g) {
+  if (g.mode === 'broma') return;
   try { localStorage.setItem(PENDING_KEY, JSON.stringify({ ...snapshot(g), updatedAt: Date.now() })); } catch {}
 }
 function clearPending(id) {
@@ -977,6 +1013,7 @@ window.addEventListener('pagehide', () => {
 
 async function finishGame() {
   const g = game;
+  if (g.mode === 'broma') return revealPrank(g);
   g.locked = true;
   g.done = true;
   clearPending(g.id);
