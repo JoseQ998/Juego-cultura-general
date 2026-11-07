@@ -836,6 +836,11 @@ function startGame(cfg) {
   showQuestion();
 }
 
+// Una opción es un texto o una imagen ({ img, label }) con un nombre opcional debajo.
+const optionHtml = (o) => (o?.img
+  ? `<span class="opt-img"><img src="${esc(o.img)}" alt="${esc(o.label || '')}" loading="eager">${o.label ? `<span>${esc(o.label)}</span>` : ''}</span>`
+  : esc(o));
+
 function showQuestion() {
   const g = game;
   const q = g.questions[g.idx];
@@ -853,8 +858,8 @@ function showQuestion() {
       </div>
       <div class="timer"><div class="track"><div class="timer-bar" id="bar"></div></div><span id="secs">10</span></div>
       <h2 class="question">${esc(q.text)}</h2>
-      <div class="options">
-        ${q.options.map((o, i) => `<button class="option" data-i="${i}"><span class="letter">${'ABCD'[i]}</span>${esc(o)}</button>`).join('')}
+      <div class="options${q.options.some((o) => o?.img) ? ' img-options' : ''}">
+        ${q.options.map((o, i) => `<button class="option" data-i="${i}"><span class="letter">${'ABCD'[i]}</span>${optionHtml(o)}</button>`).join('')}
       </div>
       <p class="feedback" id="feedback"></p>
     </section>`;
