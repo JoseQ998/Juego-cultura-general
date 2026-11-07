@@ -1634,6 +1634,8 @@ async function boot() {
   route();
   recoverPending();
   watchVersion();
+  // Para poder instalarlo como aplicación (sw.js no guarda nada: siempre se carga la última versión).
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
 // ---------------- versión nueva ----------------

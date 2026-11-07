@@ -15,6 +15,7 @@ Página web de preguntas de cultura general. Funciona sin servidor propio: se pu
 | **Rankings** | Semanal (en directo), mensual y anual del reto semanal, con el filtro **Todos / Solo verificados**; **Copas** del Draft Worlds; uno del Aleatorio y uno por cada sala. |
 | **10 segundos** | Límite por pregunta. Si se acaba el tiempo, cuenta como fallo. |
 | **Panel de administrador** | Dar la insignia de **verificado** (como la de Twitter) a las cuentas que hayas comprobado, bloquear cuentas, cambiar contraseñas, borrar la partida semanal de alguien, elegir el tema de la semana y añadir la pregunta extra. |
+| **Aplicación (PWA)** | Se puede instalar desde el navegador ("Instalar aplicación" en el ordenador, "Añadir a pantalla de inicio" en el móvil) y se abre a pantalla completa con su propio icono. No guarda el juego en el dispositivo: siempre carga la última versión y necesita conexión. |
 | **Registro** | Solo para el administrador: todas las partidas, con aviso de los dispositivos y navegadores desde los que se jugó con varios nombres. |
 
 **Puntuación (todos los modos):** cuenta el número de aciertos. Se mide el tiempo total de la partida y, si hay empate, gana quien tardó menos. El ranking mensual y el anual suman los aciertos de todas las semanas (y el tiempo total para desempatar). Cada semana cuenta para el mes en que empieza.
