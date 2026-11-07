@@ -11,8 +11,8 @@ export const PRANK = {
     ['¿De qué color es Kirby?', 'Rosa', 'Amarillo', 'Azul', 'Verde'],
     ['¿En qué año salió la Nintendo Switch?', '2017', '2015', '2016', '2019'],
     ['¿Cómo se llama el villano principal de Super Mario?', 'Bowser', 'Ganondorf', 'King K. Rool', 'Ridley'],
-    // Con imágenes: la "correcta" es Link (los dibujos son pixel art propio, img/broma/)
-    ['¿Quién es Zelda?', { img: 'img/broma/link.svg' }, { img: 'img/broma/pacman.svg' }, { img: 'img/broma/steve.svg' }, { img: 'img/broma/alien.svg' }],
+    // Con imágenes: la "correcta" es Link (renders de Super Smash Bros. Ultimate, de las wikis de Fandom)
+    ['¿Quién es Zelda?', { img: 'img/broma/link.webp' }, { img: 'img/broma/sonic.webp' }, { img: 'img/broma/pacman.webp' }, { img: 'img/broma/steve.webp' }],
     ['¿Qué consola de Nintendo, lanzada en 2012, fue un fracaso de ventas?', 'Wii U', 'Wii', 'GameCube', 'Nintendo 3DS'],
     ['¿Cómo se llama la protagonista de Metroid?', 'Samus Aran', 'Palutena', 'Zelda', 'Ridley'],
     ['¿En qué juego aparece la frase «¡Es peligroso ir solo! Toma esto»?', 'The Legend of Zelda', 'Super Mario Bros.', 'Metroid', 'Kid Icarus'],
