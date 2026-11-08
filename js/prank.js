@@ -1,11 +1,11 @@
 // Semana especial de broma: antes del reto de verdad salen 10 preguntas "de Nintendo" que no cuentan para nada.
-// Solo en la semana PRANK.week (la que empieza el sábado 7 de noviembre de 2026 a las 8pm de Venezuela).
+// Solo en la semana PRANK.week (del sábado 7 de noviembre de 2026 a las 8pm de Venezuela al sábado 14).
 // Primera opción = respuesta correcta (como en questions.js). Una opción puede ser una imagen ({ img }) y la
 // pregunta puede llevar su propia imagen ({ text, img }). Imágenes: renders de Smash Bros. Ultimate y wikis de
 // Fandom, y emojis 3D de Microsoft (Fluent Emoji, licencia MIT).
 
 export const PRANK = {
-  week: 2965,
+  week: 2966,
   category: { id: 'nintendo', name: 'Nintendo' },
   questions: [
     // Las dos primeras son normales, para que se confíe
