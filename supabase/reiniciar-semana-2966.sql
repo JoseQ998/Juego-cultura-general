@@ -1,6 +1,6 @@
--- Reinicia el reto semanal 2966 (del sábado 7 al sábado 14 de noviembre de 2026) con 15 preguntas
--- de videojuegos nuevas. Ejecútalo UNA vez en Supabase → SQL Editor, cuando la página ya tenga la
--- versión con las preguntas nuevas (videojuegos-57 a videojuegos-71).
+-- OPCIONAL: ya no hace falta (en el panel de administrador están "Borrar todas las partidas" y "Cambiar las preguntas").
+-- Hace lo mismo y además aparta las 15 preguntas que ya se jugaron en la semana 2966 para que no vuelvan a salir.
+-- Si lo usas, ejecútalo UNA vez en Supabase → SQL Editor.
 
 begin;
 

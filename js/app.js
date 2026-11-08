@@ -188,10 +188,19 @@ function buildLobby(lobby) {
 
 // Elige las 15 preguntas de una semana: nunca usadas en otra semana, del tema de
 // la semana si lo tiene (y si no alcanzan, se completan con el resto).
+// Semanas con preguntas elegidas a mano (la 2966 se reinició con preguntas nuevas).
+const FIXED_WEEKS = {
+  2966: Array.from({ length: 15 }, (_, i) => `videojuegos-${57 + i}`),
+};
+
 function pickWeekIds(week) {
+  const fixed = FIXED_WEEKS[week.id]?.filter((id) => BY_ID[id] && !week.usedIds.includes(id));
+  if (fixed?.length === QUESTION_COUNT) return fixed;
   const used = new Set(week.usedIds);
   const pool = QUESTIONS.filter((q) => !used.has(q.id));
-  const rnd = seededRandom(hashStr(`semana:${week.id}`));
+  // Se eligen una sola vez por semana (las guarda el servidor), así que pueden ser al azar: si el administrador
+  // pide preguntas nuevas, salen otras.
+  const rnd = seededRandom(hashStr(`semana:${week.id}:${Math.random()}`));
   let picked = pickBalanced(week.theme ? pool.filter((q) => q.cat === week.theme) : pool, QUESTION_COUNT, rnd);
   if (picked.length < QUESTION_COUNT) {
     const rest = pool.filter((q) => !picked.includes(q));
@@ -1277,7 +1286,7 @@ async function renderAdmin() {
           </fieldset>
           ${locked
             ? '<p class="muted small">Ya hay partidas jugadas esta semana: el tema y la pregunta extra no se pueden cambiar.</p>'
-            : `<div class="row small-gap"><button class="btn">Guardar</button>${w.extra ? '<button type="button" class="btn ghost sm danger" data-clear-extra>Quitar pregunta extra</button>' : ''}</div>`}
+            : `<div class="row small-gap"><button class="btn">Guardar</button>${w.extra ? '<button type="button" class="btn ghost sm danger" data-clear-extra>Quitar pregunta extra</button>' : ''}${w === current ? '<button type="button" class="btn ghost sm" data-new-questions>Cambiar las preguntas</button>' : ''}</div>`}
         </form>
         ${w === current ? `
           <h4>Partidas de esta semana (${w.plays.length})</h4>
@@ -1293,7 +1302,8 @@ async function renderAdmin() {
                 <td class="mono small">${esc(p.deviceId.slice(0, 8))} · ${esc(p.ua)}</td>
                 <td><button class="btn ghost sm danger" data-del-play="${p.userId}" data-name="${esc(p.name)}">Borrar partida</button></td>
               </tr>`).join('')}</tbody></table></div>` : '<p class="muted small">Nadie ha jugado todavía.</p>'}
-          <p class="muted small">Al borrar la partida de alguien, esa persona puede volver a jugar el reto de esta semana.</p>` : ''}
+          ${w.plays.length > 1 ? '<button class="btn ghost sm danger" data-del-all>Borrar todas las partidas</button>' : ''}
+          <p class="muted small">Al borrar la partida de alguien, esa persona puede volver a jugar el reto de esta semana. Cuando no queda ninguna, puedes cambiar el tema o pedir preguntas nuevas.</p>` : ''}
       </section>`;
   };
 
@@ -1358,6 +1368,22 @@ async function renderAdmin() {
         if (!confirm(`¿Borrar la partida semanal de ${del.dataset.name}? Podrá volver a jugar el reto de esta semana.`)) return;
         await store.adminDeletePlay(current.id, del.dataset.delPlay);
         toast('Partida borrada.');
+        return reload();
+      }
+      if (e.target.closest('[data-del-all]')) {
+        if (!confirm(`¿Borrar las ${current.plays.length} partidas de esta semana? Todos podrán volver a jugar el reto.`)) return;
+        for (const p of current.plays) await store.adminDeletePlay(current.id, p.userId);
+        toast('Partidas borradas.');
+        return reload();
+      }
+      if (e.target.closest('[data-new-questions]')) {
+        if (!confirm('¿Cambiar las preguntas de esta semana? Se eligen otras al azar del mismo tema la próxima vez que alguien entre a jugar.')) return;
+        // El servidor solo vacía las preguntas al cambiar el tema: se cambia a otro y se vuelve al mismo.
+        const form = e.target.closest('form');
+        const theme = form.theme.value;
+        await store.adminSetWeek(current.id, theme ? '' : CATEGORIES[0].id, current.extra || null);
+        await store.adminSetWeek(current.id, theme, current.extra || null);
+        toast('Listo: la semana tendrá preguntas nuevas.');
         return reload();
       }
       if (clearExtra) {
