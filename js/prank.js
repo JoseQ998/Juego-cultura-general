@@ -23,7 +23,7 @@ export const PRANK = {
   ].map(([t, ...options], i) => ({ id: `broma-${i + 1}`, cat: 'nintendo', text: t.text ?? t, img: t.img, options })),
 };
 
-const KEY = 'cg_broma';
+const KEY = 'cg_broma2'; // cambió al reiniciar la semana 2966: la broma vuelve a salir a todos
 export function prankPending(weekId) {
   if (weekId !== PRANK.week) return false;
   try { return localStorage.getItem(KEY) !== String(weekId); } catch { return true; }
