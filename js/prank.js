@@ -11,7 +11,6 @@ export const PRANK = {
     // Las dos primeras son normales, para que se confíe
     ['¿Cómo se llama el hermano de Mario?', 'Luigi', 'Wario', 'Toad', 'Yoshi'],
     [{ text: '¿Cómo se llama esto?', img: 'img/broma/nunchuk.webp' }, 'Nunchuk', 'Wiimote', 'Joy-Con', 'Wii Zapper'],
-    // Pendiente: el usuario aún no ha decidido la 3
     ['¿De qué color es Kirby?', 'Rosa', 'Amarillo', 'Azul', 'Verde'],
     ['¿Cuál es más rápida?', { img: 'img/broma/calculadora.webp' }, { img: 'img/broma/switch-cuadrada.webp' }, { img: 'img/broma/wiiu.webp' }, { img: 'img/broma/gamecube.webp' }],
     ['¿Cuál de estos es un robo a mano armada?', { img: 'img/broma/eshop.webp' }, { img: 'img/broma/ladron.webp' }, { img: 'img/broma/pirata.webp' }, { img: 'img/broma/mapache.webp' }],
